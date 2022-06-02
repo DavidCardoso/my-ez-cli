@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+IMAGE=davidcardoso/aws-sso-cred:latest
+
+echo "=========================================================="
+echo "Building '${IMAGE}'..."
+echo "=========================================================="
+
+docker build --tag ${IMAGE} .

@@ -1,0 +1,54 @@
+#!/bin/sh
+set -e
+
+BASEDIR=$(dirname "${0}")
+MFA_CODE=$1
+
+# Load env vars
+cat <<EOF
+==========================================================
+Preparing env vars...
+==========================================================
+EOF
+
+while IFS="" read -r p || [ -n "$p" ]
+do
+  printf '%s\n' "$p"
+  eval "$p"
+done < ${BASEDIR}/../config/aws/.env
+
+cat <<EOF
+==========================================================
+
+EOF
+
+# Requires AWS CLI. See './aws'.
+cat <<EOF
+==========================================================
+Getting AWS Session Token...
+==========================================================
+EOF
+
+export AWS_PROFILE=${AWS_STS_MFA_PROFILE}
+
+aws sts get-session-token \
+    --duration-seconds ${AWS_STS_SESSION_EXPIRATION} \
+    --serial-number ${AWS_STS_MFA_SERIAL_NUMBER} \
+    --token-code ${MFA_CODE} 
+
+cat <<EOF
+==========================================================
+
+EOF
+
+# Setting AWS profile
+cat <<EOF
+==========================================================
+Next steps:
+
+1. Replace the credentials of the profile '${AWS_STS_SESSION_PROFILE}' with the values above.
+2. Set the AWS profile to '${AWS_STS_SESSION_PROFILE}'.
+
+That's it!
+==========================================================
+EOF

@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+IMAGE=hashicorp/terraform:1.2.2
+CONTEXTDIR=/context
+WORKDIR=${CONTEXTDIR}/app
+
+if [ -z "${CONTEXT}" ]; then
+    # defaults to parent folder
+    CONTEXT=$(cd "${PWD}/../" && pwd)
+fi
+
+cat <<EOF
+
+################################################################################
+Context: ${CONTEXT}
+Mounted on: ${CONTEXTDIR}
+Workdir: ${WORKDIR}
+################################################################################
+
+To use a different context, run:
+$ CONTEXT=/absolute/path/to/my/context terraform
+################################################################################
+
+EOF
+
+# run from your working directory
+docker run -it --rm \
+    --name terraform-cli \
+    --env AWS_PROFILE=${AWS_PROFILE} \
+    --volume ${HOME}/.aws:/root/.aws \
+    --volume ${HOME}/.terraformrc:/root/.terraformrc \
+    --volume ${CONTEXT}:${CONTEXTDIR} \
+    --volume ${PWD}:${WORKDIR} \
+    --workdir ${WORKDIR} \
+    $IMAGE "${@}"

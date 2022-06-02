@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+IMAGE=amazon/aws-cli:latest
+WORKDIR=/app
+
+# run from your working directory
+docker run -it --rm \
+--env AWS_PROFILE=$AWS_PROFILE \
+--volume $HOME/.aws:/root/.aws \
+--volume $PWD:$WORKDIR \
+--workdir $WORKDIR \
+$IMAGE "${@}"
