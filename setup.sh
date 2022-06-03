@@ -28,7 +28,7 @@ Type the number of the OPTION:
 # yarn: Yarn with node 14 and 16
 # serverless: Serverless Framework CLI
 # terraform: Terraform CLI
-# EXIT: To activate all options
+# EXIT: To leave this menu
 ==============================================================
 EOF
 }
