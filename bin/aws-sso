@@ -1,0 +1,106 @@
+#!/bin/bash
+set -e
+
+BASEDIR=$(cd $(dirname "${0}") && pwd)
+ARGS=("${@}")
+
+# Warning: Requires AWS CLI. See './aws'.
+
+# Helpers
+
+show_help() {
+    cat <<EOF
+
+==========================================================
+Error: $1
+
+Usage examples:
+- aws-sso           # 1) configure: To setup the "~/.aws/config" file
+- aws-sso           # 2) login: To login to your aws profile
+- aws-sso           # 3) logout: To finish all AWS SSO sessions
+==========================================================
+EOF
+}
+
+load_env_vars() {
+    cat <<EOF
+
+==========================================================
+Loading env vars...
+==========================================================
+EOF
+
+    while IFS="" read -r p || [ -n "$p" ]; do
+        if [ $(echo "$p" | grep $1) ]; then
+            printf '%s\n' "$p"
+            eval "$p"
+        fi
+    done <${BASEDIR}/../config/aws/.env
+}
+
+next_steps() {
+    cat <<EOF
+
+==========================================================
+Next steps:
+
+1. Remember: With great power comes great responsibility!!
+
+That's it! ;)
+==========================================================
+EOF
+}
+
+sso_config() {
+    cat <<EOF
+
+==========================================================
+Configuring AWS SSO profile (~/.aws/config)...
+==========================================================
+EOF
+    aws configure sso
+}
+
+sso_login() {
+    cat <<EOF
+
+==========================================================
+Logging in using AWS SSO profile...
+==========================================================
+EOF
+    load_env_vars AWS_SSO
+    echo
+    echo "=========================================================="
+    echo "Type the name of the profile you want to log in (default: ${AWS_SSO_DEFAULT_PROFILE}):"
+    read profile && if [[ "$profile" = "" ]]; then profile=${AWS_SSO_DEFAULT_PROFILE}; fi
+    echo "Selected profile: $profile"
+    echo "=========================================================="
+    aws sso login --profile "${profile}"
+}
+
+sso_logout() {
+    cat <<EOF
+
+==========================================================
+Finishing all AWS SSO sessions...
+Cleaning all related cache...
+==========================================================
+EOF
+    aws sso logout
+}
+
+# Main
+PS3="Choose an option: "
+select opt in configure login logout; do
+    case ${opt} in
+    configure) sso_config ;;
+    login) sso_login ;;
+    logout) sso_logout ;;
+    *) show_help "Invalid argument." && exit 2 ;;
+    esac
+    break
+done
+
+next_steps
+
+# More info: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html

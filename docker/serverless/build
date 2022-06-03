@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+IMAGE=davidcardoso/docker-serverless-framework:latest
+
+echo "=========================================================="
+echo "Building '${IMAGE}'..."
+echo "=========================================================="
+
+docker build --tag ${IMAGE} .

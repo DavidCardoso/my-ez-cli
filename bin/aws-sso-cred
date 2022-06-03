@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+# see "../docker/aws-sso-cred/build"
+IMAGE=davidcardoso/aws-sso-cred:latest
+WORKDIR=/app
+
+# run from your working directory
+docker run -it --rm \
+    --name aws-sso-cred \
+    --env AWS_PROFILE=$AWS_PROFILE \
+    --env AWS_SDK_LOAD_CONFIG=1 \
+    --volume $HOME/.aws:/root/.aws \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint /bin/bash \
+    $IMAGE -c "ssocred ${@}"

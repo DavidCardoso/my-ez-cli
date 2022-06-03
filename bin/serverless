@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+# see "../docker/serverless/build"
+IMAGE=davidcardoso/docker-serverless-framework:latest
+WORKDIR=/app
+
+if [ -z "${STACK_NAME}"]; then
+    STACK_NAME=development
+fi
+
+# run from your working directory
+docker run -it --rm \
+    --name serverless-cli \
+    --env AWS_PROFILE=$AWS_PROFILE \
+    --env AWS_SDK_LOAD_CONFIG=1 \
+    --env STACK_NAME=${STACK_NAME} \
+    --volume $HOME/.aws:/root/.aws \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint serverless \
+    --network="host" \
+    $IMAGE "${@}"
