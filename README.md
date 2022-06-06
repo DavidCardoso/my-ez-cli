@@ -16,6 +16,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [Yarn with Node 14](#yarn-with-node-14)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
+    - [Ookla Speedtest CLI](#ookla-speedtest-cli)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -214,6 +215,18 @@ terraform apply tfplan
 # destroy created resources on the providers
 # warning: do not run it in production! ;D
 terraform destroy
+```
+
+### Ookla Speedtest CLI
+
+[Building the docker image](docker/speedtest/README.md).
+
+```shell
+# help
+speedtest --help
+
+# run a speed test
+speedtest
 ```
 
 ## Author
