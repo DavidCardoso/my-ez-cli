@@ -15,4 +15,4 @@ RUN apk add --no-cache --virtual .deps tar curl && \
     rm -rf /tmp/speedtest.* && \
     apk del .deps
 
-CMD ["/usr/local/bin/speedtest", "--accept-license", "--accept-gdpr"]
+ENTRYPOINT ["/usr/local/bin/speedtest", "--accept-license", "--accept-gdpr"]
