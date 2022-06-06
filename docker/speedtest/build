@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+IMAGE=davidcardoso/docker-speedtest:latest
+SPEEDTEST_VERSION=1.1.1
+
+echo "=========================================================="
+echo "Building '${IMAGE}'..."
+echo "=========================================================="
+
+docker build \
+    --build-arg VERSION=${SPEEDTEST_VERSION} \
+    --tag ${IMAGE} \
+    .

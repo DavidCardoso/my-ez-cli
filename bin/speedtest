@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+# see "../docker/speedtest/README.md"
+IMAGE=davidcardoso/dockers-speedtest:latest
+WORKDIR=/app
+
+# run from your working directory
+docker run -it --rm \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint /bin/bash \
+    $IMAGE "${@}"

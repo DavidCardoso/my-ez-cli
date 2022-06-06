@@ -28,6 +28,7 @@ Type the number of the OPTION:
 # yarn: Yarn with node 14 and 16
 # serverless: Serverless Framework CLI
 # terraform: Terraform CLI
+# speedtest: Ookla Speedtest CLI
 # EXIT: To leave this menu
 ==============================================================
 EOF
@@ -92,18 +93,26 @@ install_terraform() {
     show_msg "Activating terraform..."
 }
 
+install_speedtest() {
+    sudo ln -sf ${BASEDIR}/bin/speedtest /usr/local/bin/speedtest
+    show_msg "Activating speedtest..."
+}
+
 install_all() {
     install_aws
     install_node
     install_yarn
     install_serverless
     install_terraform
+    install_speedtest
 }
 
 # Main
 
+show_begin
+
 PS3="Choose an option: "
-select opt in ALL aws node yarn serverless terraform EXIT; do
+select opt in ALL aws node yarn serverless terraform speedtest EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -111,6 +120,7 @@ select opt in ALL aws node yarn serverless terraform EXIT; do
     yarn) install_yarn ;;
     serverless) install_serverless ;;
     terraform) install_terraform ;;
+    speedtest) install_speedtest ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac
