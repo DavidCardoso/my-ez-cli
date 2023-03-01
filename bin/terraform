@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-IMAGE=hashicorp/terraform:1.2.2
+IMAGE=hashicorp/terraform:1.3.9
 CONTEXTDIR=/context
 WORKDIR=${CONTEXTDIR}/app
 
