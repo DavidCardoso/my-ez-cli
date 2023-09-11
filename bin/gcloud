@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
+WORKDIR=/app
+
+# run from your working directory
+docker run -it --rm \
+    --volume $PWD:$WORKDIR \
+    --volumes-from gcloud-config \
+    --workdir $WORKDIR \
+    --entrypoint gcloud \
+    $IMAGE "${@}"
