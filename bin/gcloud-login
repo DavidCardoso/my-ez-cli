@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
+WORKDIR=/app
+
+# Remove previous auth configs
+if [[ $(docker ps --all | grep gcloud-config) ]]; then
+    echo "Removing previous $(gcloud-config) container..."
+    docker rm gcloud-config
+fi
+
+# run from your working directory
+docker run -it \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint gcloud \
+    --name gcloud-config \
+    $IMAGE auth login

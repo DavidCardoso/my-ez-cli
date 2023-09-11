@@ -29,6 +29,7 @@ Type the number of the OPTION:
 # serverless: Serverless Framework CLI
 # terraform: Terraform CLI
 # speedtest: Ookla Speedtest CLI
+# gcloud: Google Cloud CLI
 # EXIT: To leave this menu
 ==============================================================
 EOF
@@ -98,6 +99,14 @@ install_speedtest() {
     show_msg "Activating speedtest..."
 }
 
+install_gcloud() {
+    sudo ln -sf ${BASEDIR}/bin/gcloud-login /usr/local/bin/gcloud-login
+    show_msg "Activating gcloud-login..."
+
+    sudo ln -sf ${BASEDIR}/bin/gcloud /usr/local/bin/gcloud
+    show_msg "Activating gcloud..."
+}
+
 install_all() {
     install_aws
     install_node
@@ -105,6 +114,7 @@ install_all() {
     install_serverless
     install_terraform
     install_speedtest
+    install_gcloud
 }
 
 # Main
@@ -112,7 +122,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws node yarn serverless terraform speedtest EXIT; do
+select opt in ALL aws node yarn serverless terraform speedtest gcloud EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -121,6 +131,7 @@ select opt in ALL aws node yarn serverless terraform speedtest EXIT; do
     serverless) install_serverless ;;
     terraform) install_terraform ;;
     speedtest) install_speedtest ;;
+    gcloud) install_gcloud ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac

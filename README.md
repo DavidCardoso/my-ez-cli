@@ -17,6 +17,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
+    - [Google Cloud CLI](#google-cloud-cli)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -30,6 +31,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
 It adds aliases to your `~/.zshrc` file and symbolic links to your `/usr/local/bin/` folder:
 
 ```shell
+# Run this script and choose an option
 ./setup.sh
 ```
 
@@ -228,6 +230,28 @@ speedtest --help
 # run a speed test
 speedtest
 ```
+
+### Google Cloud CLI
+
+```shell
+# If are not logged in, run the command below and follow the steps:
+# 1. Copy/paste the provided URL in your browser
+# 2. Authorize using your Google account
+# 3. Copy/paste the generated auth code back in your terminal
+gcloud-login
+
+# If your current project is [None] or you wanna change it, set one.
+gcloud config set project <PROJECT_ID>
+
+# Test if it is working...
+gcloud version
+gcloud help
+gcloud storage ls
+```
+
+> [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
+
+> [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
 
 ## Author
 
