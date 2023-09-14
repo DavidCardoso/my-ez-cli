@@ -26,6 +26,7 @@ EOF
 
 # run from your working directory
 docker run -it --rm \
+    --platform linux/amd64 \
     --name terraform-cli \
     --env AWS_PROFILE=${AWS_PROFILE} \
     --volume ${HOME}/.aws:/root/.aws \

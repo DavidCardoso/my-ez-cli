@@ -12,6 +12,7 @@ fi
 
 # run from your working directory
 docker run -it \
+    --platform linux/amd64 \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     --entrypoint gcloud \

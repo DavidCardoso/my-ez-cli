@@ -11,6 +11,7 @@ fi
 
 # run from your working directory
 docker run -it --rm \
+    --platform linux/amd64 \
     --name serverless-cli \
     --env AWS_PROFILE=$AWS_PROFILE \
     --env AWS_SDK_LOAD_CONFIG=1 \

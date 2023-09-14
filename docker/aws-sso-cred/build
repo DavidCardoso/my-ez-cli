@@ -7,4 +7,6 @@ echo "=========================================================="
 echo "Building '${IMAGE}'..."
 echo "=========================================================="
 
-docker build --tag ${IMAGE} .
+docker build \
+    --platform linux/amd64 \
+    --tag ${IMAGE} .
