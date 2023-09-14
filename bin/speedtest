@@ -6,4 +6,5 @@ IMAGE=davidcardoso/docker-speedtest:latest
 
 # run from your working directory
 docker run -it --rm \
+    --platform linux/amd64 \
     $IMAGE "${@}"

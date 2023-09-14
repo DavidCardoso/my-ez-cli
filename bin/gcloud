@@ -6,6 +6,7 @@ WORKDIR=/app
 
 # run from your working directory
 docker run -it --rm \
+    --platform linux/amd64 \
     --volume $PWD:$WORKDIR \
     --volumes-from gcloud-config \
     --workdir $WORKDIR \

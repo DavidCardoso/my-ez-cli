@@ -9,6 +9,7 @@ echo "Building '${IMAGE}'..."
 echo "=========================================================="
 
 docker build \
+    --platform linux/amd64 \
     --build-arg VERSION=${SPEEDTEST_VERSION} \
     --tag ${IMAGE} \
     .
