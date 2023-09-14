@@ -38,7 +38,7 @@ EOF
 show_begin() {
     cat <<EOF
 ==============================================================
-                  Tooling Dev CLI Setup
+                  My Ez CLI • Setup
 ==============================================================
   Hope you enjoy it! :D
 ==============================================================
@@ -48,7 +48,7 @@ show_begin() {
 ==============================================================
   Warning: Root access may be needed.
 ==============================================================
-  GitHub: https://github.com/Tooling-Dev/cli
+  GitHub: https://github.com/My-Tooling/my-ez-cli
 ==============================================================
 
 EOF
@@ -140,4 +140,4 @@ done
 
 # End
 
-show_msg "Thanks for using Tooling Dev CLI ;)"
+show_msg "Thanks for using My Ez CLI ;)"

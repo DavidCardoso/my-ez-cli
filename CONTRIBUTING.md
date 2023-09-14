@@ -1,8 +1,8 @@
 # Contribution Guidelines
 
-Help wanted! We'd love your contributions to `Tooling Dev CLI`. 
+Help wanted! We'd love your contributions to `My Ez CLI`.
 
-Please review the following guidelines before contributing. 
+Please review the following guidelines before contributing.
 
 * [I have a question...](#have-a-question)
 * [I found a bug...](#found-a-bug)
@@ -16,22 +16,22 @@ Also, feel free to propose changes to these guidelines by updating this file and
 You can use [discussions](../../discussions) to interact with other community members, share new ideas and ask questions.
 
 ## Found a bug?
-                            
-You can use [issues](../../issues) to report bugs. Choose the `bug template` and provide all the requested information, otherwise your issue could be closed. 
+
+You can use [issues](../../issues) to report bugs. Choose the `bug template` and provide all the requested information, otherwise your issue could be closed.
 
 Please also feel free to submit a Pull Request with a fix for the bug! For sensitive security-related issues, please report via email: [dev+github@davidcardoso.me](mailto:dev+github@davidcardoso.me).
 
 ## Have a Feature Request?
 
-All feature requests should start with [submitting an issue](../../issues/new) documenting the user story and acceptance criteria. Choose the `feature request template` and provide all the requested information, otherwise your issue could be closed. 
+All feature requests should start with [submitting an issue](../../issues/new) documenting the user story and acceptance criteria. Choose the `feature request template` and provide all the requested information, otherwise your issue could be closed.
 
-Again, feel free to submit a `Pull Request` with a proposed implementation of the feature. 
+Again, feel free to submit a `Pull Request` with a proposed implementation of the feature.
 
 ## Ready to contribute
 
 ### Create an issue
 
-Before submitting a [new issue](../../issues/new), please search the [issues](../../issues) to make sure there isn't a similar issue doesn't already exist. 
+Before submitting a [new issue](../../issues/new), please search the [issues](../../issues) to make sure there isn't a similar issue doesn't already exist.
 
 Assuming no existing issues exist, please ensure you include the following bits of information when submitting the issue to ensure we can quickly reproduce your issue:
 
@@ -57,7 +57,7 @@ We may have additional questions and will communicate through the GitHub issue, 
 7. For a Pull Request to be merged:
    * CI workflow must succeed
    * A project member must review and approve it
-   
+
 The reviewer may have additional questions and will communicate through conversations in the GitHub PR, so please respond back to our questions or changes requested during review.
 
 ### <a name="style"></a> Styleguide
@@ -66,7 +66,7 @@ When submitting code, please make every effort to follow existing conventions an
 
 ### License
 
-By contributing your code, you agree to license your contribution under the terms of the [MIT License](LICENSE). 
+By contributing your code, you agree to license your contribution under the terms of the [MIT License](LICENSE).
 
 All files are released with the MIT License.
 
