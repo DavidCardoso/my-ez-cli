@@ -26,14 +26,12 @@ Configuration in `~/.aws/config`:
 ```
 [profile my-sso-profile]
 sso_start_url = https://yourcompany.awsapps.com/start
-sso_region = us-east-1
+sso_region = sa-east-1
 sso_account_id = 1234567890
 sso_role_name = RoleName
 region = sa-east-1
 output = json
 ```
-
-> AWS SSO is a global service. So, use `sso_region = us-east-1` (N. Virginia).
 
 > AWS SSO do not need `~/.aws/credentials` file.
 

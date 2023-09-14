@@ -37,4 +37,4 @@ Example: steps to reproduce the behavior:
 Note: List of related links and updated docs (READMEs, Notion, Google Docs, others links, etc).
 -->
 
-- [README](/tooling-dev/cli#readme)
+- [README](/my-tooling/my-ez-cli#readme)

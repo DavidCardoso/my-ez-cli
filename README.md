@@ -1,8 +1,8 @@
-# Dev Tooling CLI
+# My Ez CLI
 
 Tools via **Unix Command Line Interface** with no installation and just using **Docker** + **Shell Script**.
 
-- [Dev Tooling CLI](#dev-tooling-cli)
+- [My Ez CLI](#my-ez-cli)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
   - [Usage examples](#usage-examples)
@@ -24,7 +24,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
 ## Prerequisites
 
 - [Docker](https://www.docker.com/get-started).
-- [Oh My Zsh](https://ohmyz.sh/).
+- [Zshell + Oh My Zsh](https://ohmyz.sh/).
 
 ## Setup
 
