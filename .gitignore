@@ -1,3 +1,9 @@
 # Dotenv files
 .env*
 !.env.example
+
+# npm, yarn...
+*.log
+**/yarn*/.cache
+.yarn/
+!.yarn/releases/yarn-*.cjs

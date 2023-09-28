@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+IMAGE=node:18-alpine
+REALPATH=$(realpath "${0}")
+BASEDIR=$(cd $(dirname $REALPATH) && pwd)
+WORKDIR=/app
+YARN_LOCAL_DIR=$(cd $BASEDIR/../docker/yarn-berry && pwd)
+YARN_DIR=/root
+
+# should be executed from your working directory
+docker run -it --rm \
+    --env NPM_TOKEN=$NPM_TOKEN \
+    --volume $YARN_LOCAL_DIR:$YARN_DIR \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint yarn \
+    $IMAGE "${@}"
