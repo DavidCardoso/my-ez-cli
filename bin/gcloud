@@ -5,7 +5,7 @@ IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
 WORKDIR=/app
 
 # run from your working directory
-docker run -it --rm \
+docker run --rm \
     --platform linux/amd64 \
     --volume $PWD:$WORKDIR \
     --volumes-from gcloud-config \
