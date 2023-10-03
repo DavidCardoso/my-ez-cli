@@ -14,6 +14,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [Node 14](#node-14)
     - [Yarn](#yarn)
       - [Yarn with Node 14](#yarn-with-node-14)
+      - [Yarn Berry (v2+)](#yarn-berry-v2)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
@@ -128,6 +129,16 @@ yarn global add another-pkg
 ```shell
 # see yarn version
 yarn14 -v
+```
+
+#### Yarn Berry (v2+)
+
+```shell
+# if you have replaced yarn
+yarn --version # it should show 3.6+
+
+# otherwise
+yarn-berry --version # it should show 3.6+
 ```
 
 ### Serverless Framework

@@ -26,6 +26,7 @@ Type the number of the OPTION:
 # aws: AWS CLI, AWS Get Session Token, AWS SSO, AWS SSO Get Credentials
 # node: Node 14, Node 16
 # yarn: Yarn with node 14 and 16
+# yarn-berry: Yarn Berry (v2+)
 # serverless: Serverless Framework CLI
 # terraform: Terraform CLI
 # speedtest: Ookla Speedtest CLI
@@ -107,10 +108,27 @@ install_gcloud() {
     show_msg "Activating gcloud..."
 }
 
+install_yarn-berry() {
+    if [[ $(which yarn) ]]; then
+        echo "A yarn version was found: $(yarn --version)"
+        echo "Do you want to replace it? (Y/n)"
+        read REPLACE_YARN
+        if [[ $REPLACE_YARN == "Y" || $REPLACE_YARN == "y" ]]; then
+            sudo ln -sf ${BASEDIR}/bin/yarn-berry $(which yarn)
+            sudo ln -sf ${BASEDIR}/bin/yarn-berry /usr/local/bin/yarn
+            show_msg "Replacing yarn by yarn berry version..."
+        fi
+    fi
+
+    sudo ln -sf ${BASEDIR}/bin/yarn-berry /usr/local/bin/yarn-berry
+    show_msg "Activating yarn-berry..."
+}
+
 install_all() {
     install_aws
     install_node
     install_yarn
+    install_yarn-berry
     install_serverless
     install_terraform
     install_speedtest
@@ -122,12 +140,13 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws node yarn serverless terraform speedtest gcloud EXIT; do
+select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
     node) install_node ;;
     yarn) install_yarn ;;
+    yarn-berry) install_yarn-berry ;;
     serverless) install_serverless ;;
     terraform) install_terraform ;;
     speedtest) install_speedtest ;;
