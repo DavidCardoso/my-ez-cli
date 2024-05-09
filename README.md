@@ -17,7 +17,11 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [Yarn Berry (v2+)](#yarn-berry-v2)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
-      - [CONTEXT variable](#context-variable)
+      - [`CONTEXT` variable](#context-variable)
+      - [`DOTENV_FILE` variable](#dotenv_file-variable)
+      - [`TF_RC_FILE` variable](#tf_rc_file-variable)
+      - [`AWS_CREDENTIALS_FOLDER` variable](#aws_credentials_folder-variable)
+      - [`GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables](#gcloud_credentials_folder-and-google_application_credentials-variables)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
     - [Google Cloud CLI](#google-cloud-cli)
     - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
@@ -118,7 +122,6 @@ yarn init
 
 # install a package as dev dependency
 yarn add some-pkg --dev
-
 
 # install a package globally
 yarn global add another-pkg
@@ -230,6 +233,102 @@ terraform apply tfplan
 # destroy created resources on the providers
 # warning: do not run it in production! ;D
 terraform destroy
+```
+
+#### `CONTEXT` variable
+
+By default, the parent directory is mounted on the container.
+This allows files inside parent folder to be referenced in the Terraform files.
+
+For instance, if you need to use a Terraform `module` that is located two levels up
+in the filesystem, you can use `CONTEXT` variable before the `terraform` command
+to define the absolute path to that module (or another folder).
+
+```shell
+# option 1
+CONTEXT=$(cd "$PWD/../../" && pwd) terraform --version
+CONTEXT=$(cd "$PWD/../../" && pwd) terraform init
+
+# option 2
+CONTEXT=$(cd "$PWD/../../" && pwd)
+CONTEXT=$CONTEXT terraform --version
+CONTEXT=$CONTEXT terraform init
+
+# option 3
+export CONTEXT=$(cd "$PWD/../../" && pwd)
+terraform --version
+terraform init
+```
+
+#### `DOTENV_FILE` variable
+
+All variables in `DOTENV_FILE` file will be available inside the container.
+
+By default, the terraform container will use `${PWD}/.env` file.
+
+Inform a different value if you want to point to another one.
+
+```shell
+export DOTENV_FILE=local.env
+terraform init
+terraform plan
+
+# or
+DOTENV_FILE=local.env terraform init
+DOTENV_FILE=local.env terraform plan
+```
+
+#### `TF_RC_FILE` variable
+
+This is used for Terraform Cloud login.
+
+By default, the terraform container will use `${HOME}/.terraformrc` file.
+
+Inform a different value if you want to point to another one.
+
+```shell
+export TF_RC_FILE=/another/path/to/terraform-credentials/file
+terraform init
+# it should recognize the backend config pointing to your TF Cloud workspace(s)
+```
+
+#### `AWS_CREDENTIALS_FOLDER` variable
+
+This is used for AWS CLI authentication.
+
+By default, the terraform container will use `${HOME}/.aws` folder.
+
+Inform a different value if you want to point to another one.
+
+```shell
+export AWS_PROFILE=your-aws-profile
+export AWS_CREDENTIALS_FOLDER=/another/path/to/credentials/folder/
+terraform init
+terraform plan
+terraform apply
+# it should be able to deploy to your aws account based on the credentials used
+```
+
+> See [more about AWS auth configs](config/aws).
+
+#### `GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables
+
+This is used for GCP CLI authentication.
+
+By default, the terraform container will use `${HOME}/.config/gcloud` folder,
+and `/root/.config/gcloud/application_default_credentials.json` file, respectively.
+
+> `GOOGLE_APPLICATION_CREDENTIALS` path starts with `/root/` because this is the default user inside the container. Therefore you should not change it to your local user.
+
+Inform different values if you want to point to another one.
+
+```shell
+export GCLOUD_CREDENTIALS_FOLDER=/another/path/to/credentials/folder/
+export GOOGLE_APPLICATION_CREDENTIALS=/root/another/path/to/credentials/file
+terraform init
+terraform plan
+terraform apply
+# it should be able to deploy to your cloud account based on the credentials used
 ```
 
 ### Ookla Speedtest CLI

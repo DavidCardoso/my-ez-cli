@@ -50,7 +50,7 @@ show_begin() {
 ==============================================================
   Warning: Root access may be needed.
 ==============================================================
-  GitHub: https://github.com/My-Tooling/my-ez-cli
+  GitHub: https://github.com/DavidCardoso/my-ez-cli
 ==============================================================
 
 EOF
@@ -126,8 +126,8 @@ install_yarn-berry() {
 }
 
 install_docker-compose-viz() {
-    sudo ln -sf ${BASEDIR}/bin/docker-compose-viz /usr/local/bin/docker-compose-viz
     show_msg "Activating docker-compose-viz..."
+    sudo ln -sf ${BASEDIR}/bin/docker-compose-viz /usr/local/bin/docker-compose-viz
 }
 
 install_all() {
