@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+IMAGE=pmsipilot/docker-compose-viz
+WORKDIR=/input
+OUTPUT_FILE="${1:-topology.png}"
+YAML=docker-compose.yaml
+
+# Check extension variation
+if [[ ! -f $YAML ]]; then
+    YAML=docker-compose.yml
+fi
+
+# Remove previous container
+if [[ $(docker ps --all | grep dcv) ]]; then
+    echo "Removing previous 'dcv' container..."
+    docker rm dcv
+fi
+
+# run from your working directory
+docker run --rm -it \
+    --platform linux/amd64 \
+    --volume $PWD:$WORKDIR \
+    --name dcv \
+    $IMAGE render $YAML \
+    -m image \
+    --output-file=$OUTPUT_FILE \
+    --force \
+    --no-volumes \
+    --no-ports \
+    --no-networks

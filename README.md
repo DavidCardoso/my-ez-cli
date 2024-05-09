@@ -17,8 +17,10 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [Yarn Berry (v2+)](#yarn-berry-v2)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
+      - [CONTEXT variable](#context-variable)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
     - [Google Cloud CLI](#google-cloud-cli)
+    - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -258,6 +260,33 @@ gcloud config set project <PROJECT_ID>
 gcloud version
 gcloud help
 gcloud storage ls
+```
+
+### Graph Viz for docker compose
+
+This will create a dependency graph in `display` only, `dot`, or `image` formats
+based on a docker-compose YAML file (defaults to `./docker-compose.yml`).
+
+> For more info, please check its [official documentation](https://github.com/pmsipilot/docker-compose-viz?tab=readme-ov-file#usage).
+
+```shell
+# navigate to the directory where the docker-compose YAML file is
+cd /my/project/with/docker-compose-file/
+
+# using just default options
+docker-compose-viz render
+
+# using a custom docker compose file
+docker-compose-viz render ./my-custom-docker-compose.yml
+
+# dot output format
+docker-compose-viz render --output-format=dot
+
+# image output format
+docker-compose-viz render --output-format=image
+
+# setting the path/name of the output file
+docker-compose-viz render --output-format=image --output-file=graph.png
 ```
 
 > [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
