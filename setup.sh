@@ -31,6 +31,7 @@ Type the number of the OPTION:
 # terraform: Terraform CLI
 # speedtest: Ookla Speedtest CLI
 # gcloud: Google Cloud CLI
+# docker-compose-viz: Graph Viz for docker compose
 # EXIT: To leave this menu
 ==============================================================
 EOF
@@ -124,6 +125,11 @@ install_yarn-berry() {
     show_msg "Activating yarn-berry..."
 }
 
+install_docker-compose-viz() {
+    sudo ln -sf ${BASEDIR}/bin/docker-compose-viz /usr/local/bin/docker-compose-viz
+    show_msg "Activating docker-compose-viz..."
+}
+
 install_all() {
     install_aws
     install_node
@@ -133,6 +139,7 @@ install_all() {
     install_terraform
     install_speedtest
     install_gcloud
+    install_docker-compose-viz
 }
 
 # Main
@@ -140,7 +147,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud EXIT; do
+select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud docker-compose-viz EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -151,6 +158,7 @@ select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud
     terraform) install_terraform ;;
     speedtest) install_speedtest ;;
     gcloud) install_gcloud ;;
+    docker-compose-viz) install_docker-compose-viz ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac
