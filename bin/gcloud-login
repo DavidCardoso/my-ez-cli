@@ -6,15 +6,23 @@ WORKDIR=/app
 
 # Remove previous auth configs
 if [[ $(docker ps --all | grep gcloud-config) ]]; then
-    echo "Removing previous $(gcloud-config) container..."
+    echo "Removing previous 'gcloud-config' container..."
     docker rm gcloud-config
+fi
+
+# This is used for Terraform CLI
+# and others that require authentication to GCP
+if [ -z "$CREDENTIALS_FOLDER" ]; then
+    CREDENTIALS_FOLDER="$HOME/.config/gcloud"
+    mkdir -p $CREDENTIALS_FOLDER
 fi
 
 # run from your working directory
 docker run -it \
     --platform linux/amd64 \
     --volume $PWD:$WORKDIR \
+    --volume $CREDENTIALS_FOLDER:/root/.config/gcloud \
     --workdir $WORKDIR \
     --entrypoint gcloud \
     --name gcloud-config \
-    $IMAGE auth login
+    $IMAGE auth application-default login
