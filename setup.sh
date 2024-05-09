@@ -50,7 +50,7 @@ show_begin() {
 ==============================================================
   Warning: Root access may be needed.
 ==============================================================
-  GitHub: https://github.com/DavidCardso/my-ez-cli
+  GitHub: https://github.com/DavidCardoso/my-ez-cli
 ==============================================================
 
 EOF
