@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Yarn v2 (a.k.a, Berry)",
   "main": "index.js",
-  "repository": "https://github.com/My-Tooling/my-ez-cli/tree/main/docker/yarn-berry",
+  "repository": "https://github.com/DavidCardoso/my-ez-cli/tree/main/docker/yarn-berry",
   "author": "David Cardoso <dev+github@davidcardoso.me>",
   "license": "MIT",
   "packageManager": "yarn@3.6.3"
