@@ -7,9 +7,9 @@ BASEDIR=$(cd $(dirname "${0}") && pwd)
 
 show_msg() {
     cat <<EOF
-==============================================================
+--------------------------------------------------------------------------------
 $1
-==============================================================
+--------------------------------------------------------------------------------
 EOF
 }
 
@@ -17,7 +17,7 @@ show_help() {
     show_msg "$1"
 
     cat <<EOF
-==============================================================
+--------------------------------------------------------------------------------
 Usage examples:
 ${BASEDIR}/setup.sh <OPTION>
 
@@ -33,25 +33,25 @@ Type the number of the OPTION:
 # gcloud: Google Cloud CLI
 # docker-compose-viz: Graph Viz for docker compose
 # EXIT: To leave this menu
-==============================================================
+--------------------------------------------------------------------------------
 EOF
 }
 
 show_begin() {
     cat <<EOF
-==============================================================
+--------------------------------------------------------------------------------
                   My Ez CLI • Setup
-==============================================================
+--------------------------------------------------------------------------------
   Hope you enjoy it! :D
-==============================================================
+--------------------------------------------------------------------------------
   Note: Aliases may be created in '~/.zshrc' file...
-==============================================================
+--------------------------------------------------------------------------------
   Note: Symbolic links may be created in '/usr/local/bin/' folder...
-==============================================================
+--------------------------------------------------------------------------------
   Warning: Root access may be needed.
-==============================================================
+--------------------------------------------------------------------------------
   GitHub: https://github.com/DavidCardoso/my-ez-cli
-==============================================================
+--------------------------------------------------------------------------------
 
 EOF
 }
@@ -71,19 +71,31 @@ install_aws() {
 }
 
 install_node() {
+    show_msg "Activating node (v20)..."
     sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node
-    show_msg "Activating node..."
 
-    sudo ln -sf ${BASEDIR}/bin/node14 /usr/local/bin/node14
     show_msg "Activating node14..."
+    sudo ln -sf ${BASEDIR}/bin/node14 /usr/local/bin/node14
+
+    show_msg "Activating node16..."
+    sudo ln -sf ${BASEDIR}/bin/node16 /usr/local/bin/node16
+
+    show_msg "Activating node18..."
+    sudo ln -sf ${BASEDIR}/bin/node18 /usr/local/bin/node18
 }
 
 install_yarn() {
+    show_msg "Activating yarn (using node v20)..."
     sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn
-    show_msg "Activating yarn..."
 
-    sudo ln -sf ${BASEDIR}/bin/yarn14 /usr/local/bin/yarn14
     show_msg "Activating yarn14..."
+    sudo ln -sf ${BASEDIR}/bin/yarn14 /usr/local/bin/yarn14
+
+    show_msg "Activating yarn16..."
+    sudo ln -sf ${BASEDIR}/bin/yarn16 /usr/local/bin/yarn16
+
+    show_msg "Activating yarn18..."
+    sudo ln -sf ${BASEDIR}/bin/yarn18 /usr/local/bin/yarn18
 }
 
 install_serverless() {
@@ -164,6 +176,10 @@ select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud
     esac
     break
 done
+
+show_msg "> If you want to check and/or adapt how each script is being executed, just check them inside '${BASEDIR}/bin/' folder."
+
+show_msg "> For more info, check the README."
 
 # End
 

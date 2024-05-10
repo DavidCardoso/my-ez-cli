@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-IMAGE=node:20-alpine
+IMAGE=node:18-alpine
 WORKDIR=/app
 
 # should be executed from your working directory

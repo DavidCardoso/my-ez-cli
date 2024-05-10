@@ -11,9 +11,10 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [AWS SSO](#aws-sso)
       - [AWS SSO Get Credentials](#aws-sso-get-credentials)
     - [Node](#node)
-      - [Node 14](#node-14)
+      - [Using other Node versions](#using-other-node-versions)
     - [Yarn](#yarn)
-      - [Yarn with Node 14](#yarn-with-node-14)
+      - [Using Yarn with NPM token and custom ports](#using-yarn-with-npm-token-and-custom-ports)
+      - [Using Yarn with other Node versions](#using-yarn-with-other-node-versions)
       - [Yarn Berry (v2+)](#yarn-berry-v2)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
@@ -91,7 +92,7 @@ aws-sso-cred my-working-profile
 
 ### Node
 
-> It is using Node 16 (current LTS version).
+> It is using Node 20 (current LTS version).
 
 ```shell
 # see node version
@@ -104,14 +105,18 @@ node
 node somefile.js
 ```
 
-#### Node 14
+#### Using other Node versions
 
 ```shell
-# see node version
+# just add the node version as a suffix
 node14 -v
+node16 -v
+node18 -v
 ```
 
 ### Yarn
+
+> It is using Node 20 (current LTS version).
 
 ```shell
 # see yarn version
@@ -127,13 +132,41 @@ yarn add some-pkg --dev
 yarn global add another-pkg
 ```
 
-#### Yarn with Node 14
+#### Using Yarn with NPM token and custom ports
 
-> Some Node packages aren't compatible with Node 16 yet.
+Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
 
 ```shell
-# see yarn version
+MEC_BIND_PORTS="8080:80 9090:80" yarn
+
+# or
+export MEC_BIND_PORTS="8080:80 9090:80"
+yarn
+```
+
+In order to be able to install NPM packages from a private repository,
+you might need to inform `NPM_TOKEN` env var.
+
+```shell
+NPM_TOKEN=your-token-here yarn
+
+# or
+export NPM_TOKEN=your-token-here
+yarn
+```
+
+> **Hint**: you can put this on your default shell config file.\
+> Example for zsh: `echo "export NPM_TOKEN=your-token-here" >> ~/.zshrc`
+
+#### Using Yarn with other Node versions
+
+> Some NPM packages aren't compatible with newer Node versions yet.
+
+```shell
+# just add the node version as a suffix
 yarn14 -v
+yarn16 -v
+yarn18 -v
 ```
 
 #### Yarn Berry (v2+)

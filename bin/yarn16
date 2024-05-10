@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-IMAGE=node:14-alpine
+IMAGE=node:16-alpine
 WORKDIR=/app
 
 # Check README for usage info.
