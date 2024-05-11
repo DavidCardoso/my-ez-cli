@@ -181,7 +181,9 @@ yarn-berry --version # it should show 3.6+
 
 ### Serverless Framework
 
-[Building the docker image](docker/serverless).
+It is ready to work with AWS.
+
+> [See more about the docker image](docker/serverless).
 
 ```shell
 # see versions

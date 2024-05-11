@@ -99,8 +99,8 @@ install_yarn() {
 }
 
 install_serverless() {
-    sudo ln -sf ${BASEDIR}/bin/serverless /usr/local/bin/serverless
     show_msg "Activating serverless..."
+    sudo ln -sf ${BASEDIR}/bin/serverless /usr/local/bin/serverless
 }
 
 install_terraform() {

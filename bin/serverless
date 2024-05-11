@@ -1,10 +1,17 @@
 #!/bin/sh
 set -e
 
-# see "../docker/serverless/build"
-IMAGE=davidcardoso/docker-serverless-framework:latest
 WORKDIR=/app
 
+# see "../docker/serverless/" for more info.
+IMAGE=davidcardoso/serverless-framework
+
+# via env var
+if [ -z "$IMAGE_TAG" ]; then
+    IMAGE_TAG=latest
+fi
+
+# via env var
 if [ -z "${STACK_NAME}"]; then
     STACK_NAME=development
 fi
@@ -13,12 +20,12 @@ fi
 docker run -it --rm \
     --platform linux/amd64 \
     --name serverless-cli \
-    --env AWS_PROFILE=$AWS_PROFILE \
+    --env AWS_PROFILE=${AWS_PROFILE} \
     --env AWS_SDK_LOAD_CONFIG=1 \
     --env STACK_NAME=${STACK_NAME} \
-    --volume $HOME/.aws:/root/.aws \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
+    --volume ${HOME}/.aws:/root/.aws \
+    --volume ${PWD}:${WORKDIR} \
+    --workdir ${WORKDIR} \
     --entrypoint serverless \
     --network="host" \
-    $IMAGE "${@}"
+    ${IMAGE}:${IMAGE_TAG} "${@}"
