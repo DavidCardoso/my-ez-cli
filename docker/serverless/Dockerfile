@@ -15,6 +15,8 @@ RUN yum install -y python-pip groff zip unzip jq bc &&\
     curl -sL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash - &&\
     curl -sL https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo &&\
     yum install -y yarn &&\
+    # Add Java
+    yum install -y java &&\
     # Add Serverless Framework
     yarn global add serverless@${SERVERLESS_VERSION}
 
