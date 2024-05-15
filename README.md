@@ -26,6 +26,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
     - [Google Cloud CLI](#google-cloud-cli)
     - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
+    - [Playwright](#playwright)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -396,6 +397,10 @@ gcloud help
 gcloud storage ls
 ```
 
+> [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
+
+> [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
+
 ### Graph Viz for docker compose
 
 This will create a dependency graph in `display` only, `dot`, or `image` formats
@@ -423,9 +428,17 @@ docker-compose-viz render --output-format=image
 docker-compose-viz render --output-format=image --output-file=graph.png
 ```
 
-> [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
+### Playwright
 
-> [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
+```shell
+playwright # it will open the /bin/bash inside the container
+# then you can run the other test related commands
+npx playwright install chromium
+npm run test
+# etc...
+```
+
+> For more info, please check its [official documentation](https://playwright.dev/docs/docker).
 
 ## Author
 

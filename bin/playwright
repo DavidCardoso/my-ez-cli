@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+IMAGE=mcr.microsoft.com/playwright:v1.44.0-jammy
+WORKDIR=/app
+
+# should be executed from your working directory
+docker run -it --rm \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --network="host" \
+    --ipc=host \
+    $IMAGE "${@}"

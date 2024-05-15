@@ -144,6 +144,11 @@ install_docker-compose-viz() {
     sudo ln -sf ${BASEDIR}/bin/docker-compose-viz /usr/local/bin/docker-compose-viz
 }
 
+install_playwright() {
+    show_msg "Activating playwright..."
+    sudo ln -sf ${BASEDIR}/bin/playwright /usr/local/bin/playwright
+}
+
 install_all() {
     install_aws
     install_node
@@ -154,6 +159,7 @@ install_all() {
     install_speedtest
     install_gcloud
     install_docker-compose-viz
+    install_playwright
 }
 
 # Main
@@ -161,7 +167,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud docker-compose-viz EXIT; do
+select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud docker-compose-viz playwright EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -173,6 +179,7 @@ select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud
     speedtest) install_speedtest ;;
     gcloud) install_gcloud ;;
     docker-compose-viz) install_docker-compose-viz ;;
+    playwright) install_playwright ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac
