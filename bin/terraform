@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-IMAGE=hashicorp/terraform:1.8.3
+IMAGE=hashicorp/terraform:1.9.1
 WORKDIR=${PWD}
 
 # This folder will be mounted on the container
