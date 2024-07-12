@@ -24,14 +24,16 @@ ${BASEDIR}/setup.sh <OPTION>
 Type the number of the OPTION:
 # ALL: To activate all options
 # aws: AWS CLI, AWS Get Session Token, AWS SSO, AWS SSO Get Credentials
-# node: Node 14, Node 16
-# yarn: Yarn with node 14 and 16
+# cdktf: AWS Cloud Development Kit for Terraform
+# terraform: Terraform CLI
+# gcloud: Google Cloud CLI
+# node: Node 14, 16, 18, and 20 (default)
+# yarn: Yarn classic with Node 14, 16, 18, and 20 (default)
 # yarn-berry: Yarn Berry (v2+)
 # serverless: Serverless Framework CLI
-# terraform: Terraform CLI
 # speedtest: Ookla Speedtest CLI
-# gcloud: Google Cloud CLI
 # docker-compose-viz: Graph Viz for docker compose
+# playwright: End-to-end testing for web apps
 # EXIT: To leave this menu
 --------------------------------------------------------------------------------
 EOF
@@ -149,6 +151,11 @@ install_playwright() {
     sudo ln -sf ${BASEDIR}/bin/playwright /usr/local/bin/playwright
 }
 
+install_cdktf() {
+    show_msg "Activating cdktf..."
+    sudo ln -sf ${BASEDIR}/bin/cdktf /usr/local/bin/cdktf
+}
+
 install_all() {
     install_aws
     install_node
@@ -160,6 +167,7 @@ install_all() {
     install_gcloud
     install_docker-compose-viz
     install_playwright
+    install_cdktf
 }
 
 # Main
@@ -167,24 +175,28 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws node yarn yarn-berry serverless terraform speedtest gcloud docker-compose-viz playwright EXIT; do
+select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless speedtest docker-compose-viz playwright EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
+    terraform) install_terraform ;;
+    cdktf) install_cdktf ;;
+    gcloud) install_gcloud ;;
     node) install_node ;;
     yarn) install_yarn ;;
     yarn-berry) install_yarn-berry ;;
     serverless) install_serverless ;;
-    terraform) install_terraform ;;
     speedtest) install_speedtest ;;
-    gcloud) install_gcloud ;;
     docker-compose-viz) install_docker-compose-viz ;;
     playwright) install_playwright ;;
+    cdktf) install_cdktf ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac
     break
 done
+
+# TODO: add 'uninstall' option
 
 show_msg "> If you want to check and/or adapt how each script is being executed, just check them inside '${BASEDIR}/bin/' folder."
 
