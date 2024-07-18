@@ -27,6 +27,7 @@ Tools via **Unix Command Line Interface** with no installation and just using **
     - [Google Cloud CLI](#google-cloud-cli)
     - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
     - [Playwright](#playwright)
+    - [Cloud Development Kit for Terraform (CDKTF)](#cloud-development-kit-for-terraform-cdktf)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -40,8 +41,27 @@ Tools via **Unix Command Line Interface** with no installation and just using **
 It adds aliases to your `~/.zshrc` file and symbolic links to your `/usr/local/bin/` folder:
 
 ```shell
-# Run this script and choose an option
 ./setup.sh
+# --------------------------------------------------------------------------------
+#                   My Ez CLI • Setup
+# --------------------------------------------------------------------------------
+#   Hope you enjoy it! :D
+# --------------------------------------------------------------------------------
+#   Note: Aliases may be created in '~/.zshrc' file...
+# --------------------------------------------------------------------------------
+#   Note: Symbolic links may be created in '/usr/local/bin/' folder...
+# --------------------------------------------------------------------------------
+#   Warning: Root access may be needed.
+# --------------------------------------------------------------------------------
+#   GitHub: https://github.com/DavidCardoso/my-ez-cli
+# --------------------------------------------------------------------------------
+
+# 1) ALL			 6) node		    11) docker-compose-viz
+# 2) aws			 7) yarn		    12) playwright
+# 3) terraform		 8) yarn-berry		13) EXIT
+# 4) cdktf		     9) serverless
+# 5) gcloud		    10) speedtest
+# Choose an option:
 ```
 
 ## Usage examples
@@ -439,6 +459,22 @@ npm run test
 ```
 
 > For more info, please check its [official documentation](https://playwright.dev/docs/docker).
+
+### Cloud Development Kit for Terraform (CDKTF)
+
+It is ready to work with Python.
+
+> [Building the docker image for Python](docker/cdktf/python/).
+
+```shell
+mkdir /my/folder/learn-cdktf
+cd /my/folder/learn-cdktf
+
+cdktf --help
+
+# starts a new project from a template
+cdktf init --template="python" --providers="aws@~>4.0"
+```
 
 ## Author
 

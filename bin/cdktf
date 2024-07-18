@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e
+
+# What's the programming language of the project?
+if [ -z "${CDKTF_LANG}" ]; then
+    # defaults to python
+    CDKTF_LANG=python
+fi
+
+IMAGE=davidcardoso/cdktf-${CDKTF_LANG}:latest
+WORKDIR=${PWD}
+
+# This folder will be mounted on the container
+if [ -z "${CONTEXT}" ]; then
+    # defaults to parent folder
+    CONTEXT=$(cd "${WORKDIR}/../" && pwd)
+fi
+
+# All variables in this DOTENV_FILE will be available inside the container
+if [ -z "${DOTENV_FILE}" ]; then
+    DOTENV_FILE="${WORKDIR}/.env"
+    [[ ! -f $DOTENV_FILE ]] && touch $DOTENV_FILE
+fi
+
+# This is used for Terraform Cloud login
+if [ -z "${TF_CREDENTIALS_FILE}" ]; then
+    TF_CREDENTIALS_FILE="${HOME}/.terraformrc"
+    [[ ! -f ${TF_CREDENTIALS_FILE} ]] && touch ${TF_CREDENTIALS_FILE}
+fi
+
+# AWS CLI authentication
+if [ -z "$AWS_CREDENTIALS_FOLDER" ]; then
+    AWS_CREDENTIALS_FOLDER="$HOME/.aws"
+    mkdir -p $AWS_CREDENTIALS_FOLDER
+fi
+
+# GCP CLI authentication
+if [ -z "$GCLOUD_CREDENTIALS_FOLDER" ]; then
+    GCLOUD_CREDENTIALS_FOLDER="$HOME/.config/gcloud"
+    mkdir -p $GCLOUD_CREDENTIALS_FOLDER
+fi
+if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+    GOOGLE_APPLICATION_CREDENTIALS="/root/.config/gcloud/application_default_credentials.json"
+fi
+
+cat <<EOF
+
+################################################################################
+Context mounted on: ${CONTEXT}
+Workdir: ${WORKDIR}
+################################################################################
+
+To use a different context, run:
+$ CONTEXT=/absolute/path/to/my/context $0
+################################################################################
+
+EOF
+
+# run from your working directory
+docker run -it --rm \
+    --platform linux/amd64 \
+    --name cdktf-cli-${CDKTF_LANG} \
+    --env AWS_PROFILE=${AWS_PROFILE} \
+    --env GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} \
+    --env-file ${DOTENV_FILE} \
+    --volume ${AWS_CREDENTIALS_FOLDER}:/root/.aws \
+    --volume ${GCLOUD_CREDENTIALS_FOLDER}:/root/.config/gcloud \
+    --volume ${TF_CREDENTIALS_FILE}:/root/.terraformrc \
+    --volume ${CONTEXT}:${CONTEXT} \
+    --volume ${WORKDIR}:${WORKDIR} \
+    --workdir ${WORKDIR} \
+    $IMAGE "${@}"

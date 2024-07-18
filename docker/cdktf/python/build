@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+IMAGE=davidcardoso/cdktf-python
+
+# Via env var
+if [ -z "$IMAGE_TAG" ]; then
+    IMAGE_TAG=latest
+fi
+
+if [ -z "$TF_VERSION" ]; then
+    TF_VERSION=1.9.1
+fi
+
+if [ -z "$CDKTF_VERSION" ]; then
+    CDKTF_VERSION=latest
+fi
+
+if [ -z "$NODE_VERSION" ]; then
+    NODE_VERSION=20.15.1-r0
+fi
+
+if [ -z "$PYENV_VERSION" ]; then
+    PYENV_VERSION=3.12.4
+fi
+
+echo "=========================================================="
+echo "Building '${IMAGE}:${IMAGE_TAG}'..."
+echo "=========================================================="
+
+docker build \
+    --platform linux/amd64 \
+    --build-arg TF_VERSION=${TF_VERSION} \
+    --build-arg CDKTF_VERSION=${CDKTF_VERSION} \
+    --build-arg NODE_VERSION=${NODE_VERSION} \
+    --build-arg PYENV_VERSION=${PYENV_VERSION} \
+    --tag ${IMAGE}:${IMAGE_TAG} .
