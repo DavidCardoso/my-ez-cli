@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+# Python version
+if [ -z "${PYENV_VERSION}" ]; then
+    # if not especified, set a default version
+    PYENV_VERSION=3.12.4
+fi
+
+IMAGE=python:$PYENV_VERSION
+WORKDIR=/app
+
+# should be executed from your working directory
+docker run -it --rm \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    --entrypoint python \
+    $IMAGE "${@}"
