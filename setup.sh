@@ -34,6 +34,7 @@ Type the number of the OPTION:
 # speedtest: Ookla Speedtest CLI
 # docker-compose-viz: Graph Viz for docker compose
 # playwright: End-to-end testing for web apps
+# python: Python interpreter
 # EXIT: To leave this menu
 --------------------------------------------------------------------------------
 EOF
@@ -156,6 +157,11 @@ install_cdktf() {
     sudo ln -sf ${BASEDIR}/bin/cdktf /usr/local/bin/cdktf
 }
 
+install_python() {
+    show_msg "Activating python..."
+    sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/python
+}
+
 install_all() {
     install_aws
     install_node
@@ -168,6 +174,7 @@ install_all() {
     install_docker-compose-viz
     install_playwright
     install_cdktf
+    install_python
 }
 
 # Main
@@ -175,7 +182,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless speedtest docker-compose-viz playwright EXIT; do
+select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -190,6 +197,7 @@ select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless spe
     docker-compose-viz) install_docker-compose-viz ;;
     playwright) install_playwright ;;
     cdktf) install_cdktf ;;
+    python) install_python ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac

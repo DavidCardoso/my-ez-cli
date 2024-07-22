@@ -10,6 +10,8 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [AWS Get Session Token](#aws-get-session-token)
       - [AWS SSO](#aws-sso)
       - [AWS SSO Get Credentials](#aws-sso-get-credentials)
+    - [Python](#python)
+      - [Using other Python versions](#using-other-python-versions)
     - [Node](#node)
       - [Using other Node versions](#using-other-node-versions)
     - [Yarn](#yarn)
@@ -23,11 +25,11 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [`TF_RC_FILE` variable](#tf_rc_file-variable)
       - [`AWS_CREDENTIALS_FOLDER` variable](#aws_credentials_folder-variable)
       - [`GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables](#gcloud_credentials_folder-and-google_application_credentials-variables)
+    - [Cloud Development Kit for Terraform (CDKTF)](#cloud-development-kit-for-terraform-cdktf)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
     - [Google Cloud CLI](#google-cloud-cli)
     - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
     - [Playwright](#playwright)
-    - [Cloud Development Kit for Terraform (CDKTF)](#cloud-development-kit-for-terraform-cdktf)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -56,11 +58,11 @@ It adds aliases to your `~/.zshrc` file and symbolic links to your `/usr/local/b
 #   GitHub: https://github.com/DavidCardoso/my-ez-cli
 # --------------------------------------------------------------------------------
 
-# 1) ALL			 6) node		    11) docker-compose-viz
-# 2) aws			 7) yarn		    12) playwright
-# 3) terraform		 8) yarn-berry		13) EXIT
-# 4) cdktf		     9) serverless
-# 5) gcloud		    10) speedtest
+# 1) ALL                6) node             11) docker-compose-viz
+# 2) aws                7) yarn             12) playwright
+# 3) terraform          8) yarn-berry       13) python
+# 4) cdktf              9) serverless       14) EXIT
+# 5) gcloud             10) speedtest
 # Choose an option:
 ```
 
@@ -109,6 +111,45 @@ If you need to get/know the SSO credentials being used, run:
 aws-sso-cred $AWS_PROFILE
 # or specify a profile of your choice
 aws-sso-cred my-working-profile
+```
+
+### Python
+
+> It is using version `3.12.4` as default.
+
+```shell
+# see version
+python --version
+
+# run interpreter
+python
+
+# run a script
+python main.py
+```
+
+#### Using other Python versions
+
+This script is using the same env var used by [PyEnv](https://github.com/pyenv/pyenv?tab=readme-ov-file#understanding-python-version-selection).
+
+So all you need to do is to declare the `PYENV_VERSION` before calling the `python` command.
+
+```shell
+# Export directly or add it to your profile configs (e.g.,`.zshrc`).
+export PYENV_VERSION=3.9.19
+python main.py
+
+# or pass it inline
+PYENV_VERSION=3.9.19 python main.py
+
+# Note: the respective docker image will be downloaded if not found locally
+# Unable to find image 'python:3.9.19' locally
+# 3.9.19: Pulling from library/python
+# 21988c13fd96: Download complete
+# 42d758104bc9: Download complete
+# 6d0099138f57: Download complete
+# Digest: sha256:47d6f16aa0de11f2748c73e7af8d40eaf44146c6dc059b1d0aa1f917f8c5cc58
+# Status: Downloaded newer image for python:3.9.19
 ```
 
 ### Node
@@ -387,6 +428,22 @@ terraform apply
 # it should be able to deploy to your cloud account based on the credentials used
 ```
 
+### Cloud Development Kit for Terraform (CDKTF)
+
+It is ready to work with Python.
+
+> [Building the docker image for Python](docker/cdktf/python/).
+
+```shell
+mkdir /my/folder/learn-cdktf
+cd /my/folder/learn-cdktf
+
+cdktf --help
+
+# starts a new project from a template
+cdktf init --template="python" --providers="aws@~>4.0"
+```
+
 ### Ookla Speedtest CLI
 
 [Building the docker image](docker/speedtest/README.md).
@@ -459,22 +516,6 @@ npm run test
 ```
 
 > For more info, please check its [official documentation](https://playwright.dev/docs/docker).
-
-### Cloud Development Kit for Terraform (CDKTF)
-
-It is ready to work with Python.
-
-> [Building the docker image for Python](docker/cdktf/python/).
-
-```shell
-mkdir /my/folder/learn-cdktf
-cd /my/folder/learn-cdktf
-
-cdktf --help
-
-# starts a new project from a template
-cdktf init --template="python" --providers="aws@~>4.0"
-```
 
 ## Author
 
