@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+IMAGE=davidcardoso/serverless-framework
+
+# Via env var
+if [ -z "$IMAGE_TAG" ]; then
+    IMAGE_TAG=latest
+fi
+
+echo "=========================================================="
+echo "Building '${IMAGE}:${IMAGE_TAG}'..."
+echo "=========================================================="
+
+docker build \
+    --platform linux/amd64 \
+    --tag ${IMAGE}:${IMAGE_TAG} .
