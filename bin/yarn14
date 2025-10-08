@@ -2,24 +2,5 @@
 set -e
 
 IMAGE=node:14-alpine
-WORKDIR=/app
 
-# Check README for usage info.
-
-if [ ! -z "$MEC_BIND_PORTS" ]; then
-    echo "[MEC] Binding ports:"
-    for PORT in $MEC_BIND_PORTS; do
-        echo "- $PORT"
-        PORTS=$(echo "$PORTS -p $PORT")
-    done
-    echo
-fi
-
-# should be executed from your working directory
-docker run -it --rm \
-    --env NPM_TOKEN=$NPM_TOKEN \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $PORTS \
-    --entrypoint yarn \
-    $IMAGE "${@}"
+. yarn

@@ -42,11 +42,11 @@ next_steps() {
     cat <<EOF
 
 ==========================================================
-Next steps:
+Have fun, but...
 
-1. Remember: With great power comes great responsibility!!
+‼️ Remember: With great power comes great responsibility!!
 
-That's it! ;)
+That's it! 😉
 ==========================================================
 EOF
 }
@@ -69,13 +69,22 @@ Logging in using AWS SSO profile...
 ==========================================================
 EOF
     load_env_vars AWS_SSO
+
     echo
     echo "=========================================================="
     echo "Type the name of the profile you want to log in (default: ${AWS_SSO_DEFAULT_PROFILE}):"
     read profile && if [[ "$profile" = "" ]]; then profile=${AWS_SSO_DEFAULT_PROFILE}; fi
-    echo "Selected profile: $profile"
     echo "=========================================================="
+
     aws sso login --profile "${profile}"
+    echo "Profile: $profile"
+
+    echo "=========================================================="
+    echo "⚠️ Warning: Make sure you are using the correct profile."
+    echo "      Ex.1: export AWS_PROFILE=$profile         # will apply for all aws cli commands"
+    echo "      Ex.2: AWS_PROFILE=$profile aws s3 ls      # single run"
+    echo "      Ex.3: aws s3 ls --profile $profile        # single run"
+    echo "=========================================================="
 }
 
 sso_logout() {

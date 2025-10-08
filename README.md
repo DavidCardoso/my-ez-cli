@@ -12,11 +12,14 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [AWS SSO Get Credentials](#aws-sso-get-credentials)
     - [Python](#python)
       - [Using other Python versions](#using-other-python-versions)
-    - [Node](#node)
-      - [Using other Node versions](#using-other-node-versions)
+    - [NodeJS](#nodejs)
+      - [Using other NodeJS versions](#using-other-nodejs-versions)
+      - [Using NodeJS, NPM, and Yarn with custom ports](#using-nodejs-npm-and-yarn-with-custom-ports)
+      - [Using NPM and Yarn with NPM token](#using-npm-and-yarn-with-npm-token)
+    - [NPM](#npm)
+      - [Using NPM with other NodeJS versions](#using-npm-with-other-nodejs-versions)
     - [Yarn](#yarn)
-      - [Using Yarn with NPM token and custom ports](#using-yarn-with-npm-token-and-custom-ports)
-      - [Using Yarn with other Node versions](#using-yarn-with-other-node-versions)
+      - [Using Yarn with other NodeJS versions](#using-yarn-with-other-nodejs-versions)
       - [Yarn Berry (v2+)](#yarn-berry-v2)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
@@ -152,9 +155,9 @@ PYENV_VERSION=3.9.19 python main.py
 # Status: Downloaded newer image for python:3.9.19
 ```
 
-### Node
+### NodeJS
 
-> It is using Node 20 (current LTS version).
+> It is using Node 22 (current LTS version) as default.
 
 ```shell
 # see node version
@@ -167,18 +170,98 @@ node
 node somefile.js
 ```
 
-#### Using other Node versions
+#### Using other NodeJS versions
 
 ```shell
 # just add the node version as a suffix
 node14 -v
 node16 -v
 node18 -v
+node20 -v
+node22 -v
+node24 -v
+```
+
+#### Using NodeJS, NPM, and Yarn with custom ports
+
+Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
+
+```shell
+MEC_BIND_PORTS="8080:80 9090:80" node
+MEC_BIND_PORTS="8080:80 9090:80" npm
+MEC_BIND_PORTS="8080:80 9090:80" yarn
+
+# or
+export MEC_BIND_PORTS="8080:80 9090:80"
+node
+npm
+yarn
+```
+
+#### Using NPM and Yarn with NPM token
+
+To be able to install NPM packages from a private repository,
+you need to inform the respective `NPM_TOKEN`.
+
+Method 1: Export the `NPM_TOKEN` on demand
+```shell
+NPM_TOKEN=your-token-here yarn
+NPM_TOKEN=your-token-here npm
+
+# or
+export NPM_TOKEN=your-token-here
+yarn
+npm
+```
+
+Method 2: Setting it up in the `~/.npmrc` config file
+```shell
+# ~/.npmrc example
+
+# Set the default registry
+registry=https://private.npm.registry.com/
+
+# Example for accessing private repos using NPM_TOKEN
+//private.npm.registry.com/:_authToken=${NPM_TOKEN}
+```
+
+> **Hint**: you can set the token(s) on your default shell config file.\
+> Example for zsh: `echo "export NPM_TOKEN=your-token-here" >> ~/.zshrc`
+
+### NPM
+
+> It is using NodeJS 22 as default.
+
+```shell
+# see npm version
+npm -v
+
+# start the package.json from a JS project
+npm init
+
+# install a package as dev dependency
+npm install some-pkg --save-dev
+
+# install a package globally
+npm install -g another-pkg
+```
+
+#### Using NPM with other NodeJS versions
+
+> Some NPM packages aren't compatible with older or newer NodeJS versions.
+
+```shell
+# just add the node version as a suffix
+npm14 -v
+npm16 -v
+npm18 -v
+npm20 -v
+npm22 -v
 ```
 
 ### Yarn
 
-> It is using Node 20 (current LTS version).
+> It is using Node 22.
 
 ```shell
 # see yarn version
@@ -194,41 +277,17 @@ yarn add some-pkg --dev
 yarn global add another-pkg
 ```
 
-#### Using Yarn with NPM token and custom ports
+#### Using Yarn with other NodeJS versions
 
-Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
-
-```shell
-MEC_BIND_PORTS="8080:80 9090:80" yarn
-
-# or
-export MEC_BIND_PORTS="8080:80 9090:80"
-yarn
-```
-
-In order to be able to install NPM packages from a private repository,
-you might need to inform `NPM_TOKEN` env var.
-
-```shell
-NPM_TOKEN=your-token-here yarn
-
-# or
-export NPM_TOKEN=your-token-here
-yarn
-```
-
-> **Hint**: you can put this on your default shell config file.\
-> Example for zsh: `echo "export NPM_TOKEN=your-token-here" >> ~/.zshrc`
-
-#### Using Yarn with other Node versions
-
-> Some NPM packages aren't compatible with newer Node versions yet.
+> Some NPM packages aren't compatible with older or newer NodeJS versions.
 
 ```shell
 # just add the node version as a suffix
 yarn14 -v
 yarn16 -v
 yarn18 -v
+yarn20 -v
+yarn22 -v
 ```
 
 #### Yarn Berry (v2+)

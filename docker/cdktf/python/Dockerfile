@@ -1,13 +1,13 @@
 # See ./build script
-ARG TF_VERSION
+ARG TF_VERSION=1.13.0
 
 FROM hashicorp/terraform:${TF_VERSION}
 
 LABEL Author="David Cardoso <dev+github@davidcardoso.me>"
 
-ARG CDKTF_VERSION
-ARG NODE_VERSION
-ARG PYENV_VERSION
+ARG CDKTF_VERSION=latest
+ARG NODE_VERSION=22.16.0-r2
+ARG PYENV_VERSION=3.12.4
 
 # Environment variables
 ENV PYENV_VERSION=${PYENV_VERSION}

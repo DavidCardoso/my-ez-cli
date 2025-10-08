@@ -23,6 +23,7 @@ You can set the `~/.aws/config` and `~/.aws/credentials` files manually.
 
 Configuration in `~/.aws/config`:
 
+<!-- TODO: update the example to match the current format -->
 ```
 [profile my-sso-profile]
 sso_start_url = https://yourcompany.awsapps.com/start

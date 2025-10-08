@@ -2,7 +2,7 @@
 set -e
 
 # override default image
-IMAGE=node:16-alpine
+IMAGE=node:24-alpine
 
 # import & run the local default node script
 . node

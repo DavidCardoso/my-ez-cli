@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-IMAGE=hashicorp/terraform:1.9.1
+IMAGE=hashicorp/terraform:1.9.8
 WORKDIR=${PWD}
 
 # This folder will be mounted on the container
@@ -37,18 +37,40 @@ if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
     GOOGLE_APPLICATION_CREDENTIALS="/root/.config/gcloud/application_default_credentials.json"
 fi
 
-cat <<EOF
+# TODO: consider printing a help msg instead of on each script run
+# cat <<EOF
 
-################################################################################
-Context mounted on: ${CONTEXT}
-Workdir: ${WORKDIR}
-################################################################################
+# ################################################################################
+# Context mounted on: ${CONTEXT}
+# Workdir: ${WORKDIR}
+# ################################################################################
 
-To use a different context, run:
-$ CONTEXT=/absolute/path/to/my/context terraform
-################################################################################
+# To use a different context, run:
+# $ CONTEXT=/absolute/path/to/my/context terraform
+# ################################################################################
 
-EOF
+# EOF
+
+# # Pre-commit hook
+# if [ "$TF_PRE_COMMIT" == 1 ] || [ "$TF_PRE_COMMIT" == "true" ]; then
+#     echo "TF_PRE_COMMIT: $TF_PRE_COMMIT"
+#     docker run --rm \
+#         --platform linux/amd64 \
+#         --name terraform-cli \
+#         --env AWS_PROFILE=${AWS_PROFILE} \
+#         --env GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
+#         --env-file $DOTENV_FILE \
+#         --volume $AWS_CREDENTIALS_FOLDER:/root/.aws \
+#         --volume $GCLOUD_CREDENTIALS_FOLDER:/root/.config/gcloud \
+#         --volume $TF_CREDENTIALS_FILE:/root/.terraformrc \
+#         --volume $HOME/.ssh:/root/.ssh \
+#         --volume ${CONTEXT}:${CONTEXT} \
+#         --volume ${WORKDIR}:${WORKDIR} \
+#         --workdir ${WORKDIR} \
+#         $IMAGE "${@}"
+
+#     exit $#
+# fi
 
 # run from your working directory
 docker run -it --rm \
@@ -60,6 +82,7 @@ docker run -it --rm \
     --volume $AWS_CREDENTIALS_FOLDER:/root/.aws \
     --volume $GCLOUD_CREDENTIALS_FOLDER:/root/.config/gcloud \
     --volume $TF_CREDENTIALS_FILE:/root/.terraformrc \
+    --volume $HOME/.ssh:/root/.ssh \
     --volume ${CONTEXT}:${CONTEXT} \
     --volume ${WORKDIR}:${WORKDIR} \
     --workdir ${WORKDIR} \
