@@ -11,6 +11,7 @@ YARN_DIR=/root
 # should be executed from your working directory
 docker run -it --rm \
     --env NPM_TOKEN=$NPM_TOKEN \
+    --volume $HOME/.npmrc:/root/.npmrc \
     --volume $YARN_LOCAL_DIR:$YARN_DIR \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \

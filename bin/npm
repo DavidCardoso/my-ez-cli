@@ -1,16 +1,17 @@
 #!/bin/sh
 set -e
 
+# default image
 IMAGE=${IMAGE:-"node:22-alpine"}
 WORKDIR=/app
 
 # Check README for usage info.
 
 if [ ! -z "$MEC_BIND_PORTS" ]; then
-    echo "[MEC] Binding ports:"
+    printf "MEC_BIND_PORTS="
     for PORT in $MEC_BIND_PORTS; do
-        echo "- $PORT"
-        PORTS=$(echo "$PORTS -p $PORT")
+        printf "$PORT "
+        PORTS="$PORTS -p $PORT"
     done
     echo
 fi
@@ -22,5 +23,5 @@ docker run -it --rm \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     $PORTS \
-    --entrypoint yarn \
+    --entrypoint npm \
     $IMAGE "${@}"

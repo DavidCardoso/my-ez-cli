@@ -5,23 +5,28 @@ IMAGE=davidcardoso/cdktf-python
 
 # Via env var
 if [ -z "$IMAGE_TAG" ]; then
-    IMAGE_TAG=latest
+    IMAGE_TAG=latest # local custom tag
+    echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
 if [ -z "$TF_VERSION" ]; then
-    TF_VERSION=1.9.1
+    TF_VERSION=1.13.0 # available image version in docker hub
+    echo "TF_VERSION not set, using default: ${TF_VERSION}"
 fi
 
 if [ -z "$CDKTF_VERSION" ]; then
-    CDKTF_VERSION=latest
+    CDKTF_VERSION=latest # available version in npm repo
+    echo "CDKTF_VERSION not set, using default: ${CDKTF_VERSION}"
 fi
 
 if [ -z "$NODE_VERSION" ]; then
-    NODE_VERSION=20.15.1-r0
+    NODE_VERSION=22.16.0-r2 # available version in apk repo
+    echo "NODE_VERSION not set, using default: ${NODE_VERSION}"
 fi
 
 if [ -z "$PYENV_VERSION" ]; then
-    PYENV_VERSION=3.12.4
+    PYENV_VERSION=3.12.4 # available Python version via pyenv
+    echo "PYENV_VERSION not set, using default: ${PYENV_VERSION}"
 fi
 
 echo "=========================================================="

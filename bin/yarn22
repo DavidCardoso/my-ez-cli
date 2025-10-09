@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
 
-IMAGE=node:16-alpine
+IMAGE=node:22-alpine
 
 . yarn

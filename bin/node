@@ -1,11 +1,31 @@
 #!/bin/sh
 set -e
 
-IMAGE=node:20-alpine
+# Defaults to NodeJS v22 if no version is specified
+IMAGE=${IMAGE:-"node:22-alpine"}
 WORKDIR=/app
 
-# should be executed from your working directory
-docker run -it --rm \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $IMAGE "${@}"
+# Check README for usage info
+
+if [ ! -z "$MEC_BIND_PORTS" ]; then
+    for PORT in $MEC_BIND_PORTS; do
+        PORTS="$PORTS -p $PORT"
+    done
+    # TODO: log to a file
+fi
+
+# Should be executed from your working directory
+
+if [ -z "$PORTS" ]; then
+    # if no ports are binded, we can run the container without the -p flag
+    docker run -it --rm \
+        --volume $PWD:$WORKDIR \
+        --workdir $WORKDIR \
+        $IMAGE "${@}"
+else
+    docker run -it --rm \
+        --volume $PWD:$WORKDIR \
+        --workdir $WORKDIR \
+        $PORTS \
+        $IMAGE "${@}"
+fi

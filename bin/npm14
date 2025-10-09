@@ -4,5 +4,5 @@ set -e
 # override default image
 IMAGE=node:14-alpine
 
-# import & run the local default node script
-. node
+# import & run the local default npm script
+. npm

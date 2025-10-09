@@ -27,9 +27,10 @@ Type the number of the OPTION:
 # cdktf: AWS Cloud Development Kit for Terraform
 # terraform: Terraform CLI
 # gcloud: Google Cloud CLI
-# node: Node 14, 16, 18, and 20 (default)
-# yarn: Yarn classic with Node 14, 16, 18, and 20 (default)
-# yarn-berry: Yarn Berry (v2+)
+# node: NodeJS 14, 16, 18, 20, 22 (default), and 24
+# npm: NPM over NodeJS 14, 16, 18, 20, and 22 (default)
+# yarn: Yarn over NodeJS 14, 16, 18, 20, and 22 (default)
+# yarn-berry: Yarn Berry (v2+) over NodeJS 18
 # serverless: Serverless Framework CLI
 # speedtest: Ookla Speedtest CLI
 # docker-compose-viz: Graph Viz for docker compose
@@ -74,8 +75,9 @@ install_aws() {
 }
 
 install_node() {
-    show_msg "Activating node (v20)..."
+    show_msg "Activating node (v22)..."
     sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node
+    sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node22
 
     show_msg "Activating node14..."
     sudo ln -sf ${BASEDIR}/bin/node14 /usr/local/bin/node14
@@ -85,11 +87,36 @@ install_node() {
 
     show_msg "Activating node18..."
     sudo ln -sf ${BASEDIR}/bin/node18 /usr/local/bin/node18
+
+    show_msg "Activating node20..."
+    sudo ln -sf ${BASEDIR}/bin/node20 /usr/local/bin/node20
+
+    show_msg "Activating node24..."
+    sudo ln -sf ${BASEDIR}/bin/node24 /usr/local/bin/node24
+}
+
+install_npm() {
+    show_msg "Activating npm (over NodeJS v22)..."
+    sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm
+    sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm22
+
+    show_msg "Activating npm14 (over NodeJS v14)..."
+    sudo ln -sf ${BASEDIR}/bin/npm14 /usr/local/bin/npm14
+
+    show_msg "Activating npm16 (over NodeJS v16)..."
+    sudo ln -sf ${BASEDIR}/bin/npm16 /usr/local/bin/npm16
+
+    show_msg "Activating npm18 (over NodeJS v18)..."
+    sudo ln -sf ${BASEDIR}/bin/npm18 /usr/local/bin/npm18
+
+    show_msg "Activating npm20 (over NodeJS v20)..."
+    sudo ln -sf ${BASEDIR}/bin/npm20 /usr/local/bin/npm20
 }
 
 install_yarn() {
-    show_msg "Activating yarn (using node v20)..."
+    show_msg "Activating yarn (using NodeJS v22)..."
     sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn
+    sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn22
 
     show_msg "Activating yarn14..."
     sudo ln -sf ${BASEDIR}/bin/yarn14 /usr/local/bin/yarn14
@@ -99,6 +126,9 @@ install_yarn() {
 
     show_msg "Activating yarn18..."
     sudo ln -sf ${BASEDIR}/bin/yarn18 /usr/local/bin/yarn18
+
+    show_msg "Activating yarn20..."
+    sudo ln -sf ${BASEDIR}/bin/yarn20 /usr/local/bin/yarn20
 }
 
 install_serverless() {
@@ -165,6 +195,7 @@ install_python() {
 install_all() {
     install_aws
     install_node
+    install_npm
     install_yarn
     install_yarn-berry
     install_serverless
@@ -182,7 +213,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
+select opt in ALL aws terraform cdktf gcloud node npm yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -190,6 +221,7 @@ select opt in ALL aws terraform cdktf gcloud node yarn yarn-berry serverless spe
     cdktf) install_cdktf ;;
     gcloud) install_gcloud ;;
     node) install_node ;;
+    npm) install_npm ;;
     yarn) install_yarn ;;
     yarn-berry) install_yarn-berry ;;
     serverless) install_serverless ;;
@@ -206,7 +238,8 @@ done
 
 # TODO: add 'uninstall' option
 
-show_msg "> If you want to check and/or adapt how each script is being executed, just check them inside '${BASEDIR}/bin/' folder."
+show_msg "> If you want to check and/or adapt how each script is being executed,\
+just check them inside '${BASEDIR}/bin/' folder."
 
 show_msg "> For more info, check the README."
 
