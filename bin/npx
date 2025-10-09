@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+# default image
+IMAGE=${IMAGE:-"node:22-alpine"}
+WORKDIR=/app
+
+# Check README for usage info.
+
+if [ ! -z "$MEC_BIND_PORTS" ]; then
+    for PORT in $MEC_BIND_PORTS; do
+        PORTS="$PORTS -p $PORT"
+    done
+fi
+
+# should be executed from your working directory
+docker run -it --rm \
+    --env NPM_TOKEN=$NPM_TOKEN \
+    --volume $HOME/.npmrc:/root/.npmrc \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    $PORTS \
+    --entrypoint npx \
+    $IMAGE "${@}"
