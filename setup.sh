@@ -28,6 +28,7 @@ Type the number of the OPTION:
 # terraform: Terraform CLI
 # gcloud: Google Cloud CLI
 # node: NodeJS 14, 16, 18, 20, 22 (default), and 24
+# npx: npx over NodeJS 22
 # npm: NPM over NodeJS 14, 16, 18, 20, and 22 (default)
 # yarn: Yarn over NodeJS 14, 16, 18, 20, and 22 (default)
 # yarn-berry: Yarn Berry (v2+) over NodeJS 18
@@ -113,6 +114,12 @@ install_npm() {
     sudo ln -sf ${BASEDIR}/bin/npm20 /usr/local/bin/npm20
 }
 
+install_npx() {
+    show_msg "Activating npx (over NodeJS v22)..."
+    sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx
+    sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx22
+}
+
 install_yarn() {
     show_msg "Activating yarn (using NodeJS v22)..."
     sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn
@@ -196,6 +203,7 @@ install_all() {
     install_aws
     install_node
     install_npm
+    install_npx
     install_yarn
     install_yarn-berry
     install_serverless
@@ -213,7 +221,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws terraform cdktf gcloud node npm yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
+select opt in ALL aws terraform cdktf gcloud node npm npx yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -222,6 +230,7 @@ select opt in ALL aws terraform cdktf gcloud node npm yarn yarn-berry serverless
     gcloud) install_gcloud ;;
     node) install_node ;;
     npm) install_npm ;;
+    npx) install_npx ;;
     yarn) install_yarn ;;
     yarn-berry) install_yarn-berry ;;
     serverless) install_serverless ;;
@@ -238,10 +247,9 @@ done
 
 # TODO: add 'uninstall' option
 
-show_msg "> If you want to check and/or adapt how each script is being executed,\
-just check them inside '${BASEDIR}/bin/' folder."
+show_msg "> Check the scripts in '${BASEDIR}/bin/' folder."
 
-show_msg "> For more info, check the README."
+show_msg "> Check the '${BASEDIR}/README.md' file."
 
 # End
 

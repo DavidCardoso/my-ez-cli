@@ -14,10 +14,11 @@ Tools via **Unix Command Line Interface** with no installation and just using **
       - [Using other Python versions](#using-other-python-versions)
     - [NodeJS](#nodejs)
       - [Using other NodeJS versions](#using-other-nodejs-versions)
-      - [Using NodeJS, NPM, and Yarn with custom ports](#using-nodejs-npm-and-yarn-with-custom-ports)
+      - [Using NodeJS, npm, npx, and yarn with custom ports](#using-nodejs-npm-npx-and-yarn-with-custom-ports)
       - [Using NPM and Yarn with NPM token](#using-npm-and-yarn-with-npm-token)
     - [NPM](#npm)
       - [Using NPM with other NodeJS versions](#using-npm-with-other-nodejs-versions)
+    - [NPX](#npx)
     - [Yarn](#yarn)
       - [Using Yarn with other NodeJS versions](#using-yarn-with-other-nodejs-versions)
       - [Yarn Berry (v2+)](#yarn-berry-v2)
@@ -182,13 +183,14 @@ node22 -v
 node24 -v
 ```
 
-#### Using NodeJS, NPM, and Yarn with custom ports
+#### Using NodeJS, npm, npx, and yarn with custom ports
 
 Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
 
 ```shell
 MEC_BIND_PORTS="8080:80 9090:80" node
 MEC_BIND_PORTS="8080:80 9090:80" npm
+MEC_BIND_PORTS="8080:80 9090:80" npx
 MEC_BIND_PORTS="8080:80 9090:80" yarn
 
 # or
@@ -257,6 +259,27 @@ npm16 -v
 npm18 -v
 npm20 -v
 npm22 -v
+```
+
+### NPX
+
+> It is using NodeJS 22 as default.
+
+```shell
+# exec a standalone package
+npx cowsay "Hello!"
+# Need to install the following packages:
+# cowsay@1.6.0
+# Ok to proceed? (y) y
+
+#  _______
+# < Hello >
+#  -------
+#         \   ^__^
+#          \  (oo)\_______
+#             (__)\       )\/\
+#                 ||----w |
+#                 ||     ||
 ```
 
 ### Yarn
