@@ -34,6 +34,8 @@ Tools via **Unix Command Line Interface** with no installation and just using **
     - [Google Cloud CLI](#google-cloud-cli)
     - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
     - [Playwright](#playwright)
+    - [Promptfoo](#promptfoo)
+    - [Promptfoo Server](#promptfoo-server)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -598,6 +600,62 @@ npm run test
 ```
 
 > For more info, please check its [official documentation](https://playwright.dev/docs/docker).
+
+### Promptfoo
+
+> LLM model and prompt evaluation tool. For more info, check [official documentation](https://www.promptfoo.dev/docs/getting-started/).
+
+```shell
+# Environment variables that can be used:
+export PROMPTFOO_CONFIG_DIR="/app/data"              # folder to store promptfoo config and data
+export PROMPTFOO_REMOTE_API_BASE_URL="http://localhost:33333"  # API base URL
+export PROMPTFOO_REMOTE_APP_BASE_URL="http://localhost:33333"  # UI base URL
+export OPENAI_API_KEY="your-key-here"               # OpenAI API key
+export ANTHROPIC_API_KEY="your-key-here"            # Anthropic API key
+export AZURE_API_KEY="your-key-here"                # Azure API key
+export LITELLM_API_KEY="your-key-here"              # LiteLLM API key
+export GITHUB_TOKEN="your-token-here"               # GitHub token
+
+# see version
+promptfoo --version
+
+# help
+promptfoo --help
+
+# run an evaluation
+promptfoo eval
+
+# share the evaluation results with your team
+promptfoo share
+
+# or do both in one command
+promptfoo eval --share
+```
+
+### Promptfoo Server
+
+> Self-hosted Promptfoo server for API and UI. For more info, check [official documentation](https://www.promptfoo.dev/docs/usage/self-hosting/).
+
+```shell
+# Environment variables that can be used:
+export PROMPTFOO_CONTAINER_SUFFIX="my-suffix"        # unique identifier for container name (default: timestamp)
+export PROMPTFOO_CONFIG_DIR="/app/data"              # folder to store promptfoo config and data
+export PROMPTFOO_API_PORT=33333                      # port for API and UI (default: 33333)
+export OPENAI_API_KEY="your-key-here"               # OpenAI API key
+export ANTHROPIC_API_KEY="your-key-here"            # Anthropic API key
+export AZURE_API_KEY="your-key-here"                # Azure API key
+export LITELLM_API_KEY="your-key-here"              # LiteLLM API key
+export GITHUB_TOKEN="your-token-here"               # GitHub token
+
+# start the server (it runs in detached mode)
+promptfoo-server
+
+# check if the server is running
+docker ps | grep promptfoo_server
+
+# access the UI
+open http://localhost:33333
+```
 
 ## Author
 

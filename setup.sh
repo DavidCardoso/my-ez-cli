@@ -37,6 +37,8 @@ Type the number of the OPTION:
 # docker-compose-viz: Graph Viz for docker compose
 # playwright: End-to-end testing for web apps
 # python: Python interpreter
+# promptfoo: LLM model and prompt evaluation tool
+# promptfoo-server: Self-hosted Promptfoo server for API and UI
 # EXIT: To leave this menu
 --------------------------------------------------------------------------------
 EOF
@@ -199,6 +201,16 @@ install_python() {
     sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/python
 }
 
+install_promptfoo() {
+    show_msg "Activating promptfoo..."
+    sudo ln -sf ${BASEDIR}/bin/promptfoo /usr/local/bin/promptfoo
+}
+
+install_promptfoo-server() {
+    show_msg "Activating promptfoo-server..."
+    sudo ln -sf ${BASEDIR}/bin/promptfoo-server /usr/local/bin/promptfoo-server
+}
+
 install_all() {
     install_aws
     install_node
@@ -214,6 +226,8 @@ install_all() {
     install_playwright
     install_cdktf
     install_python
+    install_promptfoo
+    install_promptfoo-server
 }
 
 # Main
@@ -221,7 +235,7 @@ install_all() {
 show_begin
 
 PS3="Choose an option: "
-select opt in ALL aws terraform cdktf gcloud node npm npx yarn yarn-berry serverless speedtest docker-compose-viz playwright python EXIT; do
+select opt in ALL aws terraform cdktf gcloud node npm npx yarn yarn-berry serverless speedtest docker-compose-viz playwright python promptfoo promptfoo-server EXIT; do
     case ${opt} in
     ALL) install_all ;;
     aws) install_aws ;;
@@ -239,6 +253,8 @@ select opt in ALL aws terraform cdktf gcloud node npm npx yarn yarn-berry server
     playwright) install_playwright ;;
     cdktf) install_cdktf ;;
     python) install_python ;;
+    promptfoo) install_promptfoo ;;
+    promptfoo-server) install_promptfoo-server ;;
     EXIT) show_msg "Bye o/" ;;
     *) show_help "Error: incorrect option." && exit 2 ;;
     esac

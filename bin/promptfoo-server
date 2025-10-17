@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+# Check README for usage info.
+
+IMAGE=${IMAGE:-"ghcr.io/promptfoo/promptfoo:latest"} # pin a specific version if needed
+WORKDIR=/app
+TIMESTAMP=$(date +%s)
+PROMPTFOO_CONTAINER_NAME=promptfoo_server_${PROMPTFOO_CONTAINER_SUFFIX:-"$TIMESTAMP"}
+PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$WORKDIR/data"} # folder to store promptfoo config and data
+PROMPTFOO_API_PORT=${PROMPTFOO_API_PORT:-33333} # default API port
+OPENAI_API_KEY=${OPENAI_API_KEY:-""}
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-""}
+AZURE_API_KEY=${AZURE_API_KEY:-""}
+LITELLM_API_KEY=${LITELLM_API_KEY:-""}
+GITHUB_TOKEN=${GITHUB_TOKEN:-""}
+
+if [ ! -z "$PROMPTFOO_API_PORT" ]; then
+    # Default port binding for promptfoo API and UI
+    PORTS="-p $PROMPTFOO_API_PORT:$PROMPTFOO_API_PORT"
+fi
+
+# should be executed from your working directory
+docker run -d \
+    --name $PROMPTFOO_CONTAINER_NAME \
+    --volume $PWD/data:$PROMPTFOO_CONFIG_DIR \
+    --env PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR \
+    --env API_PORT=$PROMPTFOO_API_PORT \
+    --env OPENAI_API_KEY=$OPENAI_API_KEY \
+    --env ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+    --env AZURE_API_KEY=$AZURE_API_KEY \
+    --env LITELLM_API_KEY=$LITELLM_API_KEY \
+    --env GITHUB_TOKEN=$GITHUB_TOKEN \
+    $PORTS \
+    $IMAGE "${@}"
+
+echo ">>> Promptfoo server is running: run 'docker ps |grep $PROMPTFOO_CONTAINER_NAME' for more info <<<"
