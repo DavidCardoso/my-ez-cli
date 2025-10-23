@@ -64,11 +64,12 @@ It adds aliases to your `~/.zshrc` file and symbolic links to your `/usr/local/b
 #   GitHub: https://github.com/DavidCardoso/my-ez-cli
 # --------------------------------------------------------------------------------
 
-# 1) ALL                6) node             11) docker-compose-viz
-# 2) aws                7) yarn             12) playwright
-# 3) terraform          8) yarn-berry       13) python
-# 4) cdktf              9) serverless       14) EXIT
-# 5) gcloud             10) speedtest
+# 1) ALL			 7) npm			    13) docker-compose-viz
+# 2) aws			 8) npx			    14) playwright
+# 3) terraform		 9) yarn		    15) python
+# 4) cdktf		    10) yarn-berry		16) promptfoo
+# 5) gcloud		    11) serverless		17) promptfoo-server
+# 6) node			12) speedtest		18) EXIT
 # Choose an option:
 ```
 
