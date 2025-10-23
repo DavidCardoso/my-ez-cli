@@ -1,0 +1,34 @@
+#!/bin/sh
+set -e
+
+# Check README for usage info.
+
+IMAGE=${IMAGE:-"ghcr.io/promptfoo/promptfoo:latest"} # pin a specific version if needed
+WORKDIR=/app
+TIMESTAMP=$(date +%s)
+PROMPTFOO_CONTAINER_NAME=promptfoo_${TIMESTAMP}
+PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$WORKDIR/data"} # folder to store promptfoo config and data
+PROMPTFOO_REMOTE_API_BASE_URL=${PROMPTFOO_REMOTE_API_BASE_URL:-""} # e.g., http://localhost:33333
+PROMPTFOO_REMOTE_APP_BASE_URL=${PROMPTFOO_REMOTE_APP_BASE_URL:-""} # e.g., http://localhost:33333
+OPENAI_API_KEY=${OPENAI_API_KEY:-""}
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-""}
+AZURE_API_KEY=${AZURE_API_KEY:-""}
+LITELLM_API_KEY=${LITELLM_API_KEY:-""}
+GITHUB_TOKEN=${GITHUB_TOKEN:-""}
+
+# should be executed from your working directory
+docker run -it --rm \
+    --name $PROMPTFOO_CONTAINER_NAME \
+    --volume $PWD:$WORKDIR \
+    --env PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR \
+    --env PROMPTFOO_REMOTE_APP_BASE_URL=$PROMPTFOO_REMOTE_APP_BASE_URL \
+    --env PROMPTFOO_REMOTE_API_BASE_URL=$PROMPTFOO_REMOTE_API_BASE_URL \
+    --env OPENAI_API_KEY=$OPENAI_API_KEY \
+    --env ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+    --env AZURE_API_KEY=$AZURE_API_KEY \
+    --env LITELLM_API_KEY=$LITELLM_API_KEY \
+    --env GITHUB_TOKEN=$GITHUB_TOKEN \
+    --workdir $WORKDIR \
+    $PORTS \
+    --entrypoint promptfoo \
+    $IMAGE "${@}"
