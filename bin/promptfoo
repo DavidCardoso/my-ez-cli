@@ -10,16 +10,31 @@ PROMPTFOO_CONTAINER_NAME=promptfoo_${TIMESTAMP}
 PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$WORKDIR/data"} # folder to store promptfoo config and data
 PROMPTFOO_REMOTE_API_BASE_URL=${PROMPTFOO_REMOTE_API_BASE_URL:-""} # e.g., http://localhost:33333
 PROMPTFOO_REMOTE_APP_BASE_URL=${PROMPTFOO_REMOTE_APP_BASE_URL:-""} # e.g., http://localhost:33333
+
+# Model providers API Keys - set only what is needed for your tests
 OPENAI_API_KEY=${OPENAI_API_KEY:-""}
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-""}
 AZURE_API_KEY=${AZURE_API_KEY:-""}
 LITELLM_API_KEY=${LITELLM_API_KEY:-""}
 GITHUB_TOKEN=${GITHUB_TOKEN:-""}
 
+# AWS config - for bedrock and bedrock-agent providers
+AWS_REGION=${AWS_REGION:-""}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-""}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-""}
+AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-""} # when using temporary credentials
+LANG=${LANG:-"en_US.UTF-8"}
+
 # should be executed from your working directory
 docker run -it --rm \
     --name $PROMPTFOO_CONTAINER_NAME \
     --volume $PWD:$WORKDIR \
+    --volume $PWD/data:$PROMPTFOO_CONFIG_DIR \
+    --env AWS_REGION=$AWS_REGION \
+    --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+    --env AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+    --env LANG=$LANG \
     --env PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR \
     --env PROMPTFOO_REMOTE_APP_BASE_URL=$PROMPTFOO_REMOTE_APP_BASE_URL \
     --env PROMPTFOO_REMOTE_API_BASE_URL=$PROMPTFOO_REMOTE_API_BASE_URL \
@@ -29,6 +44,6 @@ docker run -it --rm \
     --env LITELLM_API_KEY=$LITELLM_API_KEY \
     --env GITHUB_TOKEN=$GITHUB_TOKEN \
     --workdir $WORKDIR \
-    $PORTS \
     --entrypoint promptfoo \
+    $PORTS \
     $IMAGE "${@}"

@@ -7,13 +7,22 @@ IMAGE=${IMAGE:-"ghcr.io/promptfoo/promptfoo:latest"} # pin a specific version if
 WORKDIR=/app
 TIMESTAMP=$(date +%s)
 PROMPTFOO_CONTAINER_NAME=promptfoo_server_${PROMPTFOO_CONTAINER_SUFFIX:-"$TIMESTAMP"}
-PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$WORKDIR/data"} # folder to store promptfoo config and data
+PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$PWD/data"} # folder to store promptfoo config and data
 PROMPTFOO_API_PORT=${PROMPTFOO_API_PORT:-33333} # default API port
+
+# Model providers API Keys - required only for running the tests directly from the server (e.g., Web UI)
 OPENAI_API_KEY=${OPENAI_API_KEY:-""}
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-""}
 AZURE_API_KEY=${AZURE_API_KEY:-""}
 LITELLM_API_KEY=${LITELLM_API_KEY:-""}
 GITHUB_TOKEN=${GITHUB_TOKEN:-""}
+
+# AWS config - for bedrock and bedrock-agent providers
+AWS_REGION=${AWS_REGION:-""}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-""}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-""}
+AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-""} # when using temporary credentials
+LANG=${LANG:-"en_US.UTF-8"}
 
 if [ ! -z "$PROMPTFOO_API_PORT" ]; then
     # Default port binding for promptfoo API and UI
@@ -23,9 +32,14 @@ fi
 # should be executed from your working directory
 docker run -d \
     --name $PROMPTFOO_CONTAINER_NAME \
-    --volume $PWD/data:$PROMPTFOO_CONFIG_DIR \
-    --env PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR \
+    --volume $PROMPTFOO_CONFIG_DIR:$WORKDIR/data \
+    --env PROMPTFOO_CONFIG_DIR=$WORKDIR/data \
     --env API_PORT=$PROMPTFOO_API_PORT \
+    --env AWS_REGION=$AWS_REGION \
+    --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+    --env AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+    --env LANG=$LANG \
     --env OPENAI_API_KEY=$OPENAI_API_KEY \
     --env ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
     --env AZURE_API_KEY=$AZURE_API_KEY \
