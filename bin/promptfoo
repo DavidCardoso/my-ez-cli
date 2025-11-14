@@ -19,6 +19,7 @@ LITELLM_API_KEY=${LITELLM_API_KEY:-""}
 GITHUB_TOKEN=${GITHUB_TOKEN:-""}
 
 # AWS config - for bedrock and bedrock-agent providers
+# See: https://www.promptfoo.dev/docs/providers/aws-bedrock/#authentication-options
 AWS_REGION=${AWS_REGION:-""}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-""}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-""}

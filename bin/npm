@@ -1,25 +1,51 @@
 #!/bin/sh
 set -e
 
-# default image
+# Check README for usage info
+
+# Get the directory where this script is located (resolve symlinks)
+SCRIPT_PATH="$0"
+while [ -L "$SCRIPT_PATH" ]; do
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+    case "$SCRIPT_PATH" in
+        /*) ;;
+        *) SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH" ;;
+    esac
+done
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+
+# Source utilities
+. "$SCRIPT_DIR/utils/docker.sh"
+
 IMAGE=${IMAGE:-"node:22-alpine"}
 WORKDIR=/app
+NPMRC_FILE=$HOME/.npmrc
+NPM_CACHE_FOLDER=${NPM_CACHE_FOLDER:-"$HOME/.npm"}
 
-# Check README for usage info.
+# Create .npmrc if it doesn't exist
+if [ ! -f "$NPMRC_FILE" ]; then
+    touch "$NPMRC_FILE"
+fi
 
+# Create npm cache folder if it doesn't exist
+if [ ! -d "$NPM_CACHE_FOLDER" ]; then
+    mkdir -p "$NPM_CACHE_FOLDER"
+fi
+
+# Prepare the flag to bind the ports to the container
 if [ ! -z "$MEC_BIND_PORTS" ]; then
-    printf "MEC_BIND_PORTS="
     for PORT in $MEC_BIND_PORTS; do
-        printf "$PORT "
         PORTS="$PORTS -p $PORT"
     done
-    echo
 fi
 
 # should be executed from your working directory
-docker run -it --rm \
+docker run -i $(get_tty_flag) --rm \
     --env NPM_TOKEN=$NPM_TOKEN \
-    --volume $HOME/.npmrc:/root/.npmrc \
+    --env NPM_CACHE_FOLDER=/root/.npm \
+    --volume $NPMRC_FILE:/root/.npmrc \
+    --volume $NPM_CACHE_FOLDER:/root/.npm \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     $PORTS \
