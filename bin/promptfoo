@@ -10,6 +10,7 @@ PROMPTFOO_CONTAINER_NAME=promptfoo_${TIMESTAMP}
 PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$WORKDIR/data"} # folder to store promptfoo config and data
 PROMPTFOO_REMOTE_API_BASE_URL=${PROMPTFOO_REMOTE_API_BASE_URL:-""} # e.g., http://localhost:33333
 PROMPTFOO_REMOTE_APP_BASE_URL=${PROMPTFOO_REMOTE_APP_BASE_URL:-""} # e.g., http://localhost:33333
+PROMPTFOO_API_PORT=${PROMPTFOO_API_PORT:-3000} # API and Web UI port
 
 # Model providers API Keys - set only what is needed for your tests
 OPENAI_API_KEY=${OPENAI_API_KEY:-""}
@@ -26,11 +27,17 @@ AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-""}
 AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-""} # when using temporary credentials
 LANG=${LANG:-"en_US.UTF-8"}
 
+if [ ! -z "$PROMPTFOO_API_PORT" ]; then
+    # Default port binding for promptfoo API and UI
+    PORTS="-p $PROMPTFOO_API_PORT:$PROMPTFOO_API_PORT"
+fi
+
 # should be executed from your working directory
 docker run -it --rm \
     --name $PROMPTFOO_CONTAINER_NAME \
     --volume $PWD:$WORKDIR \
     --volume $PWD/data:$PROMPTFOO_CONFIG_DIR \
+    --env API_PORT=$PROMPTFOO_API_PORT \
     --env AWS_REGION=$AWS_REGION \
     --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
     --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
