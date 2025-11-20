@@ -1,12 +1,21 @@
 #!/bin/sh
 set -e
 
-# Check README for usage info.
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+# Check Docker availability
+check_docker
 
 IMAGE=${IMAGE:-"ghcr.io/promptfoo/promptfoo:latest"} # pin a specific version if needed
 WORKDIR=/app
+
+# Container naming and labeling (promptfoo-server runs persistently, so we use a predictable name)
 TIMESTAMP=$(date +%s)
-PROMPTFOO_CONTAINER_NAME=promptfoo_server_${PROMPTFOO_CONTAINER_SUFFIX:-"$TIMESTAMP"}
+PROMPTFOO_CONTAINER_NAME=mec-promptfoo-server-${PROMPTFOO_CONTAINER_SUFFIX:-"$TIMESTAMP"}
+CONTAINER_LABELS=$(get_container_labels "promptfoo-server" "$IMAGE")
 PROMPTFOO_CONFIG_DIR=${PROMPTFOO_CONFIG_DIR:-"$PWD/data"} # folder to store promptfoo config and data
 PROMPTFOO_API_PORT=${PROMPTFOO_API_PORT:-33333} # default API port
 
@@ -29,9 +38,13 @@ if [ ! -z "$PROMPTFOO_API_PORT" ]; then
     PORTS="-p $PROMPTFOO_API_PORT:$PROMPTFOO_API_PORT"
 fi
 
+# Setup logging (if enabled)
+setup_logging "promptfoo-server"
+
 # should be executed from your working directory
 docker run -d \
     --name $PROMPTFOO_CONTAINER_NAME \
+    $CONTAINER_LABELS \
     --volume $PROMPTFOO_CONFIG_DIR:$WORKDIR/data \
     --env PROMPTFOO_CONFIG_DIR=$WORKDIR/data \
     --env API_PORT=$PROMPTFOO_API_PORT \

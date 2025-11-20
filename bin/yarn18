@@ -1,6 +1,0 @@
-#!/bin/sh
-set -e
-
-IMAGE=node:18-alpine
-
-. yarn

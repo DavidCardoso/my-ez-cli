@@ -1,19 +1,59 @@
 #!/bin/sh
 set -e
 
-IMAGE=node:18-alpine
-REALPATH=$(realpath "${0}")
-BASEDIR=$(cd $(dirname $REALPATH) && pwd)
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+# Check Docker availability
+check_docker
+
+# Naming
+TOOL_NAME=yarn-berry
+IMAGE=davidcardoso/my-ez-cli:${TOOL_NAME}-latest
 WORKDIR=/app
-YARN_LOCAL_DIR=$(cd $BASEDIR/../docker/yarn-berry && pwd)
-YARN_DIR=/root
+NPM_TOKEN=${NPM_TOKEN:-""}
+
+# Container naming and labeling
+CONTAINER_NAME=$(get_container_name "${TOOL_NAME}")
+CONTAINER_LABELS=$(get_container_labels "${TOOL_NAME}" "$IMAGE")
+NPMRC_FILE=${NPMRC_FILE:-"$HOME/.npmrc"}
+YARNRC_FILE=${YARNRC_FILE:-"$HOME/.yarnrc.yml"}
+YARN_CACHE_FOLDER=${YARN_CACHE_FOLDER:-"$HOME/.cache/yarn/"}
+CONTAINER_YARN_CACHE_FOLDER=${CONTAINER_YARN_CACHE_FOLDER:-"/root/.cache/yarn/"}
+
+# Create .npmrc if it doesn't exist
+if [ ! -f "$NPMRC_FILE" ]; then
+    touch "$NPMRC_FILE"
+fi
+
+# Create .yarnrc.yml if it doesn't exist
+if [ ! -f "$YARNRC_FILE" ]; then
+    touch "$YARNRC_FILE"
+fi
+
+# Create yarn cache folder if it doesn't exist
+if [ ! -d "$YARN_CACHE_FOLDER" ]; then
+    mkdir -p "$YARN_CACHE_FOLDER"
+fi
+
+# Get port flags from MEC_BIND_PORTS
+PORTS=$(get_port_flags)
+
+# Setup logging (if enabled)
+setup_logging "${TOOL_NAME}"
 
 # should be executed from your working directory
-docker run -it --rm \
+docker run -i $(get_tty_flag) --rm \
+    --name $CONTAINER_NAME \
+    $CONTAINER_LABELS \
     --env NPM_TOKEN=$NPM_TOKEN \
-    --volume $HOME/.npmrc:/root/.npmrc \
-    --volume $YARN_LOCAL_DIR:$YARN_DIR \
+    --env YARN_CACHE_FOLDER=$CONTAINER_YARN_CACHE_FOLDER \
+    --volume $NPMRC_FILE:/root/.npmrc \
+    --volume $YARNRC_FILE:/root/.yarnrc.yml \
+    --volume $YARN_CACHE_FOLDER:$CONTAINER_YARN_CACHE_FOLDER \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
-    --entrypoint yarn \
+    $PORTS \
     $IMAGE "${@}"

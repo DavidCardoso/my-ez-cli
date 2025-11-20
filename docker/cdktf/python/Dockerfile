@@ -1,50 +1,57 @@
-# See ./build script
+# Multi-stage build for optimized image size and build time
 ARG TF_VERSION=1.13.0
+ARG PYTHON_VERSION=3.12
 
+# Stage 1: Build Node.js dependencies
+FROM node:24-alpine AS node-builder
+
+# Pin CDKTF version for reproducible builds (update as needed)
+# Using a specific version avoids breaking changes and improves build cache hits
+ARG CDKTF_VERSION=0.21.0
+
+# Install build dependencies for native modules and create python symlink
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ && \
+    ln -sf python3 /usr/bin/python
+
+# Install CDKTF globally
+# Note: --prefer-offline and --no-audit speed up installation
+RUN npm install --global --no-audit --no-fund cdktf-cli@${CDKTF_VERSION}
+
+# Stage 2: Final image
 FROM hashicorp/terraform:${TF_VERSION}
 
-LABEL Author="David Cardoso <dev+github@davidcardoso.me>"
+LABEL com.my-ez-cli.project="my-ez-cli" \
+      com.my-ez-cli.tool="cdktf" \
+      org.opencontainers.image.title="My Ez CLI - CDKTF" \
+      org.opencontainers.image.description="CDK for Terraform with Python support" \
+      org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
+      org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-ARG CDKTF_VERSION=latest
-ARG NODE_VERSION=22.16.0-r2
-ARG PYENV_VERSION=3.12.4
+ARG PYTHON_VERSION
 
-# Environment variables
-ENV PYENV_VERSION=${PYENV_VERSION}
-ENV PYENV_ROOT=/root/.pyenv
-ENV PIPENV_FOLDER=/root/.local/bin
-ENV LANG=en_US.UTF-8
+# Install runtime dependencies (Python, Node.js, and required libraries)
+RUN apk add --no-cache \
+    bash \
+    curl \
+    nodejs \
+    npm \
+    python3~=${PYTHON_VERSION} \
+    py3-pip \
+    && ln -sf python3 /usr/bin/python
 
-# Update the PATH env var
-ENV PATH=${PYENV_ROOT}/shims:${PYENV_ROOT}/bin:${PIPENV_FOLDER}:${PATH}
+# Copy Node.js global packages from builder stage
+COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node-builder /usr/local/bin/cdktf /usr/local/bin/cdktf
 
-# Add Python
-RUN apk add --update --no-cache bash curl &&\
-    # Add pyenv and python compilation deps (temporarily)
-    apk add --no-cache --virtual temp_dep \
-    libffi-dev \
-    openssl-dev \
-    bzip2-dev \
-    zlib-dev \
-    readline-dev \
-    sqlite-dev \
-    build-base \
-    xz-dev &&\
-    # Install pyenv, and add python & pip (as venv)
-    curl -sL https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash &&\
-    pyenv install ${PYENV_VERSION} &&\
-    pyenv global ${PYENV_VERSION} &&\
-    pyenv rehash &&\
-    # Clear virtual temporary deps
-    apk del temp_dep
+# Install pipenv (required by cdktf to initialize python templates)
+ENV PIP_ROOT_USER_ACTION=ignore \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    LANG=en_US.UTF-8
 
-# Add pipenv (required by cdktf to initialize python templates)
-ENV PIP_ROOT_USER_ACTION=ignore
-RUN pip install --upgrade pip &&\
-    pip install pipenv --user
-
-# Add CDKTF
-RUN apk add --no-cache npm nodejs=${NODE_VERSION} &&\
-    npm --global install -y cdktf-cli@${CDKTF_VERSION}
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir pipenv
 
 ENTRYPOINT [ "cdktf" ]
