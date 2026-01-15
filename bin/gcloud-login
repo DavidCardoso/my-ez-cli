@@ -1,6 +1,14 @@
 #!/bin/sh
 set -e
 
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+# Check Docker availability
+check_docker
+
 IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
 WORKDIR=/app
 
@@ -17,12 +25,20 @@ if [ -z "$CREDENTIALS_FOLDER" ]; then
     mkdir -p $CREDENTIALS_FOLDER
 fi
 
+# Container naming and labeling
+# Note: Uses static name "gcloud-config" for compatibility with bin/gcloud (--volumes-from)
+CONTAINER_LABELS=$(get_container_labels "gcloud-login" "$IMAGE")
+
+# Setup logging (if enabled)
+setup_logging "gcloud-login"
+
 # run from your working directory
-docker run -it \
+docker run -i $(get_tty_flag) \
     --platform linux/amd64 \
+    --name gcloud-config \
+    $CONTAINER_LABELS \
     --volume $PWD:$WORKDIR \
     --volume $CREDENTIALS_FOLDER:/root/.config/gcloud \
     --workdir $WORKDIR \
     --entrypoint gcloud \
-    --name gcloud-config \
     $IMAGE auth application-default login

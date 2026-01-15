@@ -2,6 +2,10 @@
 set -e
 
 BASEDIR=$(cd $(dirname "${0}") && pwd)
+TRACKING_FILE="$HOME/.my-ez-cli/installed"
+
+# Create .my-ez-cli directory if it doesn't exist
+mkdir -p "$HOME/.my-ez-cli"
 
 # Helpers
 
@@ -14,32 +18,36 @@ EOF
 }
 
 show_help() {
-    show_msg "$1"
-
+    local script_name="$(basename "${0}")"
     cat <<EOF
 --------------------------------------------------------------------------------
-Usage examples:
-${BASEDIR}/setup.sh <OPTION>
+                  My Ez CLI • Setup
+--------------------------------------------------------------------------------
+Usage:
+  ${script_name} [command] [options]
 
-Type the number of the OPTION:
-# ALL: To activate all options
-# aws: AWS CLI, AWS Get Session Token, AWS SSO, AWS SSO Get Credentials
-# cdktf: AWS Cloud Development Kit for Terraform
-# terraform: Terraform CLI
-# gcloud: Google Cloud CLI
-# node: NodeJS 14, 16, 18, 20, 22 (default), and 24
-# npx: npx over NodeJS 22
-# npm: NPM over NodeJS 14, 16, 18, 20, and 22 (default)
-# yarn: Yarn over NodeJS 14, 16, 18, 20, and 22 (default)
-# yarn-berry: Yarn Berry (v2+) over NodeJS 18
-# serverless: Serverless Framework CLI
-# speedtest: Ookla Speedtest CLI
-# docker-compose-viz: Graph Viz for docker compose
-# playwright: End-to-end testing for web apps
-# python: Python interpreter
-# promptfoo: LLM model and prompt evaluation tool
-# promptfoo-server: Self-hosted Promptfoo server for API and UI
-# EXIT: To leave this menu
+Commands:
+  install <tool1> <tool2> ...  Install specific tools
+  install all                  Install all tools
+  uninstall <tool1> <tool2>... Uninstall specific tools
+  status                       Show installation status
+  list                         List installed tools
+  (no args)                    Interactive menu
+
+Available tools:
+  aws, node, npm, npx, yarn, yarn-berry, serverless, terraform,
+  speedtest, gcloud, playwright, cdktf, python, promptfoo, promptfoo-server
+
+Examples:
+  ${script_name}                      # Interactive mode
+  ${script_name} install node terraform
+  ${script_name} install all
+  ${script_name} uninstall node
+  ${script_name} status
+  ${script_name} list
+
+For more information, visit:
+  https://github.com/DavidCardoso/my-ez-cli
 --------------------------------------------------------------------------------
 EOF
 }
@@ -63,6 +71,81 @@ show_begin() {
 EOF
 }
 
+# Tracking functions
+
+track_install() {
+    local tool="$1"
+    touch "$TRACKING_FILE"
+    if ! grep -q "^${tool}$" "$TRACKING_FILE" 2>/dev/null; then
+        echo "$tool" >> "$TRACKING_FILE"
+    fi
+}
+
+track_uninstall() {
+    local tool="$1"
+    if [ -f "$TRACKING_FILE" ]; then
+        sed -i.bak "/^${tool}$/d" "$TRACKING_FILE" && rm -f "${TRACKING_FILE}.bak"
+    fi
+}
+
+is_tracked() {
+    local tool="$1"
+    [ -f "$TRACKING_FILE" ] && grep -q "^${tool}$" "$TRACKING_FILE" 2>/dev/null
+}
+
+list_installed() {
+    if [ -f "$TRACKING_FILE" ]; then
+        cat "$TRACKING_FILE"
+    fi
+}
+
+# Verification functions
+
+verify_symlink() {
+    local link_path="$1"
+    local tool_name="$(basename "$link_path")"
+
+    if [ -L "$link_path" ]; then
+        local target=$(readlink "$link_path")
+        if [ -f "$target" ]; then
+            return 0
+        else
+            echo "Warning: Broken symlink for $tool_name (target: $target)"
+            return 1
+        fi
+    else
+        echo "Warning: $tool_name not found at $link_path"
+        return 1
+    fi
+}
+
+verify_installation() {
+    local tool="$1"
+    local verified=0
+
+    case "$tool" in
+        node|npm|terraform|python|gcloud|cdktf|promptfoo|speedtest)
+            if verify_symlink "/usr/local/bin/$tool"; then
+                verified=1
+            fi
+            ;;
+        aws|yarn|serverless|playwright)
+            if verify_symlink "/usr/local/bin/$tool"; then
+                verified=1
+            fi
+            ;;
+        npx|yarn-berry|promptfoo-server)
+            if verify_symlink "/usr/local/bin/$tool"; then
+                verified=1
+            fi
+            ;;
+    esac
+
+    return $((1 - verified))
+}
+
+# Install functions
+
 install_aws() {
     sudo ln -sf ${BASEDIR}/bin/aws /usr/local/bin/aws
     show_msg "Activating aws..."
@@ -75,69 +158,49 @@ install_aws() {
 
     sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
     show_msg "Activating aws-sso-cred..."
+
+    track_install "aws"
 }
 
 install_node() {
-    show_msg "Activating node (v22)..."
+    show_msg "Activating node (v24)..."
     sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node
-    sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node22
+    sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node24
 
-    show_msg "Activating node14..."
-    sudo ln -sf ${BASEDIR}/bin/node14 /usr/local/bin/node14
+    show_msg "Activating node22..."
+    sudo ln -sf ${BASEDIR}/bin/node22 /usr/local/bin/node22
 
-    show_msg "Activating node16..."
-    sudo ln -sf ${BASEDIR}/bin/node16 /usr/local/bin/node16
-
-    show_msg "Activating node18..."
-    sudo ln -sf ${BASEDIR}/bin/node18 /usr/local/bin/node18
-
-    show_msg "Activating node20..."
-    sudo ln -sf ${BASEDIR}/bin/node20 /usr/local/bin/node20
-
-    show_msg "Activating node24..."
-    sudo ln -sf ${BASEDIR}/bin/node24 /usr/local/bin/node24
+    track_install "node"
 }
 
 install_npm() {
-    show_msg "Activating npm (over NodeJS v22)..."
+    show_msg "Activating npm (over NodeJS v24)..."
     sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm
-    sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm22
+    sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm24
 
-    show_msg "Activating npm14 (over NodeJS v14)..."
-    sudo ln -sf ${BASEDIR}/bin/npm14 /usr/local/bin/npm14
+    show_msg "Activating npm22 (over NodeJS v22)..."
+    sudo ln -sf ${BASEDIR}/bin/npm22 /usr/local/bin/npm22
 
-    show_msg "Activating npm16 (over NodeJS v16)..."
-    sudo ln -sf ${BASEDIR}/bin/npm16 /usr/local/bin/npm16
-
-    show_msg "Activating npm18 (over NodeJS v18)..."
-    sudo ln -sf ${BASEDIR}/bin/npm18 /usr/local/bin/npm18
-
-    show_msg "Activating npm20 (over NodeJS v20)..."
-    sudo ln -sf ${BASEDIR}/bin/npm20 /usr/local/bin/npm20
+    track_install "npm"
 }
 
 install_npx() {
-    show_msg "Activating npx (over NodeJS v22)..."
+    show_msg "Activating npx (over NodeJS v24)..."
     sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx
-    sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx22
+    sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx24
+
+    track_install "npx"
 }
 
 install_yarn() {
-    show_msg "Activating yarn (using NodeJS v22)..."
+    show_msg "Activating yarn (using NodeJS v24)..."
     sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn
-    sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn22
+    sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn24
 
-    show_msg "Activating yarn14..."
-    sudo ln -sf ${BASEDIR}/bin/yarn14 /usr/local/bin/yarn14
+    show_msg "Activating yarn22..."
+    sudo ln -sf ${BASEDIR}/bin/yarn22 /usr/local/bin/yarn22
 
-    show_msg "Activating yarn16..."
-    sudo ln -sf ${BASEDIR}/bin/yarn16 /usr/local/bin/yarn16
-
-    show_msg "Activating yarn18..."
-    sudo ln -sf ${BASEDIR}/bin/yarn18 /usr/local/bin/yarn18
-
-    show_msg "Activating yarn20..."
-    sudo ln -sf ${BASEDIR}/bin/yarn20 /usr/local/bin/yarn20
+    track_install "yarn"
 }
 
 install_serverless() {
@@ -145,16 +208,22 @@ install_serverless() {
     sudo ln -sf ${BASEDIR}/bin/serverless /usr/local/bin/serverless
     sudo ln -sf ${BASEDIR}/bin/serverless /usr/local/bin/sls
     show_msg "> You can use 'serverless' or just 'sls' alias."
+
+    track_install "serverless"
 }
 
 install_terraform() {
     sudo ln -sf ${BASEDIR}/bin/terraform /usr/local/bin/terraform
     show_msg "Activating terraform..."
+
+    track_install "terraform"
 }
 
 install_speedtest() {
     sudo ln -sf ${BASEDIR}/bin/speedtest /usr/local/bin/speedtest
     show_msg "Activating speedtest..."
+
+    track_install "speedtest"
 }
 
 install_gcloud() {
@@ -163,6 +232,8 @@ install_gcloud() {
 
     sudo ln -sf ${BASEDIR}/bin/gcloud /usr/local/bin/gcloud
     show_msg "Activating gcloud..."
+
+    track_install "gcloud"
 }
 
 install_yarn-berry() {
@@ -179,36 +250,43 @@ install_yarn-berry() {
 
     sudo ln -sf ${BASEDIR}/bin/yarn-berry /usr/local/bin/yarn-berry
     show_msg "Activating yarn-berry..."
-}
 
-install_docker-compose-viz() {
-    show_msg "Activating docker-compose-viz..."
-    sudo ln -sf ${BASEDIR}/bin/docker-compose-viz /usr/local/bin/docker-compose-viz
+    track_install "yarn-berry"
 }
 
 install_playwright() {
     show_msg "Activating playwright..."
     sudo ln -sf ${BASEDIR}/bin/playwright /usr/local/bin/playwright
+
+    track_install "playwright"
 }
 
 install_cdktf() {
     show_msg "Activating cdktf..."
     sudo ln -sf ${BASEDIR}/bin/cdktf /usr/local/bin/cdktf
+
+    track_install "cdktf"
 }
 
 install_python() {
     show_msg "Activating python..."
     sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/python
+
+    track_install "python"
 }
 
 install_promptfoo() {
     show_msg "Activating promptfoo..."
     sudo ln -sf ${BASEDIR}/bin/promptfoo /usr/local/bin/promptfoo
+
+    track_install "promptfoo"
 }
 
 install_promptfoo-server() {
     show_msg "Activating promptfoo-server..."
     sudo ln -sf ${BASEDIR}/bin/promptfoo-server /usr/local/bin/promptfoo-server
+
+    track_install "promptfoo-server"
 }
 
 install_all() {
@@ -222,7 +300,6 @@ install_all() {
     install_terraform
     install_speedtest
     install_gcloud
-    install_docker-compose-viz
     install_playwright
     install_cdktf
     install_python
@@ -230,43 +307,394 @@ install_all() {
     install_promptfoo-server
 }
 
+# Uninstall functions
+
+uninstall_aws() {
+    sudo rm -f /usr/local/bin/aws
+    sudo rm -f /usr/local/bin/aws-sso-cred
+
+    # Remove aliases from ~/.zshrc
+    if [ -f ~/.zshrc ]; then
+        sed -i.bak '/aws-get-session-token/d' ~/.zshrc
+        sed -i.bak '/aws-sso.*bin\/aws-sso/d' ~/.zshrc
+        rm -f ~/.zshrc.bak
+    fi
+
+    track_uninstall "aws"
+    show_msg "Uninstalled aws..."
+}
+
+uninstall_node() {
+    sudo rm -f /usr/local/bin/node
+    sudo rm -f /usr/local/bin/node22
+    sudo rm -f /usr/local/bin/node24
+
+    track_uninstall "node"
+    show_msg "Uninstalled node..."
+}
+
+uninstall_npm() {
+    sudo rm -f /usr/local/bin/npm
+    sudo rm -f /usr/local/bin/npm22
+    sudo rm -f /usr/local/bin/npm24
+
+    track_uninstall "npm"
+    show_msg "Uninstalled npm..."
+}
+
+uninstall_npx() {
+    sudo rm -f /usr/local/bin/npx
+    sudo rm -f /usr/local/bin/npx24
+
+    track_uninstall "npx"
+    show_msg "Uninstalled npx..."
+}
+
+uninstall_yarn() {
+    sudo rm -f /usr/local/bin/yarn
+    sudo rm -f /usr/local/bin/yarn22
+    sudo rm -f /usr/local/bin/yarn24
+
+    track_uninstall "yarn"
+    show_msg "Uninstalled yarn..."
+}
+
+uninstall_yarn-berry() {
+    sudo rm -f /usr/local/bin/yarn-berry
+
+    track_uninstall "yarn-berry"
+    show_msg "Uninstalled yarn-berry..."
+}
+
+uninstall_serverless() {
+    sudo rm -f /usr/local/bin/serverless
+    sudo rm -f /usr/local/bin/sls
+
+    track_uninstall "serverless"
+    show_msg "Uninstalled serverless..."
+}
+
+uninstall_terraform() {
+    sudo rm -f /usr/local/bin/terraform
+
+    track_uninstall "terraform"
+    show_msg "Uninstalled terraform..."
+}
+
+uninstall_speedtest() {
+    sudo rm -f /usr/local/bin/speedtest
+
+    track_uninstall "speedtest"
+    show_msg "Uninstalled speedtest..."
+}
+
+uninstall_gcloud() {
+    sudo rm -f /usr/local/bin/gcloud
+    sudo rm -f /usr/local/bin/gcloud-login
+
+    track_uninstall "gcloud"
+    show_msg "Uninstalled gcloud..."
+}
+
+uninstall_playwright() {
+    sudo rm -f /usr/local/bin/playwright
+
+    track_uninstall "playwright"
+    show_msg "Uninstalled playwright..."
+}
+
+uninstall_cdktf() {
+    sudo rm -f /usr/local/bin/cdktf
+
+    track_uninstall "cdktf"
+    show_msg "Uninstalled cdktf..."
+}
+
+uninstall_python() {
+    sudo rm -f /usr/local/bin/python
+
+    track_uninstall "python"
+    show_msg "Uninstalled python..."
+}
+
+uninstall_promptfoo() {
+    sudo rm -f /usr/local/bin/promptfoo
+
+    track_uninstall "promptfoo"
+    show_msg "Uninstalled promptfoo..."
+}
+
+uninstall_promptfoo-server() {
+    sudo rm -f /usr/local/bin/promptfoo-server
+
+    track_uninstall "promptfoo-server"
+    show_msg "Uninstalled promptfoo-server..."
+}
+
+# Status functions
+
+show_status() {
+    echo "================================================================================
+                  My Ez CLI • Installation Status
+================================================================================"
+    echo ""
+
+    local tools=("aws" "node" "npm" "npx" "yarn" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "cdktf" "python" "promptfoo" "promptfoo-server")
+
+    echo "Tool                  Status        Verified"
+    echo "--------------------------------------------------------------------------------"
+
+    for tool in "${tools[@]}"; do
+        local status="Not Installed"
+        local verified=""
+
+        if is_tracked "$tool"; then
+            status="Installed"
+            if verify_installation "$tool" 2>/dev/null; then
+                verified="✓"
+            else
+                verified="✗"
+            fi
+        fi
+
+        printf "%-20s  %-13s %-10s\n" "$tool" "$status" "$verified"
+    done
+
+    echo "================================================================================
+"
+}
+
+# Interactive multi-select menu - Terminal-based
+
+interactive_menu() {
+    echo "================================================================================
+                  My Ez CLI • Interactive Setup
+================================================================================
+
+Select tools to install/uninstall (enter tool numbers separated by spaces)
+or type 'all' to install all tools, 'done' when finished.
+
+Available tools:"
+    echo "--------------------------------------------------------------------------------"
+
+    local tools=("aws" "node" "npm" "npx" "yarn" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "cdktf" "python" "promptfoo" "promptfoo-server")
+    local descriptions=("AWS CLI and SSO tools" "Node.js (v14-v24)" "NPM package manager" "NPX package runner" "Yarn package manager" "Yarn Berry (v2+)" "Serverless Framework" "Terraform CLI" "Ookla Speedtest CLI" "Google Cloud CLI" "Docker Compose visualizer" "Playwright testing" "CDK for Terraform" "Python interpreter" "Promptfoo evaluation" "Promptfoo server")
+
+    local i=1
+    for tool in "${tools[@]}"; do
+        local status="  "
+        if is_tracked "$tool"; then
+            status="✓ "
+        fi
+        printf "%2d. [%s] %-20s - %s\n" "$i" "$status" "$tool" "${descriptions[$((i-1))]}"
+        ((i++))
+    done
+
+    echo "--------------------------------------------------------------------------------"
+    echo ""
+    echo "Options:"
+    echo "  • Enter numbers (e.g., '1 2 5' to install aws, node, and yarn)"
+    echo "  • Type 'all' to install all tools"
+    echo "  • Type 'done' or press Enter to finish"
+    echo "  • Type 'uninstall <numbers>' to uninstall (e.g., 'uninstall 1 3')"
+    echo ""
+
+    while true; do
+        read -p "Your selection: " selection
+
+        # Exit conditions
+        if [ -z "$selection" ] || [ "$selection" = "done" ] || [ "$selection" = "exit" ] || [ "$selection" = "quit" ]; then
+            echo "Setup complete!"
+            break
+        fi
+
+        # Install all
+        if [ "$selection" = "all" ]; then
+            echo "Installing all tools..."
+            install_all
+            show_msg "> All tools installed successfully!"
+            break
+        fi
+
+        # Uninstall mode
+        if [[ "$selection" =~ ^uninstall ]]; then
+            local numbers=$(echo "$selection" | sed 's/uninstall //')
+            for num in $numbers; do
+                if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#tools[@]}" ]; then
+                    local tool="${tools[$((num-1))]}"
+                    if is_tracked "$tool"; then
+                        echo "Uninstalling $tool..."
+                        # Use explicit function dispatch for security
+                        case "$tool" in
+                            aws|node|npm|npx|yarn|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|cdktf|python|promptfoo|promptfoo-server)
+                                "uninstall_${tool}"
+                                ;;
+                            *)
+                                echo "Error: Invalid tool name: $tool"
+                                ;;
+                        esac
+                    else
+                        echo "Tool '$tool' is not installed."
+                    fi
+                else
+                    echo "Invalid number: $num"
+                fi
+            done
+            continue
+        fi
+
+        # Install selected tools
+        for num in $selection; do
+            if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#tools[@]}" ]; then
+                local tool="${tools[$((num-1))]}"
+                if is_tracked "$tool"; then
+                    echo "Tool '$tool' is already installed. Skipping..."
+                else
+                    echo "Installing $tool..."
+                    # Use explicit function dispatch for security
+                    case "$tool" in
+                        aws|node|npm|npx|yarn|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|cdktf|python|promptfoo|promptfoo-server)
+                            "install_${tool}"
+                            ;;
+                        *)
+                            echo "Error: Invalid tool name: $tool"
+                            ;;
+                    esac
+                fi
+            else
+                echo "Invalid selection: $num (must be 1-${#tools[@]})"
+            fi
+        done
+
+        echo ""
+        echo "Select more tools, type 'done', or press Enter to finish:"
+    done
+}
+
+# Command handling
+
+handle_install() {
+    if [ $# -eq 0 ]; then
+        echo "Error: No tools specified."
+        echo "Usage: ${0} install <tool1> <tool2> ... | all"
+        exit 1
+    fi
+
+    # Handle help request
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "help" ]; then
+        show_help
+        exit 0
+    fi
+
+    if [ "$1" = "all" ]; then
+        install_all
+        show_msg "> All tools installed successfully!"
+        return
+    fi
+
+    for tool in "$@"; do
+        case "$tool" in
+            aws|node|npm|npx|yarn|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|cdktf|python|promptfoo|promptfoo-server)
+                if is_tracked "$tool"; then
+                    echo "Tool '$tool' is already installed."
+                else
+                    install_$tool
+                fi
+                ;;
+            *)
+                echo "Error: Unknown tool '$tool'"
+                echo "Run '${0} help' for usage information"
+                exit 1
+                ;;
+        esac
+    done
+}
+
+handle_uninstall() {
+    if [ $# -eq 0 ]; then
+        echo "Error: No tools specified."
+        echo "Usage: ${0} uninstall <tool1> <tool2> ..."
+        exit 1
+    fi
+
+    # Handle help request
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "help" ]; then
+        show_help
+        exit 0
+    fi
+
+    for tool in "$@"; do
+        case "$tool" in
+            aws|node|npm|npx|yarn|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|cdktf|python|promptfoo|promptfoo-server)
+                if is_tracked "$tool"; then
+                    uninstall_$tool
+                else
+                    echo "Tool '$tool' is not installed."
+                fi
+                ;;
+            *)
+                echo "Error: Unknown tool '$tool'"
+                echo "Run '${0} help' for usage information"
+                exit 1
+                ;;
+        esac
+    done
+}
+
+handle_list() {
+    local installed=$(list_installed)
+
+    if [ -z "$installed" ]; then
+        echo "No tools are currently installed."
+    else
+        echo "Installed tools:"
+        echo "--------------------------------------------------------------------------------"
+        echo "$installed"
+        echo "--------------------------------------------------------------------------------"
+    fi
+}
+
 # Main
 
-show_begin
+if [ $# -eq 0 ]; then
+    # No arguments - run interactive mode
+    show_begin
+    interactive_menu
+else
+    # Command-line mode
+    command="$1"
+    shift
 
-PS3="Choose an option: "
-select opt in ALL aws terraform cdktf gcloud node npm npx yarn yarn-berry serverless speedtest docker-compose-viz playwright python promptfoo promptfoo-server EXIT; do
-    case ${opt} in
-    ALL) install_all ;;
-    aws) install_aws ;;
-    terraform) install_terraform ;;
-    cdktf) install_cdktf ;;
-    gcloud) install_gcloud ;;
-    node) install_node ;;
-    npm) install_npm ;;
-    npx) install_npx ;;
-    yarn) install_yarn ;;
-    yarn-berry) install_yarn-berry ;;
-    serverless) install_serverless ;;
-    speedtest) install_speedtest ;;
-    docker-compose-viz) install_docker-compose-viz ;;
-    playwright) install_playwright ;;
-    cdktf) install_cdktf ;;
-    python) install_python ;;
-    promptfoo) install_promptfoo ;;
-    promptfoo-server) install_promptfoo-server ;;
-    EXIT) show_msg "Bye o/" ;;
-    *) show_help "Error: incorrect option." && exit 2 ;;
+    case "$command" in
+        install)
+            show_begin
+            handle_install "$@"
+            ;;
+        uninstall)
+            handle_uninstall "$@"
+            ;;
+        status)
+            show_status
+            exit 0
+            ;;
+        list)
+            handle_list
+            exit 0
+            ;;
+        help|--help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Error: Unknown command '$command'"
+            echo ""
+            show_help
+            exit 1
+            ;;
     esac
-    break
-done
+fi
 
-# TODO: add 'uninstall' option
-
+# End message
 show_msg "> Check the scripts in '${BASEDIR}/bin/' folder."
-
 show_msg "> Check the '${BASEDIR}/README.md' file."
-
-# End
-
 show_msg "Thanks for using My Ez CLI ;)"

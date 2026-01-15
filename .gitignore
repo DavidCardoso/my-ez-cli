@@ -5,8 +5,7 @@
 # npm, yarn...
 *.log
 **/yarn*/.cache
-.yarn/
-!.yarn/releases/yarn-*.cjs
+**/.yarn/
 
 # IDEs
 .vscode/

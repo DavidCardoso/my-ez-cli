@@ -1,8 +1,0 @@
-#!/bin/sh
-set -e
-
-# override default image
-IMAGE=node:16-alpine
-
-# import & run the local default npm script
-. npm

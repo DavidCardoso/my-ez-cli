@@ -1,29 +1,27 @@
 #!/bin/sh
 set -e
 
-# Check README for usage info
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
 
-# Get the directory where this script is located (resolve symlinks)
-SCRIPT_PATH="$0"
-while [ -L "$SCRIPT_PATH" ]; do
-    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
-    case "$SCRIPT_PATH" in
-        /*) ;;
-        *) SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH" ;;
-    esac
-done
-SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+# Check Docker availability
+check_docker
 
-# Source utilities
-. "$SCRIPT_DIR/utils/docker.sh"
-
-IMAGE=${IMAGE:-"node:22-alpine"}
+# Configs
+IMAGE=${IMAGE:-"node:24-alpine"}
 WORKDIR=/app
-NPMRC_FILE=$HOME/.npmrc
+NPM_TOKEN=${NPM_TOKEN:-""}
+
+# Container naming and labeling
+CONTAINER_NAME=$(get_container_name "npx")
+CONTAINER_LABELS=$(get_container_labels "npx" "$IMAGE")
+NPMRC_FILE=${NPMRC_FILE:-"$HOME/.npmrc"}
 NPM_CACHE_FOLDER=${NPM_CACHE_FOLDER:-"$HOME/.npm"}
-YARNRC_FILE=$HOME/.yarnrc.yml
-YARN_CACHE_FOLDER=${YARN_CACHE_FOLDER:-"$HOME/.cache/yarn"}
+YARNRC_FILE=${YARNRC_FILE:-"$HOME/.yarnrc.yml"}
+YARN_CACHE_FOLDER=${YARN_CACHE_FOLDER:-"$HOME/.cache/yarn/"}
+CONTAINER_YARN_CACHE_FOLDER=${CONTAINER_YARN_CACHE_FOLDER:-"/root/.cache/yarn/"}
 
 # Create .npmrc if it doesn't exist
 if [ ! -f "$NPMRC_FILE" ]; then
@@ -45,22 +43,23 @@ if [ ! -d "$YARN_CACHE_FOLDER" ]; then
     mkdir -p "$YARN_CACHE_FOLDER"
 fi
 
-# Prepare the flag to bind the ports to the container
-if [ ! -z "$MEC_BIND_PORTS" ]; then
-    for PORT in $MEC_BIND_PORTS; do
-        PORTS="$PORTS -p $PORT"
-    done
-fi
+# Get port flags from MEC_BIND_PORTS
+PORTS=$(get_port_flags)
+
+# Setup logging (if enabled)
+setup_logging "npx"
 
 # should be executed from your working directory
 docker run -i $(get_tty_flag) --rm \
+    --name $CONTAINER_NAME \
+    $CONTAINER_LABELS \
     --env NPM_TOKEN=$NPM_TOKEN \
     --env NPM_CACHE_FOLDER=/root/.npm \
     --env YARN_CACHE_FOLDER=/root/.cache/yarn/ \
     --volume $NPMRC_FILE:/root/.npmrc \
     --volume $NPM_CACHE_FOLDER:/root/.npm \
     --volume $YARNRC_FILE:/root/.yarnrc.yml \
-    --volume $YARN_CACHE_FOLDER:/root/.cache/yarn \
+    --volume $YARN_CACHE_FOLDER:$CONTAINER_YARN_CACHE_FOLDER \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     $PORTS \

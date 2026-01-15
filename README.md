@@ -1,10 +1,17 @@
 # My Ez CLI
 
-Tools via **Unix Command Line Interface** with no installation and just using **Docker** + **Shell Script**.
+CLI Devtools over Docker.
+
+> **v1.0.0 Release Candidate**: My Ez CLI is currently being upgraded to v1.0.0 with enhanced features, improved testing, and better documentation. See [ROADMAP.md](./ROADMAP.md) for details.
+
+## Table of Contents
 
 - [My Ez CLI](#my-ez-cli)
+  - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
+  - [Docker Container Management](#docker-container-management)
+  - [Documentation](#documentation)
   - [Usage examples](#usage-examples)
     - [AWS CLI](#aws-cli)
       - [AWS Get Session Token](#aws-get-session-token)
@@ -46,32 +53,50 @@ Tools via **Unix Command Line Interface** with no installation and just using **
 
 ## Setup
 
-It adds aliases to your `~/.zshrc` file and symbolic links to your `/usr/local/bin/` folder:
+Run the interactive setup script to install tools:
 
 ```shell
 ./setup.sh
-# --------------------------------------------------------------------------------
-#                   My Ez CLI • Setup
-# --------------------------------------------------------------------------------
-#   Hope you enjoy it! :D
-# --------------------------------------------------------------------------------
-#   Note: Aliases may be created in '~/.zshrc' file...
-# --------------------------------------------------------------------------------
-#   Note: Symbolic links may be created in '/usr/local/bin/' folder...
-# --------------------------------------------------------------------------------
-#   Warning: Root access may be needed.
-# --------------------------------------------------------------------------------
-#   GitHub: https://github.com/DavidCardoso/my-ez-cli
-# --------------------------------------------------------------------------------
-
-# 1) ALL			 7) npm			    13) docker-compose-viz
-# 2) aws			 8) npx			    14) playwright
-# 3) terraform		 9) yarn		    15) python
-# 4) cdktf		    10) yarn-berry		16) promptfoo
-# 5) gcloud		    11) serverless		17) promptfoo-server
-# 6) node			12) speedtest		18) EXIT
-# Choose an option:
 ```
+
+The setup script adds symbolic links to `/usr/local/bin/` and aliases to `~/.zshrc`.
+
+For detailed setup documentation, see [SETUP.md](./SETUP.md).
+
+## Docker Container Management
+
+All My Ez CLI containers use consistent naming and labeling for easy management:
+
+**Container Naming**: `mec-{tool}-{timestamp}` (e.g., `mec-node-1700000000`)
+
+**Container Labels**:
+- `com.my-ez-cli.project=my-ez-cli` - Identifies project
+- `com.my-ez-cli.tool={tool}` - Identifies the tool
+- `com.my-ez-cli.image={image}` - Source Docker image
+
+**Useful Commands**:
+```shell
+# List all My Ez CLI containers
+docker ps -a --filter "name=mec-"
+
+# List by label
+docker ps -a --filter "label=com.my-ez-cli.project=my-ez-cli"
+
+# Remove stopped My Ez CLI containers
+docker container prune --filter "label=com.my-ez-cli.project=my-ez-cli"
+
+# List all My Ez CLI images
+docker images --filter "label=com.my-ez-cli.project=my-ez-cli"
+```
+
+## Documentation
+
+- **[SETUP.md](./SETUP.md)** - Comprehensive setup guide with installation modes, troubleshooting, and advanced usage
+- **[DOCKER_HUB.md](./DOCKER_HUB.md)** - Docker Hub setup, image management, CI/CD workflows, and GitHub Secrets configuration
+- **[tests/README.md](./tests/README.md)** - Testing framework documentation, writing tests, and running test suites
+- **[ROADMAP.md](./ROADMAP.md)** - v1.0.0 upgrade roadmap with planned features and implementation phases
+- **[CLAUDE.md](./CLAUDE.md)** - Development guidelines and architecture documentation for contributors
+- **[config/aws/](./config/aws/)** - AWS CLI configuration examples and authentication setup
 
 ## Usage examples
 
@@ -161,7 +186,7 @@ PYENV_VERSION=3.9.19 python main.py
 
 ### NodeJS
 
-> It is using Node 22 (current LTS version) as default.
+> It is using Node 24 (current LTS version) as default.
 
 ```shell
 # see node version
@@ -177,13 +202,9 @@ node somefile.js
 #### Using other NodeJS versions
 
 ```shell
-# just add the node version as a suffix
-node14 -v
-node16 -v
-node18 -v
-node20 -v
+# Node 22 and 24 LTS are supported
 node22 -v
-node24 -v
+node24 -v  # default
 ```
 
 #### Using NodeJS, npm, npx, and yarn with custom ports
@@ -235,7 +256,7 @@ registry=https://private.npm.registry.com/
 
 ### NPM
 
-> It is using NodeJS 22 as default.
+> It is using NodeJS 24 as default.
 
 ```shell
 # see npm version
@@ -266,7 +287,7 @@ npm22 -v
 
 ### NPX
 
-> It is using NodeJS 22 as default.
+> It is using NodeJS 24 as default.
 
 ```shell
 # exec a standalone package
@@ -287,7 +308,7 @@ npx cowsay "Hello!"
 
 ### Yarn
 
-> It is using Node 22.
+> It is using Node 24.
 
 ```shell
 # see yarn version
@@ -562,33 +583,6 @@ gcloud storage ls
 > [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
 
 > [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
-
-### Graph Viz for docker compose
-
-This will create a dependency graph in `display` only, `dot`, or `image` formats
-based on a docker-compose YAML file (defaults to `./docker-compose.yml`).
-
-> For more info, please check its [official documentation](https://github.com/pmsipilot/docker-compose-viz?tab=readme-ov-file#usage).
-
-```shell
-# navigate to the directory where the docker-compose YAML file is
-cd /my/project/with/docker-compose-file/
-
-# using just default options
-docker-compose-viz render
-
-# using a custom docker compose file
-docker-compose-viz render ./my-custom-docker-compose.yml
-
-# dot output format
-docker-compose-viz render --output-format=dot
-
-# image output format
-docker-compose-viz render --output-format=image
-
-# setting the path/name of the output file
-docker-compose-viz render --output-format=image --output-file=graph.png
-```
 
 ### Playwright
 
