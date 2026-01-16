@@ -1,0 +1,58 @@
+#!/bin/bash
+set -e
+
+# Image configuration
+IMAGE_REPO=davidcardoso/my-ez-cli
+IMAGE_TOOL=claude
+TZ=${TZ:-"Europe/Amsterdam"}
+
+# Auto-detect platform if not set
+if [ -z "$PLATFORM" ]; then
+    # Detect local architecture
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  PLATFORM=linux/amd64 ;;
+        aarch64|arm64) PLATFORM=linux/arm64 ;;
+        *)       PLATFORM=linux/amd64 ;;
+    esac
+    echo "PLATFORM not set, auto-detected: ${PLATFORM}"
+fi
+
+# Build configuration via env vars
+if [ -z "$IMAGE_TAG" ]; then
+    IMAGE_TAG=latest
+    echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
+fi
+
+if [ -z "$CLAUDE_CODE_VERSION" ]; then
+    CLAUDE_CODE_VERSION=latest
+    echo "CLAUDE_CODE_VERSION not set, using default: ${CLAUDE_CODE_VERSION}"
+fi
+
+# Build options (use --load for local single-platform builds, --push for CI multi-platform)
+BUILD_OPTS="--platform ${PLATFORM}"
+
+if [ "$CI" = "true" ]; then
+    # CI mode: multi-platform build with push (if enabled)
+    echo "CI mode detected"
+    if [ "$PUSH" = "true" ]; then
+        BUILD_OPTS="${BUILD_OPTS} --push"
+    fi
+else
+    # Local mode: single-platform build with load
+    BUILD_OPTS="${BUILD_OPTS} --load"
+fi
+
+echo "=========================================================="
+echo "Building '${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG}'..."
+echo "Platform: ${PLATFORM}"
+echo "Claude Code version: ${CLAUDE_CODE_VERSION}"
+echo "Build options: ${BUILD_OPTS}"
+echo "=========================================================="
+
+docker buildx build \
+    ${BUILD_OPTS} \
+    --build-arg CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION} \
+    --build-arg TZ=${TZ} \
+    --tag ${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG} \
+    .

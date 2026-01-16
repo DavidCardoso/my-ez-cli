@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
 SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
 MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-IMAGE=node:22-alpine
+export IMAGE=node:22-alpine
 
 . "${MEC_BASE_DIR}/bin/yarn"

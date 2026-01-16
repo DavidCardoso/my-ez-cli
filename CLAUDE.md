@@ -4,24 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## v1.0.0 Upgrade Status
 
-**Phase 1 Complete**: My Ez CLI has completed Phase 1 of the v1.0.0 upgrade. See [ROADMAP.md](./ROADMAP.md) for the complete upgrade plan.
+**Phase 1 + Phase 2 + Phase 2.8 Complete**: My Ez CLI v1.0.0 includes Docker tooling (Phase 1), AI integration (Phase 2), and UX hardening (Phase 2.8). See [ROADMAP.md](./docs/ROADMAP.md) for the complete plan.
 
-### Completed (Phase 1)
+### Completed (Phase 1 — Foundation)
 - ✓ Path resolution fixes with `common.sh` utilities
 - ✓ Multi-select installation in setup.sh
-- ✓ Comprehensive test framework (73 tests with bats-core)
+- ✓ Comprehensive test framework (bats-core)
 - ✓ Docker Hub migration for custom images
 - ✓ Enhanced documentation (SETUP.md, DOCKER_HUB.md, tests/README.md)
 - ✓ GitHub Actions CI/CD with multi-platform builds
 - ✓ Container naming and labeling for better management
 
-### Upcoming (Phase 2+)
-- NPM package publishing with `mec` alias pattern
-- Log persistence with filtering and MCP integration
-- TUI/Web dashboards for monitoring
-- AI integration (BYOK) and more
+### Completed (Phase 2 — AI Integration)
+- ✓ Claude Code as first-class tool (`bin/claude` + Docker image)
+- ✓ I/O middleware (Python) for filtering and token optimization
+- ✓ All analysis through Claude Code (no rule-based analyzers)
+- ✓ `mec ai` CLI subcommands (status, enable, disable, test, analyze)
+- ✓ All bin scripts wired to `exec_with_ai()` for automatic analysis
+- ✓ API key, OAuth long-lived token, or web login supported (see [docker/claude/README.md](./docker/claude/README.md#authentication))
 
-Follow the roadmap phases and priority matrix when implementing changes.
+### Completed (Phase 2.8 — Hardening & UX)
+- ✓ `bin/yarn-plus` wired to `exec_with_ai()` (last remaining unwired script)
+- ✓ Conflict detection for all CLI-sharing tools (node, npm, npx, yarn, terraform, python, aws, gcloud, serverless, speedtest, playwright, promptfoo) — 3-option menu: side-by-side as `mec-<tool>`, replace, skip
+- ✓ `mec setup` / `mec install <tool>` / `mec uninstall <tool>` top-level subcommands
+- ✓ Unit tests for conflict detection functions in `tests/unit/test-setup.bats`
+- ✓ Manual testing checklist in `docs/SETUP.md`
+
+### Future (v1.1.0+)
+- Shell completion, `mec doctor`, Homebrew formula
+- Web UI (log viewer), PostgreSQL log storage
+- Log encryption, Elasticsearch integration
+
+Follow the roadmap phases when implementing changes.
 
 ## Project Overview
 
@@ -45,10 +59,12 @@ All wrapper scripts in `bin/` follow a consistent pattern:
 
 - `bin/`: Contains all executable wrapper scripts
 - `bin/utils/`: Shared utilities (e.g., `common.sh` for common functions, `docker.sh` for TTY detection)
-- `docker/`: Custom Dockerfiles for tools requiring special builds (aws-sso-cred, serverless, speedtest, yarn-berry, cdktf)
+- `docker/`: Custom Dockerfiles for tools requiring special builds (aws-sso-cred, serverless, speedtest, yarn-berry, claude)
 - `config/`: Configuration examples and documentation (currently only AWS)
+- `docs/`: Project documentation (see [CODE_STANDARDS.md](./docs/CODE_STANDARDS.md) and [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md))
 - `tests/`: Test framework using bats-core (73 tests: 65 unit, 8 integration)
 - `setup.sh`: Installation script that creates symbolic links in `/usr/local/bin/` and aliases in `~/.zshrc`
+- `services/ai/`: AI analysis service (Python 3.14) - See [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)
 
 ### Docker Hub Images
 
@@ -57,13 +73,15 @@ Custom Docker images are hosted on Docker Hub in a single repository with tool-s
 **Repository**: `davidcardoso/my-ez-cli`
 
 **Images**:
+- `davidcardoso/my-ez-cli:ai-service-latest` - AI I/O middleware service
 - `davidcardoso/my-ez-cli:aws-sso-cred-latest` - AWS SSO credential retrieval
-- `davidcardoso/my-ez-cli:cdktf-latest` - CDK for Terraform
+- `davidcardoso/my-ez-cli:claude-latest` - Claude Code CLI
 - `davidcardoso/my-ez-cli:serverless-latest` - Serverless Framework
 - `davidcardoso/my-ez-cli:speedtest-latest` - Ookla Speedtest CLI
 - `davidcardoso/my-ez-cli:yarn-berry-latest` - Yarn Berry (v2+)
+- `davidcardoso/my-ez-cli:yarn-plus-latest` - Yarn with extra tools (git, curl, jq)
 
-For detailed information about Docker Hub setup, GitHub Secrets, and CI/CD workflows, see [DOCKER_HUB.md](./DOCKER_HUB.md).
+For detailed information about Docker Hub setup, GitHub Secrets, and CI/CD workflows, see [DOCKER_HUB.md](./docs/DOCKER_HUB.md).
 
 ### Installation System
 
@@ -143,12 +161,13 @@ bash -c "source ./setup.sh && install_node"
 ### Node.js Multi-Version Support
 
 Scripts support multiple Node.js LTS versions through version-suffixed commands:
-- `node`, `node24`: Node.js 24 (default/LTS)
-- `node22`: Node.js 22 (LTS)
+- `node`, `node22`: Node.js 22 (default/Active LTS)
+- `node24`: Node.js 24 (LTS)
+- `node20`: Node.js 20 (maintenance)
 
-Same pattern applies to `npm` and `yarn` (e.g., `npm22`, `yarn22`).
+Same pattern applies to `npm`, `npx`, and `yarn` (e.g., `npm20`, `npm22`, `npx20`, `npx22`, `yarn20`, `yarn22`).
 
-Each version-specific script (e.g., `bin/node22`) simply sets the `IMAGE` environment variable and sources the base script.
+Each version-specific script (e.g., `bin/node22`) simply sets the `IMAGE` environment variable with `export` and sources the base script.
 
 ## Adding New Tools
 
@@ -233,6 +252,57 @@ docker run -i $(get_tty_flag) --rm ...
 - Use `gcloud-login` for interactive authentication
 - Credentials stored in `$HOME/.config/gcloud/`
 - Application default credentials at `application_default_credentials.json`
+
+## AI Integration
+
+My Ez CLI uses Claude Code for all AI-powered analysis. The Python middleware (`services/ai/`) is a pure I/O layer for filtering and token optimization — no rule-based analyzers.
+
+### Documentation
+
+**⭐ IMPORTANT:** Read these documents for AI work:
+- [CODE_STANDARDS.md](./docs/CODE_STANDARDS.md) - Global code standards (logging, type hints, error handling)
+- [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md) - AI architecture, Claude Code integration, filtering
+
+### Architecture
+
+- **I/O middleware** (`services/ai/`): Python 3.14 service. Handles output filtering and token optimization only. No AI API calls, no rule-based analysis.
+- **Claude Code** (`bin/claude`): First-class tool running in Docker (node:20-slim). Sole analysis engine. Requires an API key or OAuth token for automated use.
+- **Single-path flow**: `exec_with_ai()` in `bin/utils/common.sh` invokes Claude Code when `MEC_AI_ENABLED=true` and a valid credential is set.
+
+### Key Information
+
+- **I/O middleware:** Python 3.14, Docker container (`davidcardoso/my-ez-cli:ai-service-latest`) — filter only
+- **Claude Code:** Docker container (`davidcardoso/my-ez-cli:claude-latest`) — all analysis
+- **Auth:** API key, OAuth long-lived token, or web login — see [docker/claude/README.md](./docker/claude/README.md#authentication)
+- **CLI commands:** `mec ai status`, `mec ai enable`, `mec ai test`, `mec ai analyze <log>`
+
+### Code Standards (Key Points)
+
+From [CODE_STANDARDS.md](./docs/CODE_STANDARDS.md):
+
+1. **Logging:** Minimize noise - most logs should be `logger.debug()`, not `logger.info()`
+2. **Error Handling:** Always log → custom exception → chain with `from e`
+3. **Testing:** 80% coverage minimum, use mocks for external dependencies
+
+### Working with AI Service
+
+1. **Before coding:** Read [CODE_STANDARDS.md](./docs/CODE_STANDARDS.md) and [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)
+2. **The middleware is filter-only** — do not add analyzers; all analysis goes through Claude Code
+3. **Test thoroughly:** Write comprehensive tests for filter engine changes
+4. **Build and test:**
+
+```bash
+# Build AI service
+cd docker/ai-service && ./build
+
+# Run all tests (filter engine only)
+docker run --rm --entrypoint python \
+  davidcardoso/my-ez-cli:ai-service-latest \
+  -m pytest tests/ -v
+
+# Test Claude Code
+mec ai test
+```
 
 ## Contributing
 

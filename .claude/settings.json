@@ -1,0 +1,87 @@
+{
+  "project": "my-ez-cli",
+  "version": "1.0.0-rc",
+  "model": "sonnet",
+  "preferences": {
+    "communication": {
+      "emoji_usage": "minimal",
+      "emoji_usage_guidelines": [
+        "Only use emojis when they add meaningful value to understanding",
+        "Acceptable uses: comparisons (→, vs), status indicators (✓, ✗), warnings (⚠)",
+        "Avoid in: section titles, subtitles, list items (unless indicating status)",
+        "Avoid excessive decorative emojis in general communication"
+      ],
+      "tone": "professional and concise",
+      "verbosity": "minimal",
+      "response_style": [
+        "Keep responses brief - user can see file changes in real-time",
+        "Avoid lengthy summaries of what was done at the end",
+        "Let tool outputs speak for themselves",
+        "Only explain when something is non-obvious or potentially surprising",
+        "Skip recap sections unless explicitly requested",
+        "For simple edits/tasks: just do the work without commentary"
+      ],
+      "documentation_style": "clear and straightforward",
+      "plan_mode": "always activate plan mode before making editions related to architecture decisions, implementing new features, and not small refactoring tasks"
+    },
+    "development": {
+      "breaking_changes_allowed": true,
+      "breaking_changes_reason": "v1.0.0 is first stable release from v0.x.x beta",
+      "supported_node_versions": ["22", "24"],
+      "default_node_version": "22",
+      "focus": "actively supported LTS versions only"
+    },
+    "tools": {
+      "core_tools": [
+        "aws",
+        "node",
+        "npm",
+        "npx",
+        "yarn",
+        "yarn-berry",
+        "yarn-plus",
+        "terraform",
+        "serverless",
+        "python",
+        "gcloud",
+        "playwright",
+        "speedtest",
+        "promptfoo",
+        "promptfoo-server"
+      ],
+      "custom_docker_images": [
+        "yarn-berry",
+        "yarn-plus",
+        "serverless",
+        "aws-sso-cred",
+        "speedtest",
+        "ai-service",
+        "claude"
+      ]
+    },
+    "testing": {
+      "framework": "bats-core",
+      "total_tests": 147,
+      "custom_images_in_ci": false,
+      "custom_images_in_ci_reason": "Avoid long build times (e.g., CDKTF timeout issues)"
+    }
+  },
+  "notes": [
+    "This file stores global instructions and preferences for Claude Code sessions",
+    "Update this file when project conventions or preferences change",
+    "Reference docs/ folder for detailed project guidance"
+  ],
+  "code_quality": {
+    "standards_document": "docs/CODE_STANDARDS.md",
+    "standards_description": "Code quality standards",
+    "applies_to": ["services/**/*.py"],
+    "enforcement": {
+      "type_hints": "required",
+      "custom_exceptions": "required",
+      "error_logging": "required with exc_info=True",
+      "exception_chaining": "required with 'from e'",
+      "line_length": 100,
+      "docstring_style": "google"
+    }
+  }
+}

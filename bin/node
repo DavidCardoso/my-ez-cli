@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -9,8 +9,8 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-# Defaults to NodeJS v24 if no version is specified
-IMAGE=${IMAGE:-"node:24-alpine"}
+# Defaults to NodeJS v22 if no version is specified
+IMAGE=${IMAGE:-"node:22-alpine"}
 WORKDIR=/app
 
 # Container naming and labeling
@@ -21,13 +21,16 @@ CONTAINER_LABELS=$(get_container_labels "node" "$IMAGE")
 PORTS=$(get_port_flags)
 
 # Setup logging (if enabled)
-setup_logging "node"
+setup_logging "node" "$IMAGE" "node ${*}"
 
-# Run container
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     $PORTS \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis (port detection)
+exec_with_ai "$DOCKER_CMD"

@@ -1,0 +1,197 @@
+# ============================================================================
+# My Ez CLI - Default Configuration
+# ============================================================================
+# This is the default configuration template for my-ez-cli
+# Copy this to ~/.my-ez-cli/config.yaml and customize as needed
+# Version: 1.0.0
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Logs Configuration
+# ----------------------------------------------------------------------------
+logs:
+  # Enable/disable logging system
+  enabled: false
+
+  # Log level: debug, info, warn, error
+  level: info
+
+  # Log format: json, text
+  format: json
+
+  # Log directory (default: ~/.my-ez-cli/logs)
+  # directory: ~/.my-ez-cli/logs
+
+  # Log rotation
+  rotation:
+    # Rotation strategy: daily, weekly, size-based
+    strategy: daily
+
+    # Compress logs older than N days
+    compress_after_days: 7
+
+    # Delete logs older than N days
+    retention_days: 30
+
+    # Max size in MB (for size-based rotation)
+    max_size_mb: 100
+
+# ----------------------------------------------------------------------------
+# AI Integration Configuration
+# ----------------------------------------------------------------------------
+# Architecture: I/O middleware (Python) + Claude Code (analysis)
+# Middleware: Filtering and security layer (no AI API calls)
+# Analysis: Claude Code CLI — requires ANTHROPIC_API_KEY
+ai:
+  # Enable/disable AI integration
+  enabled: false
+
+  # I/O filtering for token optimization
+  # Patterns are applied to tool output before sending to Claude Code
+  # This is the single filtering layer — tool-specific noise patterns are included here
+  filters:
+    # Patterns to filter from tool output (reduce noise)
+    ignore_output:
+      # npm / yarn noise
+      - "^npm warn"
+      - "^npm WARN"
+      - "^npm notice"
+      - "^yarn warning"
+      # peer/deprecation warnings (was: suppress_peer_warnings, suppress_deprecation_warnings)
+      - "^npm warn peer"
+      - "^npm WARN peer"
+      - "^warning.*peer"
+      # install progress (was: suppress_install_progress)
+      - "^Downloading.*\\d+%"
+      - "^added \\d+ packages"
+      - "^\\d+ packages are looking"
+      # terraform progress (was: suppress_refresh_progress, suppress_provider_downloads)
+      - "^.*: Refreshing state\\.\\.\\."
+      - "^.*: Still refreshing\\.\\.\\."
+      - "Downloading registry\\."
+      - "Installing provider"
+      # python pip progress (was: suppress_pip_progress)
+      - "^Downloading .* \\d+(\\.\\d+)?[kMG]B"
+      - "^Collecting "
+      - "^  Downloading "
+      - "^Installing collected packages"
+      # aws progress bars (was: suppress_progress_bars, suppress_pagination)
+      - "\\[[-=>#]+"
+      - "^Completed \\d+"
+      # general noise
+      - "├──|└──|│"
+      - "^\\s*$"
+
+    # Patterns to filter from input context
+    ignore_input:
+      - "node_modules/"
+      - "*.lock"
+      - ".git/"
+
+  # Claude Code integration settings
+  claude:
+    # Docker image for Claude Code
+    image: "davidcardoso/my-ez-cli:claude-latest"
+
+    # Max turns for single-shot analysis
+    max_turns: 1
+
+    # Output format for automated analysis: text, json
+    output_format: text
+
+    # Model for automated analysis: sonnet, haiku, opus, or full model ID
+    # Default: sonnet — better balance of quality and cost vs opus
+    model: sonnet
+
+    # Max output tokens (32000–64000; lower = shorter, cheaper responses)
+    # Default: 8096 — concise enough for actionable analysis
+    max_output_tokens: 8096
+
+    # Effort level for Opus only: low, medium, high
+    # Ignored for sonnet/haiku
+    effort_level: medium
+
+# ----------------------------------------------------------------------------
+# Tool-Specific Settings
+# NOT YET IMPLEMENTED — keys are defined but not read at runtime yet
+# ----------------------------------------------------------------------------
+tools:
+  # Node.js settings
+  node:
+    # Default version (22, 24)
+    default_version: 22
+
+    # Auto-bind ports
+    auto_bind_ports: false
+
+  # Terraform settings
+  terraform:
+    # Auto-load .env file
+    auto_load_env: true
+
+    # Default workspace
+    # default_workspace: default
+
+  # AWS settings
+  aws:
+    # Default profile
+    # default_profile: default
+
+    # Default region
+    # default_region: us-east-1
+
+  # Python settings
+  python:
+    # Default version
+    # default_version: 3.12
+
+# ----------------------------------------------------------------------------
+# Performance Settings
+# NOT YET IMPLEMENTED — keys are defined but not read at runtime yet
+# ----------------------------------------------------------------------------
+performance:
+  # Docker image caching
+  cache:
+    # Enable image caching
+    enabled: true
+
+    # Auto-pull images on install
+    auto_pull: false
+
+  # Container cleanup
+  cleanup:
+    # Auto-remove stopped containers
+    auto_remove: true
+
+    # Cleanup interval in days
+    cleanup_after_days: 7
+
+# ----------------------------------------------------------------------------
+# Privacy and Security
+# NOT YET IMPLEMENTED — keys are defined but not read at runtime yet
+# ----------------------------------------------------------------------------
+privacy:
+  # Telemetry (currently not implemented)
+  telemetry:
+    enabled: false
+
+  # Sensitive data redaction in logs
+  redaction:
+    redact_api_key: true
+    redact_token: true
+    redact_credential: true
+    redact_email: true
+    redact_phone_number: true
+    redact_address: true
+    redact_ip: true
+
+# ----------------------------------------------------------------------------
+# Experimental Features
+# NOT YET IMPLEMENTED — keys are defined but not read at runtime yet
+# ----------------------------------------------------------------------------
+experimental:
+  # Enable experimental features
+  enabled: false
+
+  # Feature flags
+  features: []

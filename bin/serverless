@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -12,7 +12,7 @@ check_docker
 WORKDIR=/app
 
 # see "../docker/serverless/" for more info.
-IMAGE=davidcardoso/my-ez-cli:serverless-latest
+IMAGE=${IMAGE:-"$MEC_IMAGE_SERVERLESS"}
 
 # via env var
 if [ -z "${STACK_NAME}"]; then
@@ -24,20 +24,32 @@ CONTAINER_NAME=$(get_container_name "serverless")
 CONTAINER_LABELS=$(get_container_labels "serverless" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "serverless"
+setup_logging "serverless" "$IMAGE" "serverless ${*}"
 
-# run from your working directory
-docker run -i $(get_tty_flag) --rm \
-    --platform linux/amd64 \
+# Detect platform (matches build script logic; override with PLATFORM env var)
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)        PLATFORM=${PLATFORM:-linux/amd64} ;;
+    aarch64|arm64) PLATFORM=${PLATFORM:-linux/arm64} ;;
+    *)             PLATFORM=${PLATFORM:-linux/amd64} ;;
+esac
+
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
+    --platform $PLATFORM \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --env AWS_PROFILE=${AWS_PROFILE} \
     --env AWS_SDK_LOAD_CONFIG=1 \
     --env STACK_NAME=${STACK_NAME} \
-    --env SLS_DEBUG=${SLS_DEBUG} \
+    --env SLS_DEBUG="${SLS_DEBUG:-0}" \
+    --env DEBUG="${DEBUG:-0}" \
     --volume ${HOME}/.aws:/root/.aws \
     --volume ${PWD}:${WORKDIR} \
     --workdir ${WORKDIR} \
     --entrypoint serverless \
-    --network="host" \
-    ${IMAGE} "${@}"
+    --network=host \
+    ${IMAGE} $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"
