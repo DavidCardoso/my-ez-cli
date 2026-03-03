@@ -6,6 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && 
 MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "${MEC_BASE_DIR}/bin/utils/common.sh"
 
+# Source config manager for firewall setting
+if [ -f "${MEC_BASE_DIR}/bin/utils/config-manager.sh" ]; then
+    . "${MEC_BASE_DIR}/bin/utils/config-manager.sh"
+fi
+
 # Check Docker availability
 check_docker
 
@@ -45,6 +50,14 @@ for VAR in $(env | grep -E '^MEC_' | cut -d= -f1); do
     ENV_FLAGS="$ENV_FLAGS --env $VAR"
 done
 
+# Check if firewall is enabled and add required Docker flags
+FIREWALL_ENABLED=$(config_get_default "ai.claude.firewall.enabled" "false" 2>/dev/null || echo "false")
+EXTRA_DOCKER_FLAGS=""
+if [ "$FIREWALL_ENABLED" = "true" ]; then
+    ENV_FLAGS="$ENV_FLAGS --env MEC_FIREWALL_ENABLED=true"
+    EXTRA_DOCKER_FLAGS="--cap-add NET_ADMIN"
+fi
+
 # Setup logging (if enabled)
 setup_logging "claude" "$IMAGE" "claude ${*}"
 
@@ -53,6 +66,7 @@ setup_logging "claude" "$IMAGE" "claude ${*}"
 DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
+    $EXTRA_DOCKER_FLAGS \
     --volume $PWD:$WORKDIR \
     --volume ${CLAUDE_AUTH_DIR}:/home/node/.claude \
     --volume ${CLAUDE_CONFIG_FILE}:/home/node/.claude.json \

@@ -40,52 +40,25 @@ iptables -A OUTPUT -o lo -j ACCEPT
 # Create ipset with CIDR support
 ipset create allowed-domains hash:net
 
-# Fetch GitHub meta information and aggregate + add their IP ranges
-echo "Fetching GitHub IP ranges..."
-gh_ranges=$(curl -s https://api.github.com/meta)
-if [ -z "$gh_ranges" ]; then
-    echo "ERROR: Failed to fetch GitHub IP ranges"
+# Load pre-resolved IPs/CIDRs from build-time resolution
+RESOLVED_FILE="/etc/mec-firewall/resolved-cidrs.txt"
+if [ -f "$RESOLVED_FILE" ]; then
+    echo "Loading pre-resolved IPs from $RESOLVED_FILE..."
+    while IFS= read -r entry; do
+        [ -z "$entry" ] && continue
+        [[ "$entry" =~ ^# ]] && continue
+        # Strip inline comments (e.g. "1.2.3.4  # domain.com") and trim whitespace
+        ip_or_cidr="${entry%%#*}"
+        ip_or_cidr="$(echo "$ip_or_cidr" | tr -d ' \t')"
+        [ -z "$ip_or_cidr" ] && continue
+        echo "Adding $ip_or_cidr"
+        ipset add allowed-domains "$ip_or_cidr"
+    done < "$RESOLVED_FILE"
+else
+    echo "ERROR: No resolved IPs file found at $RESOLVED_FILE"
+    echo "Rebuild the image to refresh: mec claude firewall rebuild"
     exit 1
 fi
-
-if ! echo "$gh_ranges" | jq -e '.web and .api and .git' >/dev/null; then
-    echo "ERROR: GitHub API response missing required fields"
-    exit 1
-fi
-
-echo "Processing GitHub IPs..."
-while read -r cidr; do
-    if [[ ! "$cidr" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$ ]]; then
-        echo "ERROR: Invalid CIDR range from GitHub meta: $cidr"
-        exit 1
-    fi
-    echo "Adding GitHub range $cidr"
-    ipset add allowed-domains "$cidr"
-done < <(echo "$gh_ranges" | jq -r '(.web + .api + .git)[]' | aggregate -q)
-
-# Resolve and add other allowed domains
-for domain in \
-    "registry.npmjs.org" \
-    "api.anthropic.com" \
-    "sentry.io" \
-    "statsig.anthropic.com" \
-    "statsig.com"; do
-    echo "Resolving $domain..."
-    ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
-    if [ -z "$ips" ]; then
-        echo "ERROR: Failed to resolve $domain"
-        exit 1
-    fi
-
-    while read -r ip; do
-        if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            echo "ERROR: Invalid IP from DNS for $domain: $ip"
-            exit 1
-        fi
-        echo "Adding $ip for $domain"
-        ipset add allowed-domains "$ip"
-    done < <(echo "$ips")
-done
 
 # Get host IP from default route
 HOST_IP=$(ip route | grep default | cut -d" " -f3)

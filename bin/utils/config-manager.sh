@@ -133,6 +133,57 @@ parse_yaml_key() {
     _config_service get "$file" "$key" 2>/dev/null
 }
 
+# Get a YAML list value from a config file
+# Returns one item per line, exits non-zero if key not found
+# Usage: config_get_list "ai.claude.firewall.dns_resolve_domains"
+config_get_list() {
+    local KEY="$1"
+
+    ensure_config
+
+    _config_service get-list "$CONFIG_FILE" "$KEY" 2>/dev/null
+}
+
+# Get a YAML list value — tries user config, falls back to default config
+# Returns one item per line
+# Usage: config_get_list_default "ai.claude.firewall.dns_resolve_domains"
+config_get_list_default() {
+    local KEY="$1"
+
+    # Try user config first
+    local VALUE
+    VALUE=$(config_get_list "$KEY" 2>/dev/null)
+    if [ -n "$VALUE" ]; then
+        echo "$VALUE"
+        return 0
+    fi
+
+    # Fall back to default config
+    if [ -f "$DEFAULT_CONFIG" ]; then
+        _config_service get-list "$DEFAULT_CONFIG" "$KEY" 2>/dev/null
+    fi
+}
+
+# Add a domain to a firewall list in user config
+# Usage: _firewall_add_domain "ai.claude.firewall.dns_resolve_domains" "example.com"
+_firewall_add_domain() {
+    local KEY="$1"
+    local DOMAIN="$2"
+
+    ensure_config
+    _config_service add-list-item "$CONFIG_FILE" "$KEY" "$DOMAIN"
+}
+
+# Remove a domain from a firewall list in user config
+# Usage: _firewall_remove_domain "ai.claude.firewall.dns_resolve_domains" "example.com"
+_firewall_remove_domain() {
+    local KEY="$1"
+    local DOMAIN="$2"
+
+    ensure_config
+    _config_service remove-list-item "$CONFIG_FILE" "$KEY" "$DOMAIN"
+}
+
 # List all configuration keys and values
 # Usage: config_list
 config_list() {

@@ -70,8 +70,8 @@ setup() {
     grep -q '@anthropic-ai/claude-code' "$BASEDIR/docker/claude/Dockerfile"
 }
 
-@test "claude Dockerfile sets claude as entrypoint" {
-    grep -q 'ENTRYPOINT.*claude' "$BASEDIR/docker/claude/Dockerfile"
+@test "claude Dockerfile sets entrypoint (entrypoint.sh which execs claude)" {
+    grep -q 'ENTRYPOINT.*entrypoint.sh' "$BASEDIR/docker/claude/Dockerfile"
 }
 
 @test "claude Dockerfile has project labels" {
@@ -89,4 +89,64 @@ setup() {
 
 @test "setup.sh includes claude in tool lists" {
     grep -q '"claude"' "$BASEDIR/setup.sh"
+}
+
+# ----------------------------------------------------------------------------
+# Firewall config tests
+# ----------------------------------------------------------------------------
+
+@test "config.default.yaml contains firewall section" {
+    grep -q 'firewall:' "$BASEDIR/config/config.default.yaml"
+}
+
+@test "config.default.yaml firewall.enabled defaults to false" {
+    grep -A3 'firewall:' "$BASEDIR/config/config.default.yaml" | grep -q 'enabled: false'
+}
+
+@test "config.default.yaml has github_meta_endpoints list" {
+    grep -q 'github_meta_endpoints:' "$BASEDIR/config/config.default.yaml"
+}
+
+@test "config.default.yaml has dns_resolve_domains list" {
+    grep -q 'dns_resolve_domains:' "$BASEDIR/config/config.default.yaml"
+}
+
+@test "config.default.yaml dns_resolve_domains includes api.anthropic.com" {
+    grep -q 'api.anthropic.com' "$BASEDIR/config/config.default.yaml"
+}
+
+@test "bin/mec has mec_claude_firewall function" {
+    grep -q 'mec_claude_firewall' "$BASEDIR/bin/mec"
+}
+
+@test "mec claude firewall help outputs usage" {
+    run "$BASEDIR/bin/mec" claude firewall help
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q 'Usage: mec claude firewall'
+}
+
+@test "docker/claude/entrypoint.sh exists and is a script" {
+    [ -f "$BASEDIR/docker/claude/entrypoint.sh" ]
+    head -n 1 "$BASEDIR/docker/claude/entrypoint.sh" | grep -q '^#!/bin/bash'
+}
+
+@test "docker/claude/resolve-domains.sh exists and is a script" {
+    [ -f "$BASEDIR/docker/claude/resolve-domains.sh" ]
+    head -n 1 "$BASEDIR/docker/claude/resolve-domains.sh" | grep -q '^#!/bin/bash'
+}
+
+@test "docker/claude/Dockerfile references entrypoint.sh" {
+    grep -q 'entrypoint.sh' "$BASEDIR/docker/claude/Dockerfile"
+}
+
+@test "docker/claude/init-firewall.sh loads from resolved-cidrs.txt" {
+    grep -q 'resolved-cidrs.txt' "$BASEDIR/docker/claude/init-firewall.sh"
+}
+
+@test "bin/claude passes MEC_FIREWALL_ENABLED when firewall enabled" {
+    grep -q 'MEC_FIREWALL_ENABLED' "$BASEDIR/bin/claude"
+}
+
+@test "bin/claude adds NET_ADMIN capability when firewall enabled" {
+    grep -q 'NET_ADMIN' "$BASEDIR/bin/claude"
 }

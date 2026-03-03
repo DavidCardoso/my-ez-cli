@@ -54,6 +54,7 @@ Commands:
   ai                  AI analysis (Claude Code)
   logs                Log management
   claude              Run Claude Code
+  claude firewall     Manage Claude Code container firewall
   setup               Interactive setup TUI
   install <tool...>   Install tools
   uninstall <tool...> Uninstall tools
@@ -66,6 +67,7 @@ Examples:
   mec config --help
   mec ai --help
   mec logs --help
+  mec claude firewall status
   mec install node terraform
   mec uninstall yarn
 
@@ -670,6 +672,155 @@ PYEOF
 }
 
 # ----------------------------------------------------------------------------
+# Claude Firewall Commands
+# ----------------------------------------------------------------------------
+
+mec_claude_firewall() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    local GITHUB_META_KEY="ai.claude.firewall.github_meta_endpoints"
+    local DNS_DOMAINS_KEY="ai.claude.firewall.dns_resolve_domains"
+
+    case "$subcmd" in
+        status)
+            echo "Claude Firewall Status"
+            echo "----------------------"
+            local enabled
+            enabled=$(config_get_default "ai.claude.firewall.enabled" "false")
+            echo "  Enabled: $enabled"
+            echo ""
+            echo "  GitHub meta endpoints:"
+            config_get_list_default "$GITHUB_META_KEY" | while IFS= read -r item; do
+                echo "    - $item"
+            done
+            echo ""
+            echo "  DNS resolve domains:"
+            config_get_list_default "$DNS_DOMAINS_KEY" | while IFS= read -r item; do
+                echo "    - $item"
+            done
+            ;;
+        list)
+            echo "GitHub meta endpoints:"
+            config_get_list_default "$GITHUB_META_KEY" | while IFS= read -r item; do
+                echo "  - $item"
+            done
+            echo ""
+            echo "DNS resolve domains:"
+            config_get_list_default "$DNS_DOMAINS_KEY" | while IFS= read -r item; do
+                echo "  - $item"
+            done
+            ;;
+        add)
+            local list_type="${1:-}"
+            local domain="${2:-}"
+            if [ -z "$list_type" ] || [ -z "$domain" ]; then
+                echo "Usage: mec claude firewall add <github-meta|dns> <domain>" >&2
+                return 1
+            fi
+            case "$list_type" in
+                github-meta)
+                    _firewall_add_domain "$GITHUB_META_KEY" "$domain"
+                    echo "Added '$domain' to github-meta endpoints."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                dns)
+                    _firewall_add_domain "$DNS_DOMAINS_KEY" "$domain"
+                    echo "Added '$domain' to DNS resolve domains."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                *)
+                    echo "Unknown list type: $list_type" >&2
+                    echo "Use 'github-meta' or 'dns'" >&2
+                    return 1
+                    ;;
+            esac
+            ;;
+        remove)
+            local list_type="${1:-}"
+            local domain="${2:-}"
+            if [ -z "$list_type" ] || [ -z "$domain" ]; then
+                echo "Usage: mec claude firewall remove <github-meta|dns> <domain>" >&2
+                return 1
+            fi
+            case "$list_type" in
+                github-meta)
+                    _firewall_remove_domain "$GITHUB_META_KEY" "$domain"
+                    echo "Removed '$domain' from github-meta endpoints."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                dns)
+                    _firewall_remove_domain "$DNS_DOMAINS_KEY" "$domain"
+                    echo "Removed '$domain' from DNS resolve domains."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                *)
+                    echo "Unknown list type: $list_type" >&2
+                    echo "Use 'github-meta' or 'dns'" >&2
+                    return 1
+                    ;;
+            esac
+            ;;
+        enable)
+            config_set "ai.claude.firewall.enabled" "true"
+            echo "Claude firewall enabled."
+            echo "Run 'mec claude firewall rebuild' to build the image with resolved IPs."
+            ;;
+        disable)
+            config_set "ai.claude.firewall.enabled" "false"
+            echo "Claude firewall disabled."
+            ;;
+        rebuild)
+            echo "Rebuilding Claude Code Docker image with updated domain resolution..."
+            local build_script="${BASE_DIR}/docker/claude/build"
+            if [ ! -f "$build_script" ]; then
+                echo "ERROR: Build script not found: $build_script" >&2
+                return 1
+            fi
+            bash "$build_script"
+            echo "Rebuild complete. IPs are now baked into the image."
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec claude firewall <command> [arguments]
+
+Commands:
+  status                              Show firewall enabled state and domain lists
+  list                                List all configured domains
+  add <github-meta|dns> <domain>      Add a domain to the firewall allow list
+  remove <github-meta|dns> <domain>   Remove a domain from the allow list
+  enable                              Enable the container firewall
+  disable                             Disable the container firewall
+  rebuild                             Rebuild Docker image with fresh IP resolution
+  help                                Show this help message
+
+Domain list types:
+  github-meta   GitHub API endpoints (IPs fetched via api.github.com/meta CIDR ranges)
+  dns           Domains resolved via DNS at Docker build time
+
+Notes:
+  - IPs are resolved at 'docker build' time and baked into the image
+  - Run 'mec claude firewall rebuild' after any domain changes
+  - Firewall requires NET_ADMIN capability (added automatically when enabled)
+
+Examples:
+  mec claude firewall status
+  mec claude firewall list
+  mec claude firewall add dns custom.example.com
+  mec claude firewall remove dns custom.example.com
+  mec claude firewall enable
+  mec claude firewall rebuild
+EOF
+            ;;
+        *)
+            echo "Unknown firewall command: $subcmd" >&2
+            echo "Run 'mec claude firewall help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # Setup / Install / Uninstall Commands
 # ----------------------------------------------------------------------------
 
@@ -743,7 +894,13 @@ case "$COMMAND" in
         ;;
     claude)
         shift
-        exec "$SCRIPT_DIR/claude" "$@"
+        # Intercept 'mec claude firewall' before passing to bin/claude
+        if [ "${1:-}" = "firewall" ]; then
+            shift
+            mec_claude_firewall "$@"
+        else
+            exec "$SCRIPT_DIR/claude" "$@"
+        fi
         ;;
     setup)
         shift

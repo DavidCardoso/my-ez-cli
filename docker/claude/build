@@ -6,6 +6,53 @@ IMAGE_REPO=davidcardoso/my-ez-cli
 IMAGE_TOOL=claude
 TZ=${TZ:-"Europe/Amsterdam"}
 
+# ---------------------------------------------------------------------------
+# Pre-build: generate domain text files from config
+# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MEC_BASE_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+FIREWALL_DIR="${SCRIPT_DIR}/firewall"
+
+mkdir -p "$FIREWALL_DIR"
+
+# Source config manager if available
+CONFIG_MANAGER="${MEC_BASE_DIR}/bin/utils/config-manager.sh"
+
+echo "Generating firewall domain files..."
+
+if [ -f "$CONFIG_MANAGER" ]; then
+    # shellcheck source=/dev/null
+    . "$CONFIG_MANAGER"
+
+    # Generate github_meta_endpoints.txt
+    GH_META=$(config_get_list_default "ai.claude.firewall.github_meta_endpoints" 2>/dev/null || true)
+    if [ -n "$GH_META" ]; then
+        echo "$GH_META" > "${FIREWALL_DIR}/github_meta_endpoints.txt"
+        echo "  github_meta_endpoints: $(echo "$GH_META" | wc -l | tr -d ' ') entries"
+    else
+        echo "api.github.com" > "${FIREWALL_DIR}/github_meta_endpoints.txt"
+        echo "  github_meta_endpoints: using default (api.github.com)"
+    fi
+
+    # Generate dns_resolve_domains.txt
+    DNS_DOMAINS=$(config_get_list_default "ai.claude.firewall.dns_resolve_domains" 2>/dev/null || true)
+    if [ -n "$DNS_DOMAINS" ]; then
+        echo "$DNS_DOMAINS" > "${FIREWALL_DIR}/dns_resolve_domains.txt"
+        echo "  dns_resolve_domains: $(echo "$DNS_DOMAINS" | wc -l | tr -d ' ') entries"
+    else
+        printf 'registry.npmjs.org\napi.anthropic.com\nsentry.io\nstatsig.anthropic.com\nstatsig.com\n' \
+            > "${FIREWALL_DIR}/dns_resolve_domains.txt"
+        echo "  dns_resolve_domains: using defaults (5 entries)"
+    fi
+else
+    echo "  Config manager not found — using hardcoded defaults"
+    echo "api.github.com" > "${FIREWALL_DIR}/github_meta_endpoints.txt"
+    printf 'registry.npmjs.org\napi.anthropic.com\nsentry.io\nstatsig.anthropic.com\nstatsig.com\n' \
+        > "${FIREWALL_DIR}/dns_resolve_domains.txt"
+fi
+
+echo "Domain files written to ${FIREWALL_DIR}/"
+
 # Auto-detect platform if not set
 if [ -z "$PLATFORM" ]; then
     # Detect local architecture
@@ -49,6 +96,8 @@ echo "Platform: ${PLATFORM}"
 echo "Claude Code version: ${CLAUDE_CODE_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
+
+cd "$SCRIPT_DIR"
 
 docker buildx build \
     ${BUILD_OPTS} \

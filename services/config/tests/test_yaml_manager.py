@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 from src.exceptions import ConfigFileNotFoundError, ConfigKeyError
 from src.main import main
-from src.yaml_manager import parse_yaml_key, set_yaml_key
+from src.yaml_manager import (
+    add_yaml_list_item,
+    parse_yaml_key,
+    parse_yaml_list,
+    remove_yaml_list_item,
+    set_yaml_key,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -43,6 +49,27 @@ def minimal_file(tmp_path: Path) -> Path:
     """Return a minimal YAML file with just one top-level key."""
     f = tmp_path / "minimal.yaml"
     f.write_text("ai:\n  enabled: false\n")
+    return f
+
+
+@pytest.fixture()
+def firewall_file(tmp_path: Path) -> Path:
+    """Return a temp YAML file with a firewall list config."""
+    content = textwrap.dedent("""\
+        ai:
+          claude:
+            effort_level: medium
+            firewall:
+              enabled: false
+              github_meta_endpoints:
+                - api.github.com
+              dns_resolve_domains:
+                - registry.npmjs.org
+                - api.anthropic.com
+                - sentry.io
+    """)
+    f = tmp_path / "firewall.yaml"
+    f.write_text(content)
     return f
 
 
@@ -256,4 +283,214 @@ class TestMainCLI:
 
     def test_set_wrong_arg_count_returns_2(self) -> None:
         rc = main(["set", "file", "key"])
+        assert rc == 2
+
+
+# ---------------------------------------------------------------------------
+# parse_yaml_list
+# ---------------------------------------------------------------------------
+
+
+class TestParseYamlList:
+    """Tests for reading YAML list values."""
+
+    def test_reads_dns_domains_list(self, firewall_file: Path) -> None:
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result == ["registry.npmjs.org", "api.anthropic.com", "sentry.io"]
+
+    def test_reads_single_item_list(self, firewall_file: Path) -> None:
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.github_meta_endpoints")
+        assert result == ["api.github.com"]
+
+    def test_key_not_found_returns_none(self, firewall_file: Path) -> None:
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.nonexistent")
+        assert result is None
+
+    def test_scalar_key_returns_none(self, firewall_file: Path) -> None:
+        # effort_level is a scalar, not a list
+        result = parse_yaml_list(str(firewall_file), "ai.claude.effort_level")
+        assert result is None
+
+    def test_missing_file_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ConfigFileNotFoundError):
+            parse_yaml_list(
+                str(tmp_path / "missing.yaml"), "ai.claude.firewall.dns_resolve_domains"
+            )
+
+    def test_4_level_nested_list(self, firewall_file: Path) -> None:
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert len(result) == 3
+
+    def test_empty_list(self, tmp_path: Path) -> None:
+        content = "ai:\n  claude:\n    firewall:\n      dns_resolve_domains:\n"
+        f = tmp_path / "empty_list.yaml"
+        f.write_text(content)
+        result = parse_yaml_list(str(f), "ai.claude.firewall.dns_resolve_domains")
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
+# add_yaml_list_item
+# ---------------------------------------------------------------------------
+
+
+class TestAddYamlListItem:
+    """Tests for adding items to YAML lists."""
+
+    def test_add_new_item(self, firewall_file: Path) -> None:
+        add_yaml_list_item(
+            str(firewall_file), "ai.claude.firewall.dns_resolve_domains", "example.com"
+        )
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert "example.com" in result
+
+    def test_add_preserves_existing_items(self, firewall_file: Path) -> None:
+        add_yaml_list_item(
+            str(firewall_file), "ai.claude.firewall.dns_resolve_domains", "new.example.com"
+        )
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert "registry.npmjs.org" in result
+        assert "api.anthropic.com" in result
+        assert "new.example.com" in result
+
+    def test_duplicate_is_noop(self, firewall_file: Path) -> None:
+        add_yaml_list_item(
+            str(firewall_file), "ai.claude.firewall.dns_resolve_domains", "registry.npmjs.org"
+        )
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert result.count("registry.npmjs.org") == 1
+
+    def test_missing_file_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ConfigFileNotFoundError):
+            add_yaml_list_item(
+                str(tmp_path / "missing.yaml"),
+                "ai.claude.firewall.dns_resolve_domains",
+                "example.com",
+            )
+
+
+# ---------------------------------------------------------------------------
+# remove_yaml_list_item
+# ---------------------------------------------------------------------------
+
+
+class TestRemoveYamlListItem:
+    """Tests for removing items from YAML lists."""
+
+    def test_remove_existing_item(self, firewall_file: Path) -> None:
+        remove_yaml_list_item(
+            str(firewall_file), "ai.claude.firewall.dns_resolve_domains", "sentry.io"
+        )
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert "sentry.io" not in result
+
+    def test_remove_preserves_other_items(self, firewall_file: Path) -> None:
+        remove_yaml_list_item(
+            str(firewall_file), "ai.claude.firewall.dns_resolve_domains", "sentry.io"
+        )
+        result = parse_yaml_list(str(firewall_file), "ai.claude.firewall.dns_resolve_domains")
+        assert result is not None
+        assert "registry.npmjs.org" in result
+        assert "api.anthropic.com" in result
+
+    def test_remove_nonexistent_raises_key_error(self, firewall_file: Path) -> None:
+        with pytest.raises(ConfigKeyError):
+            remove_yaml_list_item(
+                str(firewall_file),
+                "ai.claude.firewall.dns_resolve_domains",
+                "nonexistent.example.com",
+            )
+
+    def test_missing_file_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ConfigFileNotFoundError):
+            remove_yaml_list_item(
+                str(tmp_path / "missing.yaml"),
+                "ai.claude.firewall.dns_resolve_domains",
+                "sentry.io",
+            )
+
+
+# ---------------------------------------------------------------------------
+# main() CLI list commands
+# ---------------------------------------------------------------------------
+
+
+class TestMainCLIList:
+    """Tests for the main() CLI dispatcher — list commands."""
+
+    def test_get_list_existing_key(
+        self, firewall_file: Path, capsys: pytest.CaptureFixture
+    ) -> None:
+        rc = main(["get-list", str(firewall_file), "ai.claude.firewall.dns_resolve_domains"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        lines = captured.out.strip().splitlines()
+        assert "registry.npmjs.org" in lines
+        assert "api.anthropic.com" in lines
+        assert "sentry.io" in lines
+
+    def test_get_list_missing_key_raises(self, firewall_file: Path) -> None:
+        with pytest.raises(ConfigKeyError):
+            main(["get-list", str(firewall_file), "ai.claude.firewall.nonexistent"])
+
+    def test_add_list_item_and_verify(
+        self, firewall_file: Path, capsys: pytest.CaptureFixture
+    ) -> None:
+        rc = main(
+            [
+                "add-list-item",
+                str(firewall_file),
+                "ai.claude.firewall.dns_resolve_domains",
+                "added.example.com",
+            ]
+        )
+        assert rc == 0
+        rc2 = main(["get-list", str(firewall_file), "ai.claude.firewall.dns_resolve_domains"])
+        assert rc2 == 0
+        captured = capsys.readouterr()
+        assert "added.example.com" in captured.out
+
+    def test_remove_list_item_and_verify(
+        self, firewall_file: Path, capsys: pytest.CaptureFixture
+    ) -> None:
+        rc = main(
+            [
+                "remove-list-item",
+                str(firewall_file),
+                "ai.claude.firewall.dns_resolve_domains",
+                "sentry.io",
+            ]
+        )
+        assert rc == 0
+        rc2 = main(["get-list", str(firewall_file), "ai.claude.firewall.dns_resolve_domains"])
+        assert rc2 == 0
+        captured = capsys.readouterr()
+        assert "sentry.io" not in captured.out
+
+    def test_remove_nonexistent_item_returns_1(self, firewall_file: Path) -> None:
+        rc = main(
+            [
+                "remove-list-item",
+                str(firewall_file),
+                "ai.claude.firewall.dns_resolve_domains",
+                "nonexistent.example.com",
+            ]
+        )
+        assert rc == 1
+
+    def test_get_list_wrong_arg_count_returns_2(self) -> None:
+        rc = main(["get-list", "file"])
+        assert rc == 2
+
+    def test_add_list_item_wrong_arg_count_returns_2(self) -> None:
+        rc = main(["add-list-item", "file", "key"])
+        assert rc == 2
+
+    def test_remove_list_item_wrong_arg_count_returns_2(self) -> None:
+        rc = main(["remove-list-item", "file", "key"])
         assert rc == 2

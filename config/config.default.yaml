@@ -111,6 +111,25 @@ ai:
     # Ignored for sonnet/haiku
     effort_level: medium
 
+    # Firewall configuration for Claude Code container network isolation
+    # Domains are pre-resolved at Docker build time and baked into the image
+    # Run 'mec claude firewall rebuild' after changing domains
+    firewall:
+      # Enable automatic firewall initialization at container start
+      enabled: false
+
+      # GitHub API endpoints — IP ranges fetched via /meta API (CIDR blocks)
+      github_meta_endpoints:
+        - api.github.com
+
+      # Domains resolved via DNS at build time
+      dns_resolve_domains:
+        - registry.npmjs.org
+        - api.anthropic.com
+        - sentry.io
+        - statsig.anthropic.com
+        - statsig.com
+
 # ----------------------------------------------------------------------------
 # Tool-Specific Settings
 # NOT YET IMPLEMENTED — keys are defined but not read at runtime yet
