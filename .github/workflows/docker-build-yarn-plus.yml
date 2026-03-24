@@ -1,18 +1,12 @@
 name: Build Yarn-Plus Docker Image
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'docker/yarn-plus/**'
-      - '.github/workflows/docker-build-yarn-plus.yml'
   pull_request:
     paths:
       - 'docker/yarn-plus/**'
       - '.github/workflows/docker-build-yarn-plus.yml'
-  workflow_dispatch:
   workflow_call:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -26,49 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.TOOL_NAME }}-latest,enable={{is_default_branch}}
-            type=ref,event=branch,prefix=${{ env.TOOL_NAME }}-
-            type=raw,value=${{ env.TOOL_NAME }}-sha-{{sha}}
-            type=semver,pattern=${{ env.TOOL_NAME }}-{{version}}
-            type=semver,pattern=${{ env.TOOL_NAME }}-{{major}}.{{minor}}
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./docker/yarn-plus
-          platforms: linux/amd64,linux/arm64
-          push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: read
       packages: write
       security-events: write
-    # Note: Environment inherits repository secrets by default
-    # Ensure DOCKERHUB_USERNAME and DOCKERHUB_TOKEN are set in repository secrets
 
     steps:
       - name: Checkout repository
@@ -81,6 +34,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -104,13 +58,14 @@ jobs:
         with:
           context: ./docker/yarn-plus
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
+        if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
@@ -118,6 +73,7 @@ jobs:
           output: 'trivy-results-yarn-plus.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
+        if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: 'trivy-results-yarn-plus.sarif'
