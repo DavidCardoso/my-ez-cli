@@ -14,27 +14,40 @@ on:
     - cron: '0 2 * * 0'
 
 jobs:
+  # Single approval gate — all images publish only after this is approved
+  approve:
+    runs-on: ubuntu-latest
+    environment: docker-publish
+    steps:
+      - run: echo "Approved — publishing all Docker images"
+
   build-config-service:
+    needs: approve
     uses: ./.github/workflows/docker-build-config-service.yml
     secrets: inherit
 
   build-serverless:
+    needs: approve
     uses: ./.github/workflows/docker-build-serverless.yml
     secrets: inherit
 
   build-aws-sso-cred:
+    needs: approve
     uses: ./.github/workflows/docker-build-aws-sso-cred.yml
     secrets: inherit
 
   build-speedtest:
+    needs: approve
     uses: ./.github/workflows/docker-build-speedtest.yml
     secrets: inherit
 
   build-yarn-berry:
+    needs: approve
     uses: ./.github/workflows/docker-build-yarn-berry.yml
     secrets: inherit
 
   build-yarn-plus:
+    needs: approve
     uses: ./.github/workflows/docker-build-yarn-plus.yml
     secrets: inherit
 

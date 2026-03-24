@@ -79,7 +79,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
-    environment: docker-publish
     permissions:
       contents: read
       packages: write
