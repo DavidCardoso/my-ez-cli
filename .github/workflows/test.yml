@@ -15,7 +15,6 @@ env:
   PYTHON_IMAGE: "python:3.12-alpine"
   TERRAFORM_IMAGE: "hashicorp/terraform:1.14.5"
   AWS_IMAGE: "amazon/aws-cli:latest"
-  CONFIG_SERVICE_IMAGE: "davidcardoso/my-ez-cli:config-service-latest"
 
 jobs:
   # Pre-pull and cache Docker images for faster test execution
@@ -54,13 +53,10 @@ jobs:
           echo "Pulling AWS CLI image..."
           docker pull $AWS_IMAGE &
 
-          echo "Pulling Config Service image..."
-          docker pull $CONFIG_SERVICE_IMAGE &
-
           wait
 
           echo "Saving images to cache..."
-          docker save $NODE_IMAGES $PYTHON_IMAGE $TERRAFORM_IMAGE $AWS_IMAGE $CONFIG_SERVICE_IMAGE -o /tmp/docker-images/images.tar
+          docker save $NODE_IMAGES $PYTHON_IMAGE $TERRAFORM_IMAGE $AWS_IMAGE -o /tmp/docker-images/images.tar
 
       - name: Load cached images
         if: steps.cache-docker.outputs.cache-hit == 'true'
