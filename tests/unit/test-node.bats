@@ -11,10 +11,10 @@ setup() {
     [ -x "$BASEDIR/bin/node" ]
 }
 
-@test "node runs with default version 24" {
+@test "node runs with default version 22" {
     run "$BASEDIR/bin/node" --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v24" ]]
+    [[ "$output" =~ "v22" ]]
 }
 
 @test "node can execute JavaScript code" {
@@ -27,6 +27,12 @@ setup() {
     run "$BASEDIR/bin/node22" --version
     [ "$status" -eq 0 ]
     [[ "$output" =~ "v22" ]]
+}
+
+@test "node20 uses correct version" {
+    run "$BASEDIR/bin/node20" --version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "v20" ]]
 }
 
 @test "node sources common.sh correctly" {

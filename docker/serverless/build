@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Image configuration
@@ -24,7 +24,7 @@ if [ -z "$IMAGE_TAG" ]; then
 fi
 
 if [ -z "$SERVERLESS_VERSION" ]; then
-    SERVERLESS_VERSION=3.38.0
+    SERVERLESS_VERSION=4.33.0
     echo "SERVERLESS_VERSION not set, using default: ${SERVERLESS_VERSION}"
 fi
 

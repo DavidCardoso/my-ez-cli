@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -17,10 +17,10 @@ CONTAINER_NAME=$(get_container_name "gcloud")
 CONTAINER_LABELS=$(get_container_labels "gcloud" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "gcloud"
+setup_logging "gcloud" "$IMAGE" "gcloud ${*}"
 
-# run from your working directory
-docker run --rm \
+# Build docker command
+DOCKER_CMD="docker run --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --platform linux/amd64 \
@@ -28,4 +28,7 @@ docker run --rm \
     --volumes-from gcloud-config \
     --workdir $WORKDIR \
     --entrypoint gcloud \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"

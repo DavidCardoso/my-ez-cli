@@ -13,7 +13,7 @@ env:
   # Docker images to cache
   NODE_IMAGES: "node:22-alpine node:24-alpine"
   PYTHON_IMAGE: "python:3.12-alpine"
-  TERRAFORM_IMAGE: "hashicorp/terraform:1.9.8"
+  TERRAFORM_IMAGE: "hashicorp/terraform:1.14.5"
   AWS_IMAGE: "amazon/aws-cli:latest"
 
 jobs:
@@ -161,6 +161,33 @@ jobs:
         run: |
           bats tests/unit/test-${{ matrix.test-suite }}.bats
 
+  # Config service unit tests — pytest inside the Docker image
+  unit-tests-config-service:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build config-service image for testing
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --file ./docker/config-service/Dockerfile \
+            --tag config-service-test \
+            ./services/config
+
+      - name: Run pytest inside config-service image
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            config-service-test \
+            -m pytest tests/ -v
+
   # Integration tests - run on main branch, releases, and workflow_dispatch
   integration-tests:
     runs-on: ubuntu-latest
@@ -196,7 +223,7 @@ jobs:
   # Summary job - aggregate results
   summary:
     runs-on: ubuntu-latest
-    needs: [smoke-tests, unit-tests, integration-tests]
+    needs: [smoke-tests, unit-tests, unit-tests-config-service, integration-tests]
     if: always()
     steps:
       - name: Test Summary
@@ -207,6 +234,7 @@ jobs:
           echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Smoke Tests | ${{ needs.smoke-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests (config-service) | ${{ needs.unit-tests-config-service.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY

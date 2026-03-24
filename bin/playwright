@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -17,14 +17,17 @@ CONTAINER_NAME=$(get_container_name "playwright")
 CONTAINER_LABELS=$(get_container_labels "playwright" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "playwright"
+setup_logging "playwright" "$IMAGE" "playwright ${*}"
 
-# should be executed from your working directory
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
-    --network="host" \
+    --network=host \
     --ipc=host \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"

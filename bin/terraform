@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=hashicorp/terraform:1.13.0
+IMAGE=hashicorp/terraform:1.14.5
 WORKDIR=${PWD}
 
 # This folder will be mounted on the container
@@ -85,21 +85,24 @@ CONTAINER_NAME=$(get_container_name "terraform")
 CONTAINER_LABELS=$(get_container_labels "terraform" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "terraform"
+setup_logging "terraform" "$IMAGE" "terraform ${*}"
 
-# run from your working directory
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --platform linux/amd64 \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --env AWS_PROFILE=${AWS_PROFILE} \
     --env GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
     --env-file $DOTENV_FILE \
-    --volume $AWS_CREDENTIALS_FOLDER:/root/.aws \
-    --volume $GCLOUD_CREDENTIALS_FOLDER:/root/.config/gcloud \
+    --volume $AWS_CREDENTIALS_FOLDER:/root/.aws:ro \
+    --volume $GCLOUD_CREDENTIALS_FOLDER:/root/.config/gcloud:ro \
     --volume $TF_CREDENTIALS_FILE:/root/.terraformrc \
-    --volume $HOME/.ssh:/root/.ssh \
+    --volume $HOME/.ssh:/root/.ssh:ro \
     --volume ${CONTEXT}:${CONTEXT} \
     --volume ${WORKDIR}:${WORKDIR} \
     --workdir ${WORKDIR} \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis (error detection for Terraform)
+exec_with_ai "$DOCKER_CMD"

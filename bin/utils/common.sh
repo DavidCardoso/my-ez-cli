@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # ============================================================================
@@ -7,6 +7,25 @@ set -e
 # This file provides shared utilities for all bin scripts.
 # Version: 1.0.0
 # ============================================================================
+
+# ----------------------------------------------------------------------------
+# Docker Image Constants
+# ----------------------------------------------------------------------------
+MEC_IMAGE_REPO="${MEC_IMAGE_REPO:-davidcardoso/my-ez-cli}"
+MEC_IMAGE_TAG="${MEC_IMAGE_TAG:-latest}"
+
+MEC_IMAGE_AI_SERVICE="${MEC_IMAGE_AI_SERVICE:-${MEC_IMAGE_REPO}:ai-service-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_CONFIG_SERVICE="${MEC_IMAGE_CONFIG_SERVICE:-${MEC_IMAGE_REPO}:config-service-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_CLAUDE="${MEC_IMAGE_CLAUDE:-${MEC_IMAGE_REPO}:claude-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_SERVERLESS="${MEC_IMAGE_SERVERLESS:-${MEC_IMAGE_REPO}:serverless-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_SPEEDTEST="${MEC_IMAGE_SPEEDTEST:-${MEC_IMAGE_REPO}:speedtest-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_AWS_SSO_CRED="${MEC_IMAGE_AWS_SSO_CRED:-${MEC_IMAGE_REPO}:aws-sso-cred-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_YARN_BERRY="${MEC_IMAGE_YARN_BERRY:-${MEC_IMAGE_REPO}:yarn-berry-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_YARN_PLUS="${MEC_IMAGE_YARN_PLUS:-${MEC_IMAGE_REPO}:yarn-plus-${MEC_IMAGE_TAG}}"
+
+export MEC_IMAGE_REPO MEC_IMAGE_TAG
+export MEC_IMAGE_AI_SERVICE MEC_IMAGE_CONFIG_SERVICE MEC_IMAGE_CLAUDE MEC_IMAGE_SERVERLESS
+export MEC_IMAGE_SPEEDTEST MEC_IMAGE_AWS_SSO_CRED MEC_IMAGE_YARN_BERRY MEC_IMAGE_YARN_PLUS
 
 # ----------------------------------------------------------------------------
 # Path Resolution (works with symlinks)
@@ -62,33 +81,79 @@ get_tty_flag() {
 }
 
 # ----------------------------------------------------------------------------
-# Logging Setup (for future log persistence)
+# Logging Setup
 # ----------------------------------------------------------------------------
-# Setup logging for a tool
-# Usage: setup_logging "node"
+# Source log-manager for advanced logging capabilities
+MEC_BASE_DIR=$(get_mec_base_dir)
+if [ -f "${MEC_BASE_DIR}/bin/utils/log-manager.sh" ]; then
+    . "${MEC_BASE_DIR}/bin/utils/log-manager.sh"
+fi
+
+# Source config-manager if available
+if [ -f "${MEC_BASE_DIR}/bin/utils/config-manager.sh" ]; then
+    . "${MEC_BASE_DIR}/bin/utils/config-manager.sh"
+fi
+
+# Auto-inject config into env vars (only if not already set by user)
+# Bridges config.yaml -> env vars so 'mec ai enable' / 'mec logging enable' take effect
+_load_mec_config() {
+    if ! command -v config_get_default >/dev/null 2>&1; then
+        return 0
+    fi
+    # [ -z "${VAR+x}" ] is true only if VAR is unset (not if it's set to empty or false)
+    # This lets explicit env var overrides (e.g. MEC_AI_ENABLED=false) take precedence
+    if [ -z "${MEC_LOGS_ENABLED+x}" ]; then
+        MEC_LOGS_ENABLED=$(config_get_default "logs.enabled" "false")
+        export MEC_LOGS_ENABLED
+    fi
+    if [ -z "${MEC_AI_ENABLED+x}" ]; then
+        MEC_AI_ENABLED=$(config_get_default "ai.enabled" "false")
+        export MEC_AI_ENABLED
+    fi
+}
+_load_mec_config
+
+# Setup logging for a tool (legacy wrapper)
+# Usage: setup_logging "node" "node:24-alpine" "node server.js"
 setup_logging() {
     TOOL_NAME="$1"
-    LOG_DIR="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/${TOOL_NAME}"
+    IMAGE_NAME="${2:-unknown}"
+    COMMAND="${3:-unknown}"
 
-    # Only create log directory if logging is enabled
-    if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_LOGS_ENABLED:-false}" = "true" ]; then
-        mkdir -p "$LOG_DIR"
+    # Use new log-manager if available
+    if command -v log_session_init >/dev/null 2>&1; then
+        log_session_init "$TOOL_NAME" "$IMAGE_NAME" "$COMMAND"
 
-        TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
-        LOG_FILE="${LOG_DIR}/${TIMESTAMP}.log"
-        RAW_LOG_FILE="${LOG_DIR}/${TIMESTAMP}.raw.log"
+        # Export legacy variables for backward compatibility
+        LOG_ENABLED="$LOG_SESSION_ENABLED"
+        LOG_FILE="$LOG_JSON_FILE"
+        RAW_LOG_FILE="$LOG_RAW_FILE"
 
-        LOG_ENABLED=true
+        export LOG_ENABLED
+        export LOG_FILE
+        export RAW_LOG_FILE
     else
-        LOG_ENABLED=false
-        LOG_FILE=""
-        RAW_LOG_FILE=""
-    fi
+        # Fallback to simple logging
+        LOG_DIR="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/${TOOL_NAME}"
 
-    # Export for use in scripts
-    export LOG_ENABLED
-    export LOG_FILE
-    export RAW_LOG_FILE
+        if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_LOGS_ENABLED:-false}" = "true" ]; then
+            mkdir -p "$LOG_DIR"
+
+            TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+            LOG_FILE="${LOG_DIR}/${TIMESTAMP}.log"
+            RAW_LOG_FILE="${LOG_DIR}/${TIMESTAMP}.raw.log"
+
+            LOG_ENABLED=true
+        else
+            LOG_ENABLED=false
+            LOG_FILE=""
+            RAW_LOG_FILE=""
+        fi
+
+        export LOG_ENABLED
+        export LOG_FILE
+        export RAW_LOG_FILE
+    fi
 }
 
 # ----------------------------------------------------------------------------
@@ -163,7 +228,189 @@ if [ "${MEC_DEBUG:-0}" = "1" ]; then
 fi
 
 # ----------------------------------------------------------------------------
+# AI Analysis Integration
+# ----------------------------------------------------------------------------
+# Analysis runs through Claude Code when MEC_AI_ENABLED=true.
+# The Python middleware (ai-service) handles I/O filtering only.
+# ----------------------------------------------------------------------------
+
+# Analyze log output with Claude Code
+# Usage: analyze_with_claude "path/to/log.json"
+analyze_with_claude() {
+    local log_file="$1"
+
+    # Check if AI is enabled
+    if [ "${MEC_AI_ENABLED:-false}" != "true" ]; then
+        return 0
+    fi
+
+    # Check if a valid credential is available (API key or OAuth token)
+    if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+        if [ "${MEC_DEBUG:-0}" = "1" ]; then
+            echo "[mec-ai] Skipping analysis: no auth credential set (ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN)." >&2
+        fi
+        return 0
+    fi
+
+    # Check if log file exists
+    if [ ! -f "$log_file" ]; then
+        return 0
+    fi
+
+    # Check if Claude Code Docker image is available (silent check)
+    if ! docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Check if ai-service Docker image is available (silent check)
+    if ! docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Read log content for the prompt
+    local log_content
+    log_content=$(cat "$log_file" 2>/dev/null || echo "")
+    if [ -z "$log_content" ]; then
+        return 0
+    fi
+
+    echo "" >&2
+    echo "[mec-ai] Running analysis with Claude Code..." >&2
+
+    # Read Claude execution settings from config
+    local claude_model
+    claude_model=$(config_get_default "ai.claude.model" "sonnet")
+
+    local claude_max_tokens
+    claude_max_tokens=$(config_get_default "ai.claude.max_output_tokens" "8096")
+
+    local claude_effort_level
+    claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
+
+    # Compute sidecar path: ~/.my-ez-cli/logs/tool/ts.json -> ~/.my-ez-cli/ai-analyses/tool/ts.json
+    local log_dir
+    log_dir=$(dirname "$log_file")
+    local ai_analyses_dir
+    ai_analyses_dir=$(echo "$log_dir" | sed 's|/logs/|/ai-analyses/|')
+    mkdir -p "$ai_analyses_dir"
+    local ai_file="${ai_analyses_dir}/$(basename "$log_file")"
+
+    # Ensure ~/.claude dir and ~/.claude.json exist so the volume mounts succeed
+    [ ! -d "${HOME}/.claude" ] && mkdir -p "${HOME}/.claude"
+    [ ! -f "${HOME}/.claude.json" ] && touch "${HOME}/.claude.json"
+
+    # Run Claude Code and pipe raw JSON to ai-service for parsing + sidecar write.
+    # ai-service outputs: first line = session_id, remaining lines = result text.
+    local analysis_output
+    analysis_output=$(docker run --rm \
+        --env ANTHROPIC_API_KEY \
+        --env CLAUDE_CODE_OAUTH_TOKEN \
+        --env MEC_AI_ENABLED \
+        --env CLAUDE_CODE_MAX_OUTPUT_TOKENS="$claude_max_tokens" \
+        --env CLAUDE_CODE_EFFORT_LEVEL="$claude_effort_level" \
+        --volume "${HOME}/.claude:/home/node/.claude" \
+        --volume "${HOME}/.claude.json:/home/node/.claude.json" \
+        --volume "${PWD}:${PWD}" \
+        --workdir "${PWD}" \
+        "$MEC_IMAGE_CLAUDE" \
+        --model "$claude_model" \
+        -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
+        --output-format json \
+        --max-turns 1 2>/dev/null \
+      | docker run --rm -i \
+        --volume "$log_file:/log.json:ro" \
+        --volume "$ai_file:/ai-analyses.json" \
+        --env MEC_AI_ENABLED \
+        "$MEC_IMAGE_AI_SERVICE" \
+        parse-claude-response \
+          --ai-file /ai-analyses.json \
+          --log-file /log.json \
+          --log-session-id "${LOG_SESSION_ID:-}" \
+        2>/dev/null || echo "")
+
+    # Check for auth failure indicators in raw output (before parsing)
+    if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
+        echo "[mec-ai] Claude Code auth failed. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN." >&2
+        return 0
+    fi
+
+    # First line = session_id, rest = result text
+    local claude_session_id
+    claude_session_id=$(printf '%s' "$analysis_output" | head -1)
+    local claude_text
+    claude_text=$(printf '%s' "$analysis_output" | tail -n +2)
+
+    # Print analysis to stderr
+    if [ -n "$claude_text" ]; then
+        echo "" >&2
+        echo "[mec-ai] Claude Code analysis:" >&2
+        echo "$claude_text" >&2
+        echo "" >&2
+    fi
+
+    # Print resume hint
+    if [ -n "$claude_session_id" ]; then
+        echo "[mec-ai] To follow up: claude --resume $claude_session_id" >&2
+    fi
+}
+
+# Execute command with optional logging and AI analysis
+# This is the main wrapper that bin scripts should use
+# Usage: exec_with_ai "docker run ..."
+exec_with_ai() {
+    local docker_cmd="$1"
+
+    # If logging is not enabled, just run the command
+    if [ "$LOG_SESSION_ENABLED" != "true" ]; then
+        eval "$docker_cmd"
+        return $?
+    fi
+
+    # Create temp files for capturing output
+    local tmpdir_path
+    tmpdir_path=$(mktemp -d)
+    local stdout_tmp="${tmpdir_path}/stdout"
+    local stderr_tmp="${tmpdir_path}/stderr"
+
+    # Run docker command with output capture
+    set +e
+    eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
+    local exit_code=$?
+    set -e
+
+    # Wait for background processes (tee) to finish
+    wait
+
+    # Read captured output
+    local stdout_content
+    stdout_content=$(cat "$stdout_tmp" 2>/dev/null || echo "")
+    local stderr_content
+    stderr_content=$(cat "$stderr_tmp" 2>/dev/null || echo "")
+
+    # Print exit-code banner for failed commands
+    if [ "$exit_code" -ne 0 ]; then
+        echo "" >&2
+        echo "[mec] Command failed (exit code $exit_code)" >&2
+    fi
+
+    # Finalize log session (creates JSON file)
+    if command -v log_session_finalize >/dev/null 2>&1; then
+        log_session_finalize "$stdout_content" "$stderr_content" "$exit_code"
+    fi
+
+    # Run Claude Code analysis if log file was created
+    if [ -n "$LOG_JSON_FILE" ] && [ -f "$LOG_JSON_FILE" ]; then
+        analyze_with_claude "$LOG_JSON_FILE"
+    fi
+
+    # Cleanup
+    rm -rf "$tmpdir_path"
+
+    return $exit_code
+}
+
+# ----------------------------------------------------------------------------
 # Version Information
 # ----------------------------------------------------------------------------
-MEC_VERSION="1.0.0-alpha"
+MEC_VERSION="1.0.0-rc"
 export MEC_VERSION

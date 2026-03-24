@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -39,7 +39,7 @@ if [ ! -z "$PROMPTFOO_API_PORT" ]; then
 fi
 
 # Setup logging (if enabled)
-setup_logging "promptfoo-server"
+setup_logging "promptfoo-server" "$IMAGE" "promptfoo-server ${*}"
 
 # should be executed from your working directory
 docker run -d \

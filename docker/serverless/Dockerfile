@@ -7,7 +7,7 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
       org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
       org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-ARG SERVERLESS_VERSION=3.38.0
+ARG SERVERLESS_VERSION=4.33.0
 ARG AWS_CLI_VERSION=2.15.0
 
 # Install runtime dependencies

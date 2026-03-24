@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -10,18 +10,21 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 check_docker
 
 # see "../docker/speedtest/README.md"
-IMAGE=davidcardoso/my-ez-cli:speedtest-latest
+IMAGE=${IMAGE:-"$MEC_IMAGE_SPEEDTEST"}
 
 # Container naming and labeling
 CONTAINER_NAME=$(get_container_name "speedtest")
 CONTAINER_LABELS=$(get_container_labels "speedtest" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "speedtest"
+setup_logging "speedtest" "$IMAGE" "speedtest ${*}"
 
-# run from your working directory
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --platform linux/amd64 \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"

@@ -1,8 +1,8 @@
 # My Ez CLI
 
-CLI Devtools over Docker.
+CLI tools over Docker.
 
-> **v1.0.0 Release Candidate**: My Ez CLI is currently being upgraded to v1.0.0 with enhanced features, improved testing, and better documentation. See [ROADMAP.md](./ROADMAP.md) for details.
+> **v1.0.0**: Docker-based dev tools + AI integration powered by Claude Code. See [ROADMAP.md](./docs/ROADMAP.md) for details.
 
 ## Table of Contents
 
@@ -29,6 +29,7 @@ CLI Devtools over Docker.
     - [Yarn](#yarn)
       - [Using Yarn with other NodeJS versions](#using-yarn-with-other-nodejs-versions)
       - [Yarn Berry (v2+)](#yarn-berry-v2)
+      - [Yarn Plus](#yarn-plus)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
       - [`CONTEXT` variable](#context-variable)
@@ -36,13 +37,13 @@ CLI Devtools over Docker.
       - [`TF_RC_FILE` variable](#tf_rc_file-variable)
       - [`AWS_CREDENTIALS_FOLDER` variable](#aws_credentials_folder-variable)
       - [`GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables](#gcloud_credentials_folder-and-google_application_credentials-variables)
-    - [Cloud Development Kit for Terraform (CDKTF)](#cloud-development-kit-for-terraform-cdktf)
     - [Ookla Speedtest CLI](#ookla-speedtest-cli)
     - [Google Cloud CLI](#google-cloud-cli)
-    - [Graph Viz for docker compose](#graph-viz-for-docker-compose)
     - [Playwright](#playwright)
     - [Promptfoo](#promptfoo)
     - [Promptfoo Server](#promptfoo-server)
+    - [Claude Code](#claude-code)
+  - [AI Features](#ai-features)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -61,7 +62,7 @@ Run the interactive setup script to install tools:
 
 The setup script adds symbolic links to `/usr/local/bin/` and aliases to `~/.zshrc`.
 
-For detailed setup documentation, see [SETUP.md](./SETUP.md).
+For detailed setup documentation, see [SETUP.md](./docs/SETUP.md).
 
 ## Docker Container Management
 
@@ -91,12 +92,13 @@ docker images --filter "label=com.my-ez-cli.project=my-ez-cli"
 
 ## Documentation
 
-- **[SETUP.md](./SETUP.md)** - Comprehensive setup guide with installation modes, troubleshooting, and advanced usage
-- **[DOCKER_HUB.md](./DOCKER_HUB.md)** - Docker Hub setup, image management, CI/CD workflows, and GitHub Secrets configuration
-- **[tests/README.md](./tests/README.md)** - Testing framework documentation, writing tests, and running test suites
-- **[ROADMAP.md](./ROADMAP.md)** - v1.0.0 upgrade roadmap with planned features and implementation phases
+- **[SETUP.md](./docs/SETUP.md)** - Comprehensive setup guide with installation modes, troubleshooting, and advanced usage
+- **[DOCKER_HUB.md](./docs/DOCKER_HUB.md)** - Docker Hub setup, image management, CI/CD workflows, and GitHub Secrets configuration
+- **[AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)** - AI architecture: Claude Code integration, I/O middleware, filtering
+- **[ROADMAP.md](./docs/ROADMAP.md)** - v1.0.0 upgrade roadmap with planned features and implementation phases
 - **[CLAUDE.md](./CLAUDE.md)** - Development guidelines and architecture documentation for contributors
-- **[config/aws/](./config/aws/)** - AWS CLI configuration examples and authentication setup
+- **[tests/README.md](./tests/README.md)** - Testing framework documentation, writing tests, and running test suites
+- **[config/aws/README.md](./config/aws/README.md)** - AWS CLI configuration examples and authentication setup
 
 ## Usage examples
 
@@ -202,7 +204,8 @@ node somefile.js
 #### Using other NodeJS versions
 
 ```shell
-# Node 22 and 24 LTS are supported
+# Node 20, 22, and 24 LTS are supported
+node20 -v
 node22 -v
 node24 -v  # default
 ```
@@ -212,13 +215,13 @@ node24 -v  # default
 Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
 
 ```shell
-MEC_BIND_PORTS="8080:80 9090:80" node
-MEC_BIND_PORTS="8080:80 9090:80" npm
-MEC_BIND_PORTS="8080:80 9090:80" npx
-MEC_BIND_PORTS="8080:80 9090:80" yarn
+MEC_BIND_PORTS="8080:80 9090:5634" node
+MEC_BIND_PORTS="8080:80 9090:5634" npm
+MEC_BIND_PORTS="8080:80 9090:5634" npx
+MEC_BIND_PORTS="8080:80 9090:5634" yarn
 
 # or
-export MEC_BIND_PORTS="8080:80 9090:80"
+export MEC_BIND_PORTS="8080:80 9090:5634"
 node
 npm
 yarn
@@ -278,9 +281,6 @@ npm install -g another-pkg
 
 ```shell
 # just add the node version as a suffix
-npm14 -v
-npm16 -v
-npm18 -v
 npm20 -v
 npm22 -v
 ```
@@ -330,9 +330,6 @@ yarn global add another-pkg
 
 ```shell
 # just add the node version as a suffix
-yarn14 -v
-yarn16 -v
-yarn18 -v
 yarn20 -v
 yarn22 -v
 ```
@@ -345,6 +342,18 @@ yarn --version # it should show 3.6+
 
 # otherwise
 yarn-berry --version # it should show 3.6+
+```
+
+#### Yarn Plus
+
+Yarn with extra tools (git, curl, jq) pre-installed. Useful for workflows that require these tools alongside package management, such as [Projen](https://projen.io/).
+
+```shell
+# see version
+yarn-plus --version
+
+# install dependencies in a Projen project
+yarn-plus install
 ```
 
 ### Serverless Framework
@@ -534,22 +543,6 @@ terraform apply
 # it should be able to deploy to your cloud account based on the credentials used
 ```
 
-### Cloud Development Kit for Terraform (CDKTF)
-
-It is ready to work with Python.
-
-> [Building the docker image for Python](docker/cdktf/python/).
-
-```shell
-mkdir /my/folder/learn-cdktf
-cd /my/folder/learn-cdktf
-
-cdktf --help
-
-# starts a new project from a template
-cdktf init --template="python" --providers="aws@~>4.0"
-```
-
 ### Ookla Speedtest CLI
 
 [Building the docker image](docker/speedtest/README.md).
@@ -651,6 +644,46 @@ docker ps | grep promptfoo_server
 # access the UI
 open http://localhost:33333
 ```
+
+### Claude Code
+
+> AI-powered coding assistant. Requires authentication on host first (run `claude` natively or set `ANTHROPIC_API_KEY`).
+
+```shell
+# interactive mode
+claude
+
+# single-shot prompt
+claude -p "help me debug this error"
+
+# check version
+claude --version
+```
+
+**Prerequisites:** Three authentication methods are supported — see [docker/claude/README.md](./docker/claude/README.md#authentication) for details.
+- **API key** (`ANTHROPIC_API_KEY`) — uses Anthropic Console credits
+- **OAuth long-lived token** (`CLAUDE_CODE_OAUTH_TOKEN`) — uses Claude.ai subscription
+- **OAuth web login** — run `claude` interactively; session persists via `~/.claude/`
+
+## AI Features
+
+My Ez CLI includes AI-powered analysis via Claude Code — the sole analysis engine. Requires an API key or OAuth token for automated use (see [authentication methods](./docker/claude/README.md#authentication)).
+
+```shell
+# Check AI status
+mec ai status
+
+# Enable AI integration
+mec ai enable
+
+# Test Claude Code availability
+mec ai test
+
+# Analyze a log file with Claude Code
+mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
+```
+
+For detailed AI documentation, see [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
 
 ## Author
 

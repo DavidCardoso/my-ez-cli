@@ -1,0 +1,928 @@
+#!/bin/bash
+# ============================================================================
+# My Ez CLI - Main Command
+# ============================================================================
+# Main entry point for my-ez-cli command-line interface
+# Version: 1.0.0
+# ============================================================================
+
+set -e
+
+# Get script directory (works with symlinks)
+get_script_dir() {
+    SCRIPT="$0"
+    if [ -L "$SCRIPT" ]; then
+        if command -v readlink >/dev/null 2>&1; then
+            if readlink -f "$SCRIPT" >/dev/null 2>&1; then
+                SCRIPT=$(readlink -f "$SCRIPT")
+            else
+                SCRIPT=$(readlink "$SCRIPT")
+            fi
+        fi
+    fi
+    dirname "$SCRIPT"
+}
+
+SCRIPT_DIR=$(get_script_dir)
+BASE_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
+
+# Source utilities
+. "$SCRIPT_DIR/utils/common.sh"
+
+# Source config manager
+if [ -f "${BASE_DIR}/bin/utils/config-manager.sh" ]; then
+    . "${BASE_DIR}/bin/utils/config-manager.sh"
+fi
+
+# ----------------------------------------------------------------------------
+# Commands
+# ----------------------------------------------------------------------------
+
+show_version() {
+    echo "my-ez-cli version ${MEC_VERSION}"
+}
+
+show_help() {
+    cat <<'EOF'
+My Ez CLI - Docker-based Development Tools
+
+Usage: mec <command> [arguments]
+       mec <command> --help
+
+Commands:
+  config              Manage configuration
+  ai                  AI analysis (Claude Code)
+  logs                Log management
+  claude              Run Claude Code
+  claude firewall     Manage Claude Code container firewall
+  setup               Interactive setup TUI
+  install <tool...>   Install tools
+  uninstall <tool...> Uninstall tools
+  version             Show version
+  help                Show this help
+
+Run 'mec <command> --help' for subcommand details.
+
+Examples:
+  mec config --help
+  mec ai --help
+  mec logs --help
+  mec claude firewall status
+  mec install node terraform
+  mec uninstall yarn
+
+Documentation: https://github.com/davidcardoso/my-ez-cli
+EOF
+}
+
+# ----------------------------------------------------------------------------
+# AI Commands
+# ----------------------------------------------------------------------------
+
+mec_ai() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        status)
+            echo "AI Integration Status"
+            echo "---------------------"
+
+            # Check config
+            local ai_enabled
+            ai_enabled=$(config_get_default "ai.enabled" "false")
+            echo "  AI enabled:    $ai_enabled"
+
+            # Check middleware (I/O filtering)
+            if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
+                echo "  Middleware:    available"
+            else
+                echo "  Middleware:    not available (image not found)"
+            fi
+
+            # Check Claude Code
+            if docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
+                echo "  Claude Code:   available"
+            else
+                echo "  Claude Code:   not available (image not found)"
+            fi
+
+            # Show Claude wrapper symlink name
+            local claude_link=""
+            local claude_target
+            if [ -L "/usr/local/bin/claude" ]; then
+                claude_target=$(readlink -f "/usr/local/bin/claude" 2>/dev/null || readlink "/usr/local/bin/claude")
+                if [[ "$claude_target" == */bin/claude ]]; then
+                    claude_link="claude  (/usr/local/bin/claude → bin/claude)"
+                fi
+            fi
+            if [ -z "$claude_link" ] && [ -L "/usr/local/bin/mec-claude" ]; then
+                claude_link="mec-claude  (/usr/local/bin/mec-claude → bin/claude)"
+            fi
+            if [ -z "$claude_link" ]; then
+                claude_link="not installed (use 'bin/claude' or 'mec claude' directly)"
+            fi
+            echo "  Claude wrapper: $claude_link"
+
+            # Check logging state
+            local logging_enabled
+            logging_enabled=$(config_get_default "logs.enabled" "false")
+            if [ "$logging_enabled" = "true" ]; then
+                echo "  Logging:       enabled"
+            else
+                echo "  Logging:       disabled  (AI analysis requires logging — run 'mec logs enable')"
+            fi
+
+            # Show Claude execution settings
+            local claude_model claude_max_tokens claude_effort_level
+            claude_model=$(config_get_default "ai.claude.model" "sonnet")
+            claude_max_tokens=$(config_get_default "ai.claude.max_output_tokens" "8096")
+            claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
+            echo "  Model:         $claude_model"
+            echo "  Max tokens:    $claude_max_tokens"
+            echo "  Effort level:  $claude_effort_level (opus only)"
+
+            # Check auth
+            if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+                echo "  Auth:          ANTHROPIC_API_KEY set"
+            elif [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+                echo "  Auth:          CLAUDE_CODE_OAUTH_TOKEN set"
+            elif [ -d "${HOME}/.claude" ] && [ -f "${HOME}/.claude/.credentials.json" ]; then
+                echo "  Auth:          configured (~/.claude/) — interactive use only"
+            else
+                echo "  Auth:          not configured (set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN)"
+            fi
+            ;;
+        enable)
+            config_set "ai.enabled" "true"
+            echo "AI integration enabled."
+            ;;
+        disable)
+            config_set "ai.enabled" "false"
+            echo "AI integration disabled."
+            ;;
+        test)
+            echo "Testing Claude Code availability..."
+
+            # Test Docker image
+            if ! docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
+                echo "FAIL: Claude Code Docker image not found." >&2
+                echo "  Pull it with: docker pull $MEC_IMAGE_CLAUDE" >&2
+                return 1
+            fi
+            echo "  Docker image: OK"
+
+            # Test auth credential
+            if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+                echo "  Auth:          ANTHROPIC_API_KEY set"
+            elif [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+                echo "  Auth:          CLAUDE_CODE_OAUTH_TOKEN set"
+            else
+                echo "WARN: No auth credential set." >&2
+                echo "  For API key:    export ANTHROPIC_API_KEY=sk-ant-..." >&2
+                echo "  For OAuth token: export CLAUDE_CODE_OAUTH_TOKEN=sk-..." >&2
+            fi
+
+            # Test Claude Code runs
+            local version_output
+            version_output=$(docker run --rm \
+                "$MEC_IMAGE_CLAUDE" \
+                --version 2>/dev/null || echo "")
+
+            if [ -n "$version_output" ]; then
+                echo "  Claude Code: $version_output"
+                echo "All checks passed."
+            else
+                echo "WARN: Could not verify Claude Code version." >&2
+                echo "  The image exists but may need updating." >&2
+            fi
+            ;;
+        analyze)
+            local log_file="$1"
+            if [ -z "$log_file" ]; then
+                echo "Usage: mec ai analyze <log-file>" >&2
+                return 1
+            fi
+            if [ ! -f "$log_file" ]; then
+                echo "Error: File not found: $log_file" >&2
+                return 1
+            fi
+
+            # Check Claude Code availability
+            if ! docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
+                echo "Error: Claude Code Docker image not found." >&2
+                echo "  Pull it with: docker pull $MEC_IMAGE_CLAUDE" >&2
+                return 1
+            fi
+
+            if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+                echo "Error: No auth credential set." >&2
+                echo "  API key:     export ANTHROPIC_API_KEY=sk-ant-..." >&2
+                echo "  OAuth token: export CLAUDE_CODE_OAUTH_TOKEN=sk-..." >&2
+                return 1
+            fi
+
+            echo "Analyzing: $log_file"
+            echo ""
+
+            docker run --rm \
+                --volume "$(cd "$(dirname "$log_file")" && pwd)/$(basename "$log_file"):/log.json:ro" \
+                --env ANTHROPIC_API_KEY \
+                --env CLAUDE_CODE_OAUTH_TOKEN \
+                "$MEC_IMAGE_CLAUDE" \
+                -p "Analyze this tool execution log and provide actionable suggestions for fixing any issues: $(cat "$log_file")" \
+                --output-format text \
+                --max-turns 1
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec ai <command> [arguments]
+
+Commands:
+  status              Show AI integration status
+  enable              Enable AI integration
+  disable             Disable AI integration
+  test                Test Claude Code availability
+  analyze <log-file>  Analyze a log file with Claude Code
+  help                Show this help message
+
+Requirements (one of):
+  ANTHROPIC_API_KEY        Anthropic API key (Console credits)
+  CLAUDE_CODE_OAUTH_TOKEN  Long-lived OAuth token (Claude.ai subscription)
+
+Claude Settings (set with 'mec config set <key> <value>'):
+  ai.claude.model              Model for analysis (default: sonnet)
+                               Accepted: sonnet, haiku, opus, or full model ID
+  ai.claude.max_output_tokens  Max tokens in response (default: 8096)
+                               Range: 1024–64000; lower = shorter, cheaper
+  ai.claude.effort_level       Effort level for opus only (default: medium)
+                               Accepted: low, medium, high (ignored for sonnet/haiku)
+
+Examples:
+  mec ai status
+  mec ai enable
+  mec ai test
+  mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
+  mec config set ai.claude.model haiku
+  mec config set ai.claude.max_output_tokens 4096
+EOF
+            ;;
+        *)
+            echo "Unknown ai command: $subcmd" >&2
+            echo "Run 'mec ai help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
+# Logging Commands
+# ----------------------------------------------------------------------------
+
+mec_logs() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        status)
+            echo "Logging Status"
+            echo "--------------"
+            local logging_enabled
+            logging_enabled=$(config_get_default "logs.enabled" "false")
+            echo "  Logging enabled: $logging_enabled"
+            local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+            echo "  Log directory:   $log_dir"
+            if [ -d "$log_dir" ]; then
+                local count
+                count=$(find "$log_dir" -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
+                echo "  Log files:       $count JSON files"
+            else
+                echo "  Log files:       none (directory not created yet)"
+            fi
+            ;;
+        enable)
+            config_set "logs.enabled" "true"
+            echo "Logging enabled."
+            echo "Logs will be written to ${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/"
+            ;;
+        disable)
+            config_set "logs.enabled" "false"
+            echo "Logging disabled."
+            ;;
+        list)
+            _mec_logs_list "$@"
+            ;;
+        failures)
+            _mec_logs_failures "$@"
+            ;;
+        stats)
+            _mec_logs_stats
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec logs <command>
+
+Commands:
+  status                        Show logging status and log file count
+  enable                        Enable logging
+  disable                       Disable logging
+  list [--tool <name>] [--last N]  List recent executions (default: last 20)
+  failures [--last N]           List recent failed executions (default: last 20)
+  stats                         Show execution statistics
+  help                          Show this help message
+
+Examples:
+  mec logs status
+  mec logs enable
+  mec logs disable
+  mec logs list
+  mec logs list --tool node
+  mec logs list --last 5
+  mec logs failures
+  mec logs failures --last 10
+  mec logs stats
+EOF
+            ;;
+        *)
+            echo "Unknown logs command: $subcmd" >&2
+            echo "Run 'mec logs help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+# _ai_sidecar_exists <log_file>
+# Returns 0 if a sidecar AI analysis file exists for the given log file.
+_ai_sidecar_exists() {
+    local log_file="$1"
+    local ai_file
+    ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
+    [ -f "$ai_file" ]
+}
+
+# _mec_logs_list [--tool <name>] [--last N]
+# List recent execution log entries from ~/.my-ez-cli/logs/
+_mec_logs_list() {
+    local filter_tool=""
+    local last_n=20
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --tool)
+                filter_tool="$2"
+                shift 2
+                ;;
+            --last)
+                last_n="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                echo "Usage: mec logs list [--tool <name>] [--last N]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+
+    if [ ! -d "$log_dir" ]; then
+        echo "No log directory found at $log_dir"
+        return 0
+    fi
+
+    # Find JSON log files (exclude .bak files)
+    local search_dir="$log_dir"
+    if [ -n "$filter_tool" ]; then
+        search_dir="${log_dir}/${filter_tool}"
+        if [ ! -d "$search_dir" ]; then
+            echo "No logs found for tool: $filter_tool"
+            return 0
+        fi
+    fi
+
+    local log_files
+    log_files=$(find "$search_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | sort -r | head -n "$last_n")
+
+    if [ -z "$log_files" ]; then
+        echo "No log files found."
+        return 0
+    fi
+
+    # Print table header
+    printf "%-21s %-12s %-6s %-10s %-4s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI"
+    printf "%-21s %-12s %-6s %-10s %-4s\n" "---------------------" "------------" "------" "----------" "----"
+
+    echo "$log_files" | while IFS= read -r log_file; do
+        [ -f "$log_file" ] || continue
+
+        local tool exit_code start_time end_time has_ai duration_str
+
+        # Extract fields using grep+sed (portable; BSD awk lacks POSIX char classes in -F)
+        tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+        start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+
+        # Check for AI sidecar
+        if _ai_sidecar_exists "$log_file"; then
+            has_ai="yes"
+        else
+            has_ai="no"
+        fi
+
+        # Format timestamp (strip T and fractional seconds)
+        local ts_display
+        ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
+        [ -z "$ts_display" ] && ts_display="unknown"
+
+        # Compute duration in seconds
+        duration_str="-"
+        if [ -n "$start_time" ] && [ -n "$end_time" ]; then
+            # Use python for date arithmetic if available, otherwise skip
+            if command -v python3 >/dev/null 2>&1; then
+                duration_str=$(python3 -c "
+import sys
+from datetime import datetime
+try:
+    fmt = '%Y-%m-%dT%H:%M:%S'
+    s = '$start_time'.split('.')[0].rstrip('Z')
+    e = '$end_time'.split('.')[0].rstrip('Z')
+    delta = datetime.strptime(e, fmt) - datetime.strptime(s, fmt)
+    secs = int(delta.total_seconds())
+    print(str(secs) + 's')
+except:
+    print('-')
+" 2>/dev/null || echo "-")
+            fi
+        fi
+
+        [ -z "$tool" ] && tool="unknown"
+        [ -z "$exit_code" ] && exit_code="?"
+
+        printf "%-21s %-12s %-6s %-10s %-4s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai"
+    done
+}
+
+# _mec_logs_failures [--last N]
+# List recent failed executions (exit_code != 0)
+_mec_logs_failures() {
+    local last_n=20
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --last)
+                last_n="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                echo "Usage: mec logs failures [--last N]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+
+    if [ ! -d "$log_dir" ]; then
+        echo "No log directory found at $log_dir"
+        return 0
+    fi
+
+    local all_files
+    all_files=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | sort -r)
+
+    if [ -z "$all_files" ]; then
+        echo "No log files found."
+        return 0
+    fi
+
+    # Print table header
+    printf "%-21s %-12s %-6s %-10s %-4s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI"
+    printf "%-21s %-12s %-6s %-10s %-4s\n" "---------------------" "------------" "------" "----------" "----"
+
+    local shown=0
+    echo "$all_files" | while IFS= read -r log_file; do
+        [ -f "$log_file" ] || continue
+        [ "$shown" -ge "$last_n" ] && break
+
+        local tool exit_code start_time end_time has_ai duration_str
+
+        tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+
+        # Only show non-zero exit codes
+        [ -z "$exit_code" ] && continue
+        [ "$exit_code" = "0" ] && continue
+
+        start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+
+        if _ai_sidecar_exists "$log_file"; then
+            has_ai="yes"
+        else
+            has_ai="no"
+        fi
+
+        local ts_display
+        ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
+        [ -z "$ts_display" ] && ts_display="unknown"
+
+        duration_str="-"
+        if [ -n "$start_time" ] && [ -n "$end_time" ]; then
+            if command -v python3 >/dev/null 2>&1; then
+                duration_str=$(python3 -c "
+import sys
+from datetime import datetime
+try:
+    fmt = '%Y-%m-%dT%H:%M:%S'
+    s = '$start_time'.split('.')[0].rstrip('Z')
+    e = '$end_time'.split('.')[0].rstrip('Z')
+    delta = datetime.strptime(e, fmt) - datetime.strptime(s, fmt)
+    secs = int(delta.total_seconds())
+    print(str(secs) + 's')
+except:
+    print('-')
+" 2>/dev/null || echo "-")
+            fi
+        fi
+
+        [ -z "$tool" ] && tool="unknown"
+
+        printf "%-21s %-12s %-6s %-10s %-4s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai"
+        shown=$((shown + 1))
+    done
+}
+
+# _mec_logs_stats
+# Show aggregate execution statistics
+_mec_logs_stats() {
+    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+
+    if [ ! -d "$log_dir" ]; then
+        echo "No log directory found at $log_dir"
+        return 0
+    fi
+
+    local all_files
+    all_files=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null)
+
+    if [ -z "$all_files" ]; then
+        echo "No log files found."
+        return 0
+    fi
+
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - "$log_dir" <<'PYEOF'
+import sys, os, json, glob
+from datetime import datetime
+
+log_dir = sys.argv[1]
+files = glob.glob(os.path.join(log_dir, "**", "*.json"), recursive=True)
+files = [f for f in files if not f.endswith(".bak")]
+
+total = 0
+failures = 0
+ai_count = 0
+tool_stats = {}  # tool -> {runs, failures, total_secs}
+
+for f in files:
+    try:
+        with open(f) as fh:
+            data = json.load(fh)
+    except Exception:
+        continue
+
+    total += 1
+    tool = data.get("tool", "unknown")
+    exec_data = data.get("execution", {})
+    exit_code = exec_data.get("exit_code", 0)
+    start_time = exec_data.get("start_time", "")
+    end_time = exec_data.get("end_time", "")
+
+    ai_sidecar = f.replace('/logs/', '/ai-analyses/')
+    if os.path.exists(ai_sidecar):
+        ai_count += 1
+
+    if exit_code != 0:
+        failures += 1
+
+    duration_secs = None
+    if start_time and end_time:
+        try:
+            fmt = "%Y-%m-%dT%H:%M:%S"
+            s = start_time.split(".")[0].rstrip("Z")
+            e = end_time.split(".")[0].rstrip("Z")
+            delta = datetime.strptime(e, fmt) - datetime.strptime(s, fmt)
+            duration_secs = delta.total_seconds()
+        except Exception:
+            pass
+
+    if tool not in tool_stats:
+        tool_stats[tool] = {"runs": 0, "failures": 0, "total_secs": 0, "timed": 0}
+    tool_stats[tool]["runs"] += 1
+    if exit_code != 0:
+        tool_stats[tool]["failures"] += 1
+    if duration_secs is not None:
+        tool_stats[tool]["total_secs"] += duration_secs
+        tool_stats[tool]["timed"] += 1
+
+success_rate = int((total - failures) / total * 100) if total > 0 else 0
+
+print("Execution Stats")
+print("---------------")
+print(f"  Total runs:     {total}")
+print(f"  Failures:       {failures}  ({100 - success_rate}%)")
+print()
+print(f"  {'Tool':<14} {'Runs':>5}  {'Failures':>8}  {'Avg Duration':>12}")
+print(f"  {'-'*14} {'-'*5}  {'-'*8}  {'-'*12}")
+for tool, stats in sorted(tool_stats.items(), key=lambda x: -x[1]["runs"]):
+    avg_dur = "-"
+    if stats["timed"] > 0:
+        avg_dur = str(int(stats["total_secs"] / stats["timed"])) + "s"
+    print(f"  {tool:<14} {stats['runs']:>5}  {stats['failures']:>8}  {avg_dur:>12}")
+print()
+print(f"  AI analyses:   {ai_count} saved")
+PYEOF
+    else
+        # Fallback: basic counts without python3
+        local total failures ai_count
+        total=$(echo "$all_files" | wc -l | tr -d ' ')
+        failures=$(echo "$all_files" | while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            ec=$(awk -F'"exit_code"[[:space:]]*:[[:space:]]*' '{print $2}' "$f" 2>/dev/null | awk -F'[^0-9-]' '{print $1; exit}')
+            [ -n "$ec" ] && [ "$ec" != "0" ] && echo "1"
+        done | wc -l | tr -d ' ')
+        ai_count=$(echo "$all_files" | while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            ai_f=$(echo "$f" | sed 's|/logs/|/ai-analyses/|')
+            [ -f "$ai_f" ] && echo "1"
+        done | wc -l | tr -d ' ')
+
+        echo "Execution Stats"
+        echo "---------------"
+        echo "  Total runs:   $total"
+        echo "  Failures:     $failures"
+        echo "  AI analyses:  $ai_count saved"
+        echo ""
+        echo "  (Install python3 for per-tool breakdown)"
+    fi
+}
+
+# ----------------------------------------------------------------------------
+# Claude Firewall Commands
+# ----------------------------------------------------------------------------
+
+mec_claude_firewall() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    local GITHUB_META_KEY="ai.claude.firewall.github_meta_endpoints"
+    local DNS_DOMAINS_KEY="ai.claude.firewall.dns_resolve_domains"
+
+    case "$subcmd" in
+        status)
+            echo "Claude Firewall Status"
+            echo "----------------------"
+            local enabled
+            enabled=$(config_get_default "ai.claude.firewall.enabled" "false")
+            echo "  Enabled: $enabled"
+            echo ""
+            echo "  GitHub meta endpoints:"
+            config_get_list_default "$GITHUB_META_KEY" | while IFS= read -r item; do
+                echo "    - $item"
+            done
+            echo ""
+            echo "  DNS resolve domains:"
+            config_get_list_default "$DNS_DOMAINS_KEY" | while IFS= read -r item; do
+                echo "    - $item"
+            done
+            ;;
+        list)
+            echo "GitHub meta endpoints:"
+            config_get_list_default "$GITHUB_META_KEY" | while IFS= read -r item; do
+                echo "  - $item"
+            done
+            echo ""
+            echo "DNS resolve domains:"
+            config_get_list_default "$DNS_DOMAINS_KEY" | while IFS= read -r item; do
+                echo "  - $item"
+            done
+            ;;
+        add)
+            local list_type="${1:-}"
+            local domain="${2:-}"
+            if [ -z "$list_type" ] || [ -z "$domain" ]; then
+                echo "Usage: mec claude firewall add <github-meta|dns> <domain>" >&2
+                return 1
+            fi
+            case "$list_type" in
+                github-meta)
+                    _firewall_add_domain "$GITHUB_META_KEY" "$domain"
+                    echo "Added '$domain' to github-meta endpoints."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                dns)
+                    _firewall_add_domain "$DNS_DOMAINS_KEY" "$domain"
+                    echo "Added '$domain' to DNS resolve domains."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                *)
+                    echo "Unknown list type: $list_type" >&2
+                    echo "Use 'github-meta' or 'dns'" >&2
+                    return 1
+                    ;;
+            esac
+            ;;
+        remove)
+            local list_type="${1:-}"
+            local domain="${2:-}"
+            if [ -z "$list_type" ] || [ -z "$domain" ]; then
+                echo "Usage: mec claude firewall remove <github-meta|dns> <domain>" >&2
+                return 1
+            fi
+            case "$list_type" in
+                github-meta)
+                    _firewall_remove_domain "$GITHUB_META_KEY" "$domain"
+                    echo "Removed '$domain' from github-meta endpoints."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                dns)
+                    _firewall_remove_domain "$DNS_DOMAINS_KEY" "$domain"
+                    echo "Removed '$domain' from DNS resolve domains."
+                    echo "Run 'mec claude firewall rebuild' to apply changes."
+                    ;;
+                *)
+                    echo "Unknown list type: $list_type" >&2
+                    echo "Use 'github-meta' or 'dns'" >&2
+                    return 1
+                    ;;
+            esac
+            ;;
+        enable)
+            config_set "ai.claude.firewall.enabled" "true"
+            echo "Claude firewall enabled."
+            echo "Run 'mec claude firewall rebuild' to build the image with resolved IPs."
+            ;;
+        disable)
+            config_set "ai.claude.firewall.enabled" "false"
+            echo "Claude firewall disabled."
+            ;;
+        rebuild)
+            echo "Rebuilding Claude Code Docker image with updated domain resolution..."
+            local build_script="${BASE_DIR}/docker/claude/build"
+            if [ ! -f "$build_script" ]; then
+                echo "ERROR: Build script not found: $build_script" >&2
+                return 1
+            fi
+            bash "$build_script"
+            echo "Rebuild complete. IPs are now baked into the image."
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec claude firewall <command> [arguments]
+
+Commands:
+  status                              Show firewall enabled state and domain lists
+  list                                List all configured domains
+  add <github-meta|dns> <domain>      Add a domain to the firewall allow list
+  remove <github-meta|dns> <domain>   Remove a domain from the allow list
+  enable                              Enable the container firewall
+  disable                             Disable the container firewall
+  rebuild                             Rebuild Docker image with fresh IP resolution
+  help                                Show this help message
+
+Domain list types:
+  github-meta   GitHub API endpoints (IPs fetched via api.github.com/meta CIDR ranges)
+  dns           Domains resolved via DNS at Docker build time
+
+Notes:
+  - IPs are resolved at 'docker build' time and baked into the image
+  - Run 'mec claude firewall rebuild' after any domain changes
+  - Firewall requires NET_ADMIN capability (added automatically when enabled)
+
+Examples:
+  mec claude firewall status
+  mec claude firewall list
+  mec claude firewall add dns custom.example.com
+  mec claude firewall remove dns custom.example.com
+  mec claude firewall enable
+  mec claude firewall rebuild
+EOF
+            ;;
+        *)
+            echo "Unknown firewall command: $subcmd" >&2
+            echo "Run 'mec claude firewall help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
+# Setup / Install / Uninstall Commands
+# ----------------------------------------------------------------------------
+
+mec_setup() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        "")
+            exec "${BASE_DIR}/setup.sh"
+            ;;
+        show)
+            exec "${BASE_DIR}/setup.sh" status
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec setup [subcommand]
+
+Subcommands:
+  (none)   Open interactive setup TUI
+  show     Show installation status
+  help     Show this help message
+
+Examples:
+  mec setup
+  mec setup show
+EOF
+            ;;
+        *)
+            echo "Unknown setup subcommand: $subcmd" >&2
+            echo "Run 'mec setup help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+mec_install() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: mec install <tool> [tool2 ...]" >&2
+        return 1
+    fi
+    exec "${BASE_DIR}/setup.sh" install "$@"
+}
+
+mec_uninstall() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: mec uninstall <tool> [tool2 ...]" >&2
+        return 1
+    fi
+    exec "${BASE_DIR}/setup.sh" uninstall "$@"
+}
+
+# ----------------------------------------------------------------------------
+# Main Dispatch
+# ----------------------------------------------------------------------------
+
+COMMAND="${1:-help}"
+
+case "$COMMAND" in
+    config)
+        shift
+        mec_config "${1:---help}" "${@:2}"
+        ;;
+    ai)
+        shift
+        mec_ai "${1:---help}" "${@:2}"
+        ;;
+    logs)
+        shift
+        mec_logs "${1:---help}" "${@:2}"
+        ;;
+    claude)
+        shift
+        # Intercept 'mec claude firewall' before passing to bin/claude
+        if [ "${1:-}" = "firewall" ]; then
+            shift
+            mec_claude_firewall "$@"
+        else
+            exec "$SCRIPT_DIR/claude" "$@"
+        fi
+        ;;
+    setup)
+        shift
+        mec_setup "$@"
+        ;;
+    install)
+        shift
+        mec_install "$@"
+        ;;
+    uninstall)
+        shift
+        mec_uninstall "$@"
+        ;;
+    version|--version|-v)
+        show_version
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $COMMAND" >&2
+        echo "Run 'mec help' for usage information" >&2
+        exit 1
+        ;;
+esac

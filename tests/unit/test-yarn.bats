@@ -10,11 +10,17 @@ setup() {
     [ -x "$BASEDIR/bin/yarn" ]
 }
 
-@test "yarn runs with default version (node 24)" {
+@test "yarn runs with default version (node 22)" {
     run "$BASEDIR/bin/yarn" --version
     [ "$status" -eq 0 ]
     # Yarn version should be displayed
     [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]
+}
+
+@test "yarn uses Node 22 by default" {
+    run "$BASEDIR/bin/yarn" node --version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "v22" ]]
 }
 
 @test "yarn can run help command" {
@@ -23,9 +29,16 @@ setup() {
     [[ "$output" =~ "yarn" ]]
 }
 
-@test "yarn22 uses correct Node version" {
-    run "$BASEDIR/bin/yarn22" --version
+@test "yarn22 uses Node.js 22" {
+    run "$BASEDIR/bin/yarn22" node --version
     [ "$status" -eq 0 ]
+    [[ "$output" =~ "v22" ]]
+}
+
+@test "yarn20 uses Node.js 20" {
+    run "$BASEDIR/bin/yarn20" node --version
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "v20" ]]
 }
 
 @test "yarn sources common.sh correctly" {

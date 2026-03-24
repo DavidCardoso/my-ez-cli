@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e
+
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+# Source config manager for firewall setting
+if [ -f "${MEC_BASE_DIR}/bin/utils/config-manager.sh" ]; then
+    . "${MEC_BASE_DIR}/bin/utils/config-manager.sh"
+fi
+
+# Check Docker availability
+check_docker
+
+# Docker image
+IMAGE=${IMAGE:-"$MEC_IMAGE_CLAUDE"}
+WORKDIR=$(pwd)
+
+# Container naming and labeling
+CONTAINER_NAME=$(get_container_name "claude")
+CONTAINER_LABELS=$(get_container_labels "claude" "$IMAGE")
+
+# Claude Code user config directory
+CLAUDE_AUTH_DIR="${HOME}/.claude"
+# Claude Code user config file
+CLAUDE_CONFIG_FILE="${HOME}/.claude.json"
+
+# Create auth dir if it doesn't exist
+if [ ! -d "$CLAUDE_AUTH_DIR" ]; then
+    mkdir -p "$CLAUDE_AUTH_DIR"
+fi
+
+# Create config file if it doesn't exist
+if [ ! -f "$CLAUDE_CONFIG_FILE" ]; then
+    touch "$CLAUDE_CONFIG_FILE"
+fi
+
+# Build environment variable flags
+ENV_FLAGS=""
+
+# Pass ANTHROPIC_* and CLAUDE_* env vars
+for VAR in $(env | grep -E '^(ANTHROPIC_|CLAUDE_)' | cut -d= -f1); do
+    ENV_FLAGS="$ENV_FLAGS --env $VAR"
+done
+
+# Pass MEC_* env vars
+for VAR in $(env | grep -E '^MEC_' | cut -d= -f1); do
+    ENV_FLAGS="$ENV_FLAGS --env $VAR"
+done
+
+# Check if firewall is enabled and add required Docker flags
+FIREWALL_ENABLED=$(config_get_default "ai.claude.firewall.enabled" "false" 2>/dev/null || echo "false")
+EXTRA_DOCKER_FLAGS=""
+if [ "$FIREWALL_ENABLED" = "true" ]; then
+    ENV_FLAGS="$ENV_FLAGS --env MEC_FIREWALL_ENABLED=true"
+    EXTRA_DOCKER_FLAGS="--cap-add NET_ADMIN"
+fi
+
+# Setup logging (if enabled)
+setup_logging "claude" "$IMAGE" "claude ${*}"
+
+# Build docker command
+# Note: $PWD:$WORKDIR already includes project's .claude/ directory
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
+    --name $CONTAINER_NAME \
+    $CONTAINER_LABELS \
+    $EXTRA_DOCKER_FLAGS \
+    --volume $PWD:$WORKDIR \
+    --volume ${CLAUDE_AUTH_DIR}:/home/node/.claude \
+    --volume ${CLAUDE_CONFIG_FILE}:/home/node/.claude.json \
+    --workdir $WORKDIR \
+    $ENV_FLAGS \
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute
+eval "$DOCKER_CMD"

@@ -3,8 +3,8 @@
 # Test setup.sh script
 
 setup() {
-    BASEDIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-    SETUP_SCRIPT="$BASEDIR/setup.sh"
+    MEC_PROJECT_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    SETUP_SCRIPT="$MEC_PROJECT_DIR/setup.sh"
 }
 
 @test "setup.sh exists and is executable" {
@@ -111,4 +111,92 @@ setup() {
     [[ "$output" =~ "node" ]]
     [[ "$output" =~ "terraform" ]]
     [[ "$output" =~ "python" ]]
+}
+
+# Conflict detection tests
+# Note: sourcing setup.sh requires basic system utilities in PATH (/usr/bin:/bin).
+# Use `export PATH=...` (not inline assignment) so the path takes effect for subshells.
+# Use a temp dir as the only tool directory so fake binaries override host tools.
+
+_sys_path="/usr/bin:/bin"
+
+@test "detect_existing_tool returns 'none' when tool not in PATH" {
+    local fake_bin project_dir
+    fake_bin=$(mktemp -d)
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    # Source setup.sh then reset BASEDIR (setup.sh recalculates BASEDIR from ${0})
+    # fake_bin has no 'npm' — only system utils available
+    run bash -c "export PATH='$fake_bin:$_sys_path'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_existing_tool 'npm'"
+    rm -rf "$fake_bin"
+    [ "$status" -eq 0 ]
+    [ "$output" = "none" ]
+}
+
+@test "detect_existing_tool returns 'mec' when tool resolves to BASEDIR/bin" {
+    local fake_bin project_dir
+    fake_bin=$(mktemp -d)
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    ln -sf "$project_dir/bin/npm" "$fake_bin/npm"
+    run bash -c "export PATH='$fake_bin:$_sys_path'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_existing_tool 'npm'"
+    rm -rf "$fake_bin"
+    [ "$status" -eq 0 ]
+    [ "$output" = "mec" ]
+}
+
+@test "detect_existing_tool returns 'external:<path>' for non-mec binary" {
+    local fake_bin project_dir
+    fake_bin=$(mktemp -d)
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    echo '#!/bin/sh' > "$fake_bin/npm"; chmod +x "$fake_bin/npm"
+    run bash -c "export PATH='$fake_bin:$_sys_path'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_existing_tool 'npm'"
+    rm -rf "$fake_bin"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "external:"* ]]
+}
+
+@test "detect_existing_claude returns 'none' when claude not in PATH" {
+    local fake_bin project_dir
+    fake_bin=$(mktemp -d)
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    run bash -c "export PATH='$fake_bin:$_sys_path'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_existing_claude"
+    rm -rf "$fake_bin"
+    [ "$status" -eq 0 ]
+    [ "$output" = "none" ]
+}
+
+@test "detect_existing_claude returns 'mec' when claude resolves to BASEDIR/bin/claude" {
+    local fake_bin project_dir
+    fake_bin=$(mktemp -d)
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    ln -sf "$project_dir/bin/claude" "$fake_bin/claude"
+    run bash -c "export PATH='$fake_bin:$_sys_path'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_existing_claude"
+    rm -rf "$fake_bin"
+    [ "$status" -eq 0 ]
+    [ "$output" = "mec" ]
+}
+
+@test "detect_claude_install_method returns 'anthropic-script' for ~/.claude/local/claude" {
+    local project_dir user_home
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    user_home="$HOME"
+    run bash -c "export HOME='$user_home'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_claude_install_method '$user_home/.claude/local/claude'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "anthropic-script" ]
+}
+
+@test "detect_claude_install_method returns 'anthropic-script' for ~/.local/bin/claude" {
+    local project_dir user_home
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    user_home="$HOME"
+    run bash -c "export HOME='$user_home'; source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_claude_install_method '$user_home/.local/bin/claude'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "anthropic-script" ]
+}
+
+@test "detect_claude_install_method returns 'unknown:<path>' for unknown path" {
+    local project_dir
+    project_dir="$(dirname "$SETUP_SCRIPT")"
+    run bash -c "source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_claude_install_method '/some/random/bin/claude'"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "unknown:"* ]]
 }

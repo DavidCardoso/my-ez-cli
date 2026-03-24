@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -10,7 +10,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 check_docker
 
 # see "../docker/aws-sso-cred/build"
-IMAGE=davidcardoso/my-ez-cli:aws-sso-cred-latest
+IMAGE=${IMAGE:-"$MEC_IMAGE_AWS_SSO_CRED"}
 WORKDIR=/app
 
 # Container naming and labeling

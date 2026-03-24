@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -17,15 +17,18 @@ CONTAINER_NAME=$(get_container_name "aws")
 CONTAINER_LABELS=$(get_container_labels "aws" "$IMAGE")
 
 # Setup logging (if enabled)
-setup_logging "aws"
+setup_logging "aws" "$IMAGE" "aws ${*}"
 
-# run from your working directory
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --env AWS_PROFILE=$AWS_PROFILE \
-    --env LANG="en_US.UTF-8" \
+    --env LANG=\"en_US.UTF-8\" \
     --volume $HOME/.aws:/root/.aws \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis (error detection for AWS CLI)
+exec_with_ai "$DOCKER_CMD"

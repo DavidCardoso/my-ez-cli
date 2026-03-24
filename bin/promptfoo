@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Source common utilities (works with symlinks)
@@ -41,10 +41,10 @@ if [ ! -z "$PROMPTFOO_API_PORT" ]; then
 fi
 
 # Setup logging (if enabled)
-setup_logging "promptfoo"
+setup_logging "promptfoo" "$IMAGE" "promptfoo ${*}"
 
-# should be executed from your working directory
-docker run -i $(get_tty_flag) --rm \
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
     --volume $PWD:$WORKDIR \
@@ -66,4 +66,7 @@ docker run -i $(get_tty_flag) --rm \
     --workdir $WORKDIR \
     --entrypoint promptfoo \
     $PORTS \
-    $IMAGE "${@}"
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"

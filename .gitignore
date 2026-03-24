@@ -2,10 +2,24 @@
 .env*
 !.env.example
 
-# npm, yarn...
+# node, npm, yarn...
 *.log
 **/yarn*/.cache
 **/.yarn/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.coverage
+htmlcov/
 
 # IDEs
 .vscode/
@@ -15,3 +29,6 @@
 
 # Prmptfoo data
 data/
+
+# Claude - ignoring local settings
+.claude/*.local.json
