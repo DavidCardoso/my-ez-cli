@@ -725,18 +725,35 @@ detect_existing_claude() {
 
 detect_claude_install_method() {
     local claude_path="$1"
+
+    # Homebrew
     local brew_prefix=""
     if command -v brew &>/dev/null; then
         brew_prefix=$(brew --prefix 2>/dev/null) || brew_prefix=""
     fi
     if [[ -n "$brew_prefix" && "$claude_path" == "$brew_prefix"* ]]; then
         echo "homebrew"
-    elif [[ "$claude_path" == "$HOME/.claude/local/claude" || \
-            "$claude_path" == "$HOME/.local/bin/claude" ]]; then
-        echo "anthropic-script"
-    else
-        echo "unknown:$claude_path"
+        return
     fi
+
+    # Anthropic install script (~/.claude/local/claude or ~/.local/bin/claude)
+    if [[ "$claude_path" == "$HOME/.claude/local/claude" || \
+          "$claude_path" == "$HOME/.local/bin/claude" ]]; then
+        echo "anthropic-script"
+        return
+    fi
+
+    # npm global install
+    local npm_prefix=""
+    if command -v npm &>/dev/null; then
+        npm_prefix=$(npm config get prefix 2>/dev/null) || npm_prefix=""
+    fi
+    if [[ -n "$npm_prefix" && "$claude_path" == "$npm_prefix"* ]]; then
+        echo "npm"
+        return
+    fi
+
+    echo "unknown:$claude_path"
 }
 
 uninstall_native_claude() {
@@ -760,6 +777,15 @@ uninstall_native_claude() {
                 return 0
             else
                 echo "Warning: Could not remove $claude_path"
+                return 1
+            fi
+            ;;
+        npm)
+            echo "Uninstalling via npm: npm uninstall -g @anthropic-ai/claude-code"
+            if npm uninstall -g @anthropic-ai/claude-code 2>/dev/null; then
+                return 0
+            else
+                echo "Warning: npm uninstall failed."
                 return 1
             fi
             ;;
@@ -792,9 +818,10 @@ install_claude() {
     echo "--------------------------------------------------------------------------------"
     echo "  Conflict detected: 'claude' already exists at: $existing_path"
     case "$method" in
-        homebrew)        echo "  Installed via:    Homebrew" ;;
+        homebrew)         echo "  Installed via:    Homebrew" ;;
         anthropic-script) echo "  Installed via:    Anthropic install script" ;;
-        unknown:*)       echo "  Installed via:    Unknown method" ;;
+        npm)              echo "  Installed via:    npm (global)" ;;
+        unknown:*)        echo "  Installed via:    Unknown method" ;;
     esac
     echo ""
     echo "  Note: 'mec claude' is always available regardless of your choice."
