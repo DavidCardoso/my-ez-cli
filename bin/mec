@@ -197,6 +197,12 @@ mec_ai() {
                 echo "  The image exists but may need updating." >&2
             fi
             ;;
+        last)
+            _mec_ai_last
+            ;;
+        logs)
+            _mec_ai_logs "$@"
+            ;;
         analyze)
             local log_file="$1"
             if [ -z "$log_file" ]; then
@@ -243,6 +249,8 @@ Commands:
   enable              Enable AI integration
   disable             Disable AI integration
   test                Test Claude Code availability
+  last                Show the most recent AI analysis
+  logs [--last N]     List recent sessions with AI status (default: last 20)
   analyze <log-file>  Analyze a log file with Claude Code
   help                Show this help message
 
@@ -257,11 +265,15 @@ Claude Settings (set with 'mec config set <key> <value>'):
                                Range: 1024–64000; lower = shorter, cheaper
   ai.claude.effort_level       Effort level for opus only (default: medium)
                                Accepted: low, medium, high (ignored for sonnet/haiku)
+  ai.dashboard.port            Dashboard port (default: 4242)
 
 Examples:
   mec ai status
   mec ai enable
   mec ai test
+  mec ai last
+  mec ai logs
+  mec ai logs --last 5
   mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
   mec config set ai.claude.model haiku
   mec config set ai.claude.max_output_tokens 4096
@@ -273,6 +285,120 @@ EOF
             return 1
             ;;
     esac
+}
+
+# _mec_ai_last
+# Show the most recent AI analysis sidecar file.
+_mec_ai_last() {
+    local ai_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli}/ai-analyses"
+
+    if [ ! -d "$ai_dir" ]; then
+        echo "No AI analyses found (directory not created yet)."
+        return 0
+    fi
+
+    local latest
+    latest=$(find "$ai_dir" -name "*.json" 2>/dev/null | sort -r | head -1)
+
+    if [ -z "$latest" ]; then
+        echo "No AI analyses found yet."
+        echo "Run any tool with AI enabled and check back: mec ai last"
+        return 0
+    fi
+
+    # Extract session metadata
+    local session_id tool timestamp result
+    session_id=$(grep '"log_session_id"' "$latest" 2>/dev/null | sed 's/.*"log_session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    tool=$(echo "$session_id" | sed 's/mec-\([^-]*\)-.*/\1/')
+    timestamp=$(grep '"timestamp"' "$latest" 2>/dev/null | sed 's/.*"timestamp"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1 | sed 's/T/ /; s/\.[0-9]*//')
+    result=$(grep '"result"' "$latest" 2>/dev/null | sed 's/.*"result"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/' | head -1 | sed 's/\\n/\n/g; s/\\t/\t/g')
+
+    local dashboard_port
+    dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+
+    echo "Session:   ${session_id:-unknown}"
+    echo "Tool:      ${tool:-unknown}"
+    echo "Timestamp: ${timestamp:-unknown}"
+    echo "File:      $latest"
+    echo "Dashboard: http://localhost:${dashboard_port}/sessions/${session_id}"
+    echo ""
+
+    if [ -n "$result" ]; then
+        echo "Analysis:"
+        echo "---------"
+        echo "$result"
+    else
+        echo "(Analysis still running or no result available — try again shortly)"
+    fi
+}
+
+# _mec_ai_logs [--last N]
+# List recent sessions showing tool, timestamp, and AI analysis status.
+_mec_ai_logs() {
+    local last_n=20
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --last)
+                last_n="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                echo "Usage: mec ai logs [--last N]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+
+    if [ ! -d "$log_dir" ]; then
+        echo "No log directory found at $log_dir"
+        return 0
+    fi
+
+    local log_files
+    log_files=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | sort -r | head -n "$last_n")
+
+    if [ -z "$log_files" ]; then
+        echo "No log files found."
+        return 0
+    fi
+
+    printf "%-21s %-12s %-6s %-10s\n" "TIMESTAMP" "TOOL" "EXIT" "AI"
+    printf "%-21s %-12s %-6s %-10s\n" "---------------------" "------------" "------" "----------"
+
+    echo "$log_files" | while IFS= read -r log_file; do
+        [ -f "$log_file" ] || continue
+
+        local tool exit_code start_time ai_status
+        tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+        start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+
+        local ts_display
+        ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
+        [ -z "$ts_display" ] && ts_display="unknown"
+
+        # Derive sidecar path
+        local ai_file
+        ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
+        if [ -f "$ai_file" ]; then
+            # Check if result field is populated
+            local has_result
+            has_result=$(grep '"result"' "$ai_file" 2>/dev/null | grep -v '"result"[[:space:]]*:[[:space:]]*""' | head -1)
+            if [ -n "$has_result" ]; then
+                ai_status="done"
+            else
+                ai_status="pending"
+            fi
+        else
+            ai_status="none"
+        fi
+
+        printf "%-21s %-12s %-6s %-10s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status"
+    done
 }
 
 # ----------------------------------------------------------------------------

@@ -274,9 +274,6 @@ analyze_with_claude() {
         return 0
     fi
 
-    echo "" >&2
-    echo "[mec-ai] Running analysis with Claude Code..." >&2
-
     # Read Claude execution settings from config
     local claude_model
     claude_model=$(config_get_default "ai.claude.model" "sonnet")
@@ -286,6 +283,9 @@ analyze_with_claude() {
 
     local claude_effort_level
     claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
+
+    local dashboard_port
+    dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
 
     # Compute sidecar path: ~/.my-ez-cli/logs/tool/ts.json -> ~/.my-ez-cli/ai-analyses/tool/ts.json
     local log_dir
@@ -299,59 +299,58 @@ analyze_with_claude() {
     [ ! -d "${HOME}/.claude" ] && mkdir -p "${HOME}/.claude"
     [ ! -f "${HOME}/.claude.json" ] && touch "${HOME}/.claude.json"
 
-    # Run Claude Code and pipe raw JSON to ai-service for parsing + sidecar write.
-    # ai-service outputs: first line = session_id, remaining lines = result text.
-    local analysis_output
-    analysis_output=$(docker run --rm \
-        --env ANTHROPIC_API_KEY \
-        --env CLAUDE_CODE_OAUTH_TOKEN \
-        --env MEC_AI_ENABLED \
-        --env CLAUDE_CODE_MAX_OUTPUT_TOKENS="$claude_max_tokens" \
-        --env CLAUDE_CODE_EFFORT_LEVEL="$claude_effort_level" \
-        --volume "${HOME}/.claude:/home/node/.claude" \
-        --volume "${HOME}/.claude.json:/home/node/.claude.json" \
-        --volume "${PWD}:${PWD}" \
-        --workdir "${PWD}" \
-        "$MEC_IMAGE_CLAUDE" \
-        --model "$claude_model" \
-        -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
-        --output-format json \
-        --max-turns 1 2>/dev/null \
-      | docker run --rm -i \
-        --volume "$log_file:/log.json:ro" \
-        --volume "$ai_file:/ai-analyses.json" \
-        --env MEC_AI_ENABLED \
-        "$MEC_IMAGE_AI_SERVICE" \
-        parse-claude-response \
-          --ai-file /ai-analyses.json \
-          --log-file /log.json \
-          --log-session-id "${LOG_SESSION_ID:-}" \
-        2>/dev/null || echo "")
+    # Print session info immediately so the user has the link before analysis finishes
+    local session_id="${LOG_SESSION_ID:-$(basename "$log_file" .json)}"
+    echo "" >&2
+    echo "[mec-ai] Analysis running in background..." >&2
+    echo "[mec-ai] Session:  $session_id" >&2
+    echo "[mec-ai] Results:  http://localhost:${dashboard_port}/sessions/${session_id}" >&2
+    echo "[mec-ai]           (or: mec ai last)" >&2
 
-    # Check for auth failure indicators in raw output (before parsing)
-    if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
-        echo "[mec-ai] Claude Code auth failed. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN." >&2
-        return 0
-    fi
+    # Snapshot env vars needed inside the subshell before backgrounding
+    local _api_key="${ANTHROPIC_API_KEY:-}"
+    local _oauth_token="${CLAUDE_CODE_OAUTH_TOKEN:-}"
+    local _ai_enabled="${MEC_AI_ENABLED:-}"
+    local _home="${HOME}"
+    local _pwd="${PWD}"
+    local _image_claude="${MEC_IMAGE_CLAUDE}"
+    local _image_ai_service="${MEC_IMAGE_AI_SERVICE}"
 
-    # First line = session_id, rest = result text
-    local claude_session_id
-    claude_session_id=$(printf '%s' "$analysis_output" | head -1)
-    local claude_text
-    claude_text=$(printf '%s' "$analysis_output" | tail -n +2)
+    # Run analysis in background — shell returns immediately
+    (
+        local analysis_output
+        analysis_output=$(docker run --rm \
+            --env ANTHROPIC_API_KEY="${_api_key}" \
+            --env CLAUDE_CODE_OAUTH_TOKEN="${_oauth_token}" \
+            --env MEC_AI_ENABLED="${_ai_enabled}" \
+            --env CLAUDE_CODE_MAX_OUTPUT_TOKENS="$claude_max_tokens" \
+            --env CLAUDE_CODE_EFFORT_LEVEL="$claude_effort_level" \
+            --volume "${_home}/.claude:/home/node/.claude" \
+            --volume "${_home}/.claude.json:/home/node/.claude.json" \
+            --volume "${_pwd}:${_pwd}" \
+            --workdir "${_pwd}" \
+            "$_image_claude" \
+            --model "$claude_model" \
+            -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
+            --output-format json \
+            --max-turns 1 2>/dev/null \
+          | docker run --rm -i \
+            --volume "$log_file:/log.json:ro" \
+            --volume "$ai_file:/ai-analyses.json" \
+            --env MEC_AI_ENABLED="${_ai_enabled}" \
+            "$_image_ai_service" \
+            parse-claude-response \
+              --ai-file /ai-analyses.json \
+              --log-file /log.json \
+              --log-session-id "${session_id}" \
+            2>/dev/null || echo "")
 
-    # Print analysis to stderr
-    if [ -n "$claude_text" ]; then
-        echo "" >&2
-        echo "[mec-ai] Claude Code analysis:" >&2
-        echo "$claude_text" >&2
-        echo "" >&2
-    fi
-
-    # Print resume hint
-    if [ -n "$claude_session_id" ]; then
-        echo "[mec-ai] To follow up: claude --resume $claude_session_id" >&2
-    fi
+        # Auth failure — write a marker so mec ai last can report it
+        if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
+            echo "[mec-ai] Auth failed for session $session_id. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN." >&2
+        fi
+    ) &
+    disown
 }
 
 # Execute command with optional logging and AI analysis
