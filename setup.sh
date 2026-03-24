@@ -725,8 +725,10 @@ detect_existing_claude() {
 
 detect_claude_install_method() {
     local claude_path="$1"
-    local brew_prefix
-    brew_prefix=$(brew --prefix 2>/dev/null)
+    local brew_prefix=""
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        brew_prefix=$(brew --prefix 2>/dev/null) || brew_prefix=""
+    fi
     if [[ -n "$brew_prefix" && "$claude_path" == "$brew_prefix"* ]]; then
         echo "homebrew"
     elif [[ "$claude_path" == "$HOME/.claude/local/claude" || \
