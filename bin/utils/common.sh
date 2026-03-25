@@ -336,6 +336,7 @@ analyze_with_claude() {
             --workdir "${_pwd}" \
             "$_image_claude" \
             --model "$claude_model" \
+            --tools "" \
             -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
             --output-format json \
             --max-turns 1 2>/dev/null \
