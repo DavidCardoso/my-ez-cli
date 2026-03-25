@@ -299,7 +299,7 @@ _mec_ai_last() {
     fi
 
     local log_file
-    log_file=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -1)
+    log_file=$(find "$log_dir" -name "*.json" ! -name "*.bak" ! -type d 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -1)
 
     if [ -z "$log_file" ]; then
         echo "No sessions found yet. Run any tool with AI enabled first."
@@ -381,7 +381,7 @@ _mec_ai_logs() {
     fi
 
     local log_files
-    log_files=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -n "$last_n")
+    log_files=$(find "$log_dir" -name "*.json" ! -name "*.bak" ! -type d 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -n "$last_n")
 
     if [ -z "$log_files" ]; then
         echo "No log files found."
