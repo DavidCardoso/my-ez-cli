@@ -407,6 +407,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 - Full configuration editor UI
 - Log encryption (AES-256-GCM, opt-in)
 - Prompt injection hardening — tool output passed to Claude as inline prompt content could contain adversarial instructions; sanitization beyond control-char stripping (e.g. delimiters, input validation, output sandboxing)
+- CVE / security advisory scanning — cross-reference tool execution logs and AI analysis results against known CVE databases (NVD, OSV, GitHub Advisory) and security issue DBs; flag vulnerable package versions, deprecated images, or insecure patterns detected at runtime (needs proper planning: data sources, update cadence, false-positive rate, opt-in UX)
 - Elasticsearch + Kibana integration
 - NPM publishing (`@my-ez-cli/core`)
 - Remote execution (curl install script)
@@ -446,6 +447,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 | PostgreSQL logs | Future | P2 | Low | Medium | 💡 Future |
 | Log encryption | Future | P2 | Medium | Medium | 💡 Future |
 | Prompt injection hardening | Future | P2 | High | Medium | 💡 Future |
+| CVE / security advisory scanning | Future | P2 | High | High | 💡 Future |
 | Elasticsearch | Future | P3 | Low | High | 💡 Future |
 
 ---
@@ -530,4 +532,4 @@ Items below are not scheduled — they may become implementation phases once v1.
 
 *This roadmap is a living document. Update as implementation progresses.*
 
-**Last updated:** 2026-02-20
+**Last updated:** 2026-03-25
