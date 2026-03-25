@@ -359,11 +359,12 @@ mec ai status
 
 ---
 
-### Phase 3: AI Performance + Dashboard
+### Phase 3: AI Performance + Dashboard ✅
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** P0 (Critical)
 **Started:** 2026-03-24
+**Completed:** 2026-03-25
 **Goal:** Eliminate AI analysis blocking delay and deliver an early Web UI for log + analysis review
 
 #### Phase 3.1 — Async Analysis + mec ai last/logs ✅
@@ -377,16 +378,16 @@ mec ai status
 **Deliverables:**
 - Non-blocking AI analysis
 - Session-aware terminal output with direct link to results
-- New `mec ai last` and `mec ai logs` subcommands
+- `mec ai last`, `mec ai show`, `mec ai logs` subcommands
 
-#### Phase 3.2 — Dashboard Daemon (Planned)
+#### Phase 3.2 — Dashboard Daemon ✅
 
-- [ ] `services/dashboard/` — Python/FastAPI server with `watchfiles` + WebSocket hot-reload
-- [ ] `docker/dashboard/Dockerfile` — `python:3.14-alpine`, exposes port `4242`
-- [ ] `mec dashboard start | stop | status | open` subcommands
-- [ ] Web UI: session list + detail (raw log + AI analysis side-by-side), auto-refreshes when new analysis arrives
-- [ ] `davidcardoso/my-ez-cli:dashboard-latest` Docker Hub image
-- [ ] `ai.dashboard.port` config key (default: `4242`)
+- ✅ `services/dashboard/` — Python/FastAPI server with `watchfiles` + WebSocket hot-reload
+- ✅ `docker/dashboard/Dockerfile` — `python:3.12-alpine`, exposes port `4242`
+- ✅ `mec dashboard start | stop | status | open` subcommands
+- ✅ Web UI: session list + detail (raw log + AI analysis side-by-side), auto-refreshes when new analysis arrives
+- ✅ `davidcardoso/my-ez-cli:dashboard-latest` Docker Hub image
+- ✅ `ai.dashboard.port` config key (default: `4242`)
 
 **Deliverables:**
 - Long-running dashboard container managed by `mec dashboard`
@@ -440,8 +441,8 @@ Items below are not scheduled — they may become implementation phases once v1.
 | Provider removal | 2 | P0 | High | Low | ✅ Complete |
 | Async AI analysis | 3.1 | P0 | High | Low | ✅ Complete |
 | mec ai last/logs/show | 3.1 | P0 | High | Low | ✅ Complete |
-| Dashboard daemon | 3.2 | P0 | High | High | ⏳ Planned |
-| Dashboard Web UI | 3.2 | P0 | High | High | ⏳ Planned |
+| Dashboard daemon | 3.2 | P0 | High | High | ✅ Complete |
+| Dashboard Web UI | 3.2 | P0 | High | High | ✅ Complete |
 | Shell completion | Future | P1 | Medium | Low | 💡 Future |
 | `mec doctor` | Future | P1 | High | Medium | 💡 Future |
 | Homebrew formula | Future | P1 | Medium | Medium | 💡 Future |
