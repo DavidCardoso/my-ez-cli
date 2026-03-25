@@ -267,9 +267,10 @@ analyze_with_claude() {
         return 0
     fi
 
-    # Read log content for the prompt
+    # Read log content for the prompt, stripping control characters that would
+    # corrupt the shell string when embedded inline in the -p argument
     local log_content
-    log_content=$(cat "$log_file" 2>/dev/null || echo "")
+    log_content=$(cat "$log_file" 2>/dev/null | tr -d '\000-\010\013\014\016-\037' || echo "")
     if [ -z "$log_content" ]; then
         return 0
     fi

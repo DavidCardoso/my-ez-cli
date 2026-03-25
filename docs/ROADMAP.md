@@ -406,6 +406,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 - PostgreSQL log storage (opt-in)
 - Full configuration editor UI
 - Log encryption (AES-256-GCM, opt-in)
+- Prompt injection hardening — tool output passed to Claude as inline prompt content could contain adversarial instructions; sanitization beyond control-char stripping (e.g. delimiters, input validation, output sandboxing)
 - Elasticsearch + Kibana integration
 - NPM publishing (`@my-ez-cli/core`)
 - Remote execution (curl install script)
@@ -444,6 +445,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 | Homebrew formula | Future | P1 | Medium | Medium | 💡 Future |
 | PostgreSQL logs | Future | P2 | Low | Medium | 💡 Future |
 | Log encryption | Future | P2 | Medium | Medium | 💡 Future |
+| Prompt injection hardening | Future | P2 | High | Medium | 💡 Future |
 | Elasticsearch | Future | P3 | Low | High | 💡 Future |
 
 ---
