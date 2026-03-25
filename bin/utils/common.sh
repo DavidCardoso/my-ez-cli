@@ -22,10 +22,12 @@ MEC_IMAGE_SPEEDTEST="${MEC_IMAGE_SPEEDTEST:-${MEC_IMAGE_REPO}:speedtest-${MEC_IM
 MEC_IMAGE_AWS_SSO_CRED="${MEC_IMAGE_AWS_SSO_CRED:-${MEC_IMAGE_REPO}:aws-sso-cred-${MEC_IMAGE_TAG}}"
 MEC_IMAGE_YARN_BERRY="${MEC_IMAGE_YARN_BERRY:-${MEC_IMAGE_REPO}:yarn-berry-${MEC_IMAGE_TAG}}"
 MEC_IMAGE_YARN_PLUS="${MEC_IMAGE_YARN_PLUS:-${MEC_IMAGE_REPO}:yarn-plus-${MEC_IMAGE_TAG}}"
+MEC_IMAGE_DASHBOARD="${MEC_IMAGE_DASHBOARD:-${MEC_IMAGE_REPO}:dashboard-${MEC_IMAGE_TAG}}"
 
 export MEC_IMAGE_REPO MEC_IMAGE_TAG
 export MEC_IMAGE_AI_SERVICE MEC_IMAGE_CONFIG_SERVICE MEC_IMAGE_CLAUDE MEC_IMAGE_SERVERLESS
 export MEC_IMAGE_SPEEDTEST MEC_IMAGE_AWS_SSO_CRED MEC_IMAGE_YARN_BERRY MEC_IMAGE_YARN_PLUS
+export MEC_IMAGE_DASHBOARD
 
 # ----------------------------------------------------------------------------
 # Path Resolution (works with symlinks)
@@ -334,6 +336,7 @@ analyze_with_claude() {
             --workdir "${_pwd}" \
             "$_image_claude" \
             --model "$claude_model" \
+            --tools "" \
             -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
             --output-format json \
             --max-turns 1 2>/dev/null \

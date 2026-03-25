@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## v1.0.0 Upgrade Status
 
-**Phase 1 + Phase 2 + Phase 2.8 Complete. Phase 3 in progress.**: My Ez CLI v1.0.0 includes Docker tooling (Phase 1), AI integration (Phase 2), UX hardening (Phase 2.8), and AI performance + dashboard (Phase 3). See [ROADMAP.md](./docs/ROADMAP.md) for the complete plan.
+**All phases complete (1, 2, 2.8, 3).**: My Ez CLI v1.0.0 includes Docker tooling (Phase 1), AI integration (Phase 2), UX hardening (Phase 2.8), and AI performance + dashboard (Phase 3). See [ROADMAP.md](./docs/ROADMAP.md) for the complete plan.
 
 ### Completed (Phase 1 — Foundation)
 - ✓ Path resolution fixes with `common.sh` utilities
@@ -30,12 +30,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✓ Unit tests for conflict detection functions in `tests/unit/test-setup.bats`
 - ✓ Manual testing checklist in `docs/SETUP.md`
 
-### In Progress (Phase 3 — AI Performance + Dashboard)
+### Completed (Phase 3 — AI Performance + Dashboard)
 - ✓ `analyze_with_claude()` now runs in background (non-blocking)
 - ✓ Terminal prints session ID + dashboard URL after each command
 - ✓ `mec ai last` — show most recent AI analysis
+- ✓ `mec ai show <session_id>` — look up any session by ID
 - ✓ `mec ai logs` — list recent sessions with AI status
-- ☐ Dashboard daemon (`mec dashboard`, Python/FastAPI, hot-reload Web UI)
+- ✓ Dashboard daemon (`mec dashboard start|stop|status|open`, Python/FastAPI, hot-reload Web UI)
 
 ### Future
 - Shell completion, `mec doctor`, Homebrew formula

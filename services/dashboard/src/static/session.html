@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mec dashboard — session</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --text: #e2e8f0; --muted: #718096; --accent: #7c6af7;
+      --green: #48bb78; --red: #fc8181; --yellow: #f6c90e;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    header a { color: var(--muted); text-decoration: none; font-size: 12px; }
+    header a:hover { color: var(--accent); }
+    header h1 { font-size: 14px; font-weight: 600; color: var(--text); }
+    #ws-status { margin-left: auto; font-size: 11px; color: var(--muted); }
+    #ws-status.connected { color: var(--green); }
+    main { padding: 20px 24px; max-width: 1200px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; }
+    .meta-item { display: flex; flex-direction: column; gap: 3px; }
+    .meta-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .meta-item .value { font-size: 13px; }
+    .exit-ok { color: var(--green); } .exit-fail { color: var(--red); }
+    .ai-done { color: var(--green); } .ai-pending { color: var(--yellow); } .ai-none { color: var(--muted); }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; }
+    .panel-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .panel-header .badge { background: var(--border); border-radius: 3px; padding: 1px 6px; font-size: 10px; }
+    pre { padding: 14px; font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre-wrap; word-break: break-word; flex: 1; min-height: 200px; max-height: 600px; overflow-y: auto; }
+    .ai-panel pre { color: #c3dafe; }
+    .pending-msg { color: var(--yellow); padding: 24px 14px; font-size: 12px; }
+    .none-msg { color: var(--muted); padding: 24px 14px; font-size: 12px; }
+    .command-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: var(--muted); }
+    .command-bar span { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← sessions</a>
+    <h1 id="page-title">Loading…</h1>
+    <span id="ws-status">⬤ connecting</span>
+  </header>
+  <main>
+    <div id="meta" class="meta"></div>
+    <div id="command-bar" class="command-bar" style="display:none">$ <span id="command-text"></span></div>
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header">Raw log output</div>
+        <pre id="raw-output">Loading…</pre>
+      </div>
+      <div class="panel ai-panel">
+        <div class="panel-header">AI analysis <span id="ai-badge" class="badge">…</span></div>
+        <div id="ai-content"></div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const sessionId = location.pathname.split('/').pop();
+
+    function fmt(ts) {
+      if (!ts) return '—';
+      return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace('Z', '');
+    }
+    function aiClass(s) { return s === 'done' ? 'ai-done' : s === 'pending' ? 'ai-pending' : 'ai-none'; }
+
+    async function load() {
+      const res = await fetch(`/api/sessions/${sessionId}`);
+      if (!res.ok) { document.getElementById('page-title').textContent = 'Session not found'; return; }
+      const s = await res.json();
+
+      document.title = `mec — ${s.session_id}`;
+      document.getElementById('page-title').textContent = `${s.tool} / ${s.session_id}`;
+
+      // Meta bar
+      const meta = document.getElementById('meta');
+      const exitClass = s.exit_code === 0 ? 'exit-ok' : s.exit_code === null ? '' : 'exit-fail';
+      meta.innerHTML = `
+        <div class="meta-item"><span class="label">Tool</span><span class="value">${s.tool || '—'}</span></div>
+        <div class="meta-item"><span class="label">Timestamp</span><span class="value">${fmt(s.timestamp)}</span></div>
+        <div class="meta-item"><span class="label">Exit code</span><span class="value ${exitClass}">${s.exit_code ?? '—'}</span></div>
+        <div class="meta-item"><span class="label">AI status</span><span class="value ${aiClass(s.ai_status)}">${s.ai_status}</span></div>`;
+
+      // Command bar
+      if (s.command) {
+        document.getElementById('command-text').textContent = s.command;
+        document.getElementById('command-bar').style.display = 'block';
+      }
+
+      // Raw output
+      const rawOutput = [s.stdout, s.stderr].filter(Boolean).join('\n--- stderr ---\n') || '(no output)';
+      document.getElementById('raw-output').textContent = rawOutput;
+
+      // AI panel
+      const aiContent = document.getElementById('ai-content');
+      const aiBadge = document.getElementById('ai-badge');
+      aiBadge.textContent = s.ai_status;
+      aiBadge.className = `badge ${aiClass(s.ai_status)}`;
+      if (s.ai_status === 'done' && s.ai_result) {
+        aiContent.innerHTML = `<pre>${escHtml(s.ai_result)}</pre>`;
+      } else if (s.ai_status === 'pending') {
+        aiContent.innerHTML = `<div class="pending-msg">⏳ Analysis running in background — page will update automatically.</div>`;
+      } else {
+        aiContent.innerHTML = `<div class="none-msg">No AI analysis for this session.</div>`;
+      }
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    load();
+
+    // WebSocket — auto-refresh when analysis arrives
+    const wsStatus = document.getElementById('ws-status');
+    function connectWS() {
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+      ws.onopen = () => { wsStatus.textContent = '⬤ live'; wsStatus.className = 'connected'; };
+      ws.onmessage = (e) => { if (e.data === 'refresh') load(); };
+      ws.onclose = () => { wsStatus.textContent = '⬤ disconnected'; wsStatus.className = ''; setTimeout(connectWS, 3000); };
+    }
+    connectWS();
+  </script>
+</body>
+</html>
