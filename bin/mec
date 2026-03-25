@@ -288,48 +288,70 @@ EOF
 }
 
 # _mec_ai_last
-# Show the most recent AI analysis sidecar file.
+# Show the most recent session: reads metadata from the log file (source of
+# truth) and the analysis result from the sidecar if available.
 _mec_ai_last() {
-    local ai_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli}/ai-analyses"
+    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
 
-    if [ ! -d "$ai_dir" ]; then
-        echo "No AI analyses found (directory not created yet)."
+    if [ ! -d "$log_dir" ]; then
+        echo "No logs found (directory not created yet)."
         return 0
     fi
 
-    local latest
-    latest=$(find "$ai_dir" -name "*.json" ! -type d 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -1)
+    local log_file
+    log_file=$(find "$log_dir" -name "*.json" ! -name "*.bak" 2>/dev/null | awk -F/ '{print $NF, $0}' | sort -rk1 | awk '{print $2}' | head -1)
 
-    if [ -z "$latest" ]; then
-        echo "No AI analyses found yet."
-        echo "Run any tool with AI enabled and check back: mec ai last"
+    if [ -z "$log_file" ]; then
+        echo "No sessions found yet. Run any tool with AI enabled first."
         return 0
     fi
 
-    # Extract session metadata
-    local session_id tool timestamp result
-    session_id=$(grep '"log_session_id"' "$latest" 2>/dev/null | sed 's/.*"log_session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
-    tool=$(echo "$session_id" | sed 's/mec-\([^-]*\)-.*/\1/')
-    timestamp=$(grep '"timestamp"' "$latest" 2>/dev/null | sed 's/.*"timestamp"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1 | sed 's/T/ /; s/\.[0-9]*//')
-    result=$(grep '"result"' "$latest" 2>/dev/null | sed 's/.*"result"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/' | head -1 | sed 's/\\n/\n/g; s/\\t/\t/g')
+    # Read metadata from the log file (always populated)
+    local session_id tool start_time exit_code
+    session_id=$(grep '"session_id"' "$log_file" 2>/dev/null | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1 | sed 's/T/ /; s/\.[0-9]*//')
+    exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+
+    # Derive sidecar path and AI status
+    local ai_file ai_status result
+    ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
+
+    if [ -f "$ai_file" ]; then
+        result=$(grep '"result"' "$ai_file" 2>/dev/null | sed 's/.*"result"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/' | head -1 | sed 's/\\n/\n/g; s/\\t/\t/g')
+        if [ -n "$result" ]; then
+            ai_status="done"
+        else
+            ai_status="pending"
+        fi
+    else
+        ai_status="none"
+    fi
 
     local dashboard_port
     dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
 
     echo "Session:   ${session_id:-unknown}"
     echo "Tool:      ${tool:-unknown}"
-    echo "Timestamp: ${timestamp:-unknown}"
-    echo "File:      $latest"
+    echo "Timestamp: ${start_time:-unknown}"
+    echo "Exit code: ${exit_code:-unknown}"
+    echo "AI status: $ai_status"
     echo "Dashboard: http://localhost:${dashboard_port}/sessions/${session_id}"
     echo ""
 
-    if [ -n "$result" ]; then
-        echo "Analysis:"
-        echo "---------"
-        echo "$result"
-    else
-        echo "(Analysis still running or no result available — try again shortly)"
-    fi
+    case "$ai_status" in
+        done)
+            echo "Analysis:"
+            echo "---------"
+            echo "$result"
+            ;;
+        pending)
+            echo "(Analysis is still running — try again shortly)"
+            ;;
+        none)
+            echo "(No AI analysis for this session — AI may be disabled or images unavailable)"
+            ;;
+    esac
 }
 
 # _mec_ai_logs [--last N]
