@@ -227,10 +227,10 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: services/dashboard/frontend/package-lock.json
+          cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Install frontend dependencies
-        run: cd services/dashboard/frontend && npm install
+        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install
 
       - name: Run Vitest unit tests
         run: cd services/dashboard/frontend && npm test
@@ -248,7 +248,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: services/dashboard/frontend/package-lock.json
+          cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -261,6 +261,7 @@ jobs:
       - name: Install frontend dependencies and build
         run: |
           cd services/dashboard/frontend
+          rm -f package-lock.json
           npm install
           npm run build
 

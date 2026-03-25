@@ -5,8 +5,9 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /frontend
 
-# Copy registry config and manifests first for better layer caching
-COPY frontend/.npmrc frontend/package.json frontend/package-lock.json* ./
+# Copy registry config and package manifest (no lockfile — let npm resolve
+# optional native deps for the current platform, e.g. rollup-linux-x64-musl)
+COPY frontend/.npmrc frontend/package.json ./
 RUN npm install
 
 # Copy source and build — output lands in /frontend/dist/
