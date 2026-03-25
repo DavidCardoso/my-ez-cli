@@ -366,12 +366,13 @@ mec ai status
 **Started:** 2026-03-24
 **Goal:** Eliminate AI analysis blocking delay and deliver an early Web UI for log + analysis review
 
-#### Phase 3.1 — Async Analysis + mec ai last/logs (In Progress)
+#### Phase 3.1 — Async Analysis + mec ai last/logs ✅
 
-- [ ] `analyze_with_claude()` fires in background — shell unblocks immediately after tool finishes
-- [ ] Terminal prints session ID + dashboard URL on every run
-- [ ] `mec ai last` — show most recent AI analysis (ad-hoc fallback)
-- [ ] `mec ai logs` — list recent sessions with status (pending/done)
+- ✅ `analyze_with_claude()` fires in background — shell unblocks immediately after tool finishes
+- ✅ Terminal prints session ID + dashboard URL on every run
+- ✅ `mec ai last` — show most recent AI analysis (ad-hoc fallback)
+- ✅ `mec ai show <session_id>` — show any session by ID
+- ✅ `mec ai logs` — list recent sessions with status (pending/done)
 
 **Deliverables:**
 - Non-blocking AI analysis
@@ -437,8 +438,8 @@ Items below are not scheduled — they may become implementation phases once v1.
 | Claude Code integration | 2 | P0 | High | High | ✅ Complete |
 | Shell integration | 2 | P0 | High | Medium | ✅ Complete |
 | Provider removal | 2 | P0 | High | Low | ✅ Complete |
-| Async AI analysis | 3.1 | P0 | High | Low | 🔄 In Progress |
-| mec ai last/logs | 3.1 | P0 | High | Low | 🔄 In Progress |
+| Async AI analysis | 3.1 | P0 | High | Low | ✅ Complete |
+| mec ai last/logs/show | 3.1 | P0 | High | Low | ✅ Complete |
 | Dashboard daemon | 3.2 | P0 | High | High | ⏳ Planned |
 | Dashboard Web UI | 3.2 | P0 | High | High | ⏳ Planned |
 | Shell completion | Future | P1 | Medium | Low | 💡 Future |
