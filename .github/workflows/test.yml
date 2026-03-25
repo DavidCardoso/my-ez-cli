@@ -261,7 +261,7 @@ jobs:
       - name: Install frontend dependencies and build
         run: |
           cd services/dashboard/frontend
-          npm ci
+          npm install
           npm run build
 
       - name: Install Playwright browsers
