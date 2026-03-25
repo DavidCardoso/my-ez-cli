@@ -1,11 +1,12 @@
 # My Ez CLI - v1.0.0 Roadmap
 
-**Status:** Phase 1, Phase 2 & Phase 2.9 Complete - v1.0.0 Release Candidate
+**Status:** Phase 3 In Progress - v1.0.0 Release Candidate
 **Target:** First Stable Release (v1.0.0)
 **Previous Versions:** 0.x.y (beta releases)
 **Phase 1 Completed:** 2026-01-20
 **Phase 2 Completed:** 2026-02-16
 **Phase 2.9 Completed:** 2026-02-20
+**Phase 3 Started:** 2026-03-24
 
 ---
 
@@ -358,154 +359,66 @@ mec ai status
 
 ---
 
-## Future Roadmap
+### Phase 3: AI Performance + Dashboard
 
-### v1.1.0 - Enhanced UX & Distribution
+**Status:** In Progress
+**Priority:** P0 (Critical)
+**Started:** 2026-03-24
+**Goal:** Eliminate AI analysis blocking delay and deliver an early Web UI for log + analysis review
 
-**Status:** Planned
-**Priority:** P1 (High)
-**Target:** Q2 2026
+#### Phase 3.1 — Async Analysis + mec ai last/logs ✅
 
-**Tasks:**
-- [ ] Shell completion (`mec` CLI, zsh/bash)
-- [ ] `mec doctor` — health checks (Docker, tools, auth, disk)
-- [ ] `mec help <tool>` — tool-specific help with examples
-- [ ] Homebrew formula (`brew install my-ez-cli`)
-- [ ] Claude Code MCP server investigation for my-ez-cli tools
-- [ ] Better error messages and onboarding
+- ✅ `analyze_with_claude()` fires in background — shell unblocks immediately after tool finishes
+- ✅ Terminal prints session ID + dashboard URL on every run
+- ✅ `mec ai last` — show most recent AI analysis (ad-hoc fallback)
+- ✅ `mec ai show <session_id>` — show any session by ID
+- ✅ `mec ai logs` — list recent sessions with status (pending/done)
 
----
+**Deliverables:**
+- Non-blocking AI analysis
+- Session-aware terminal output with direct link to results
+- New `mec ai last` and `mec ai logs` subcommands
 
-### v1.2.0 - Web UI & Log Viewer
+#### Phase 3.2 — Dashboard Daemon (Planned)
 
-**Status:** Planned
-**Priority:** P2 (Medium)
-**Target:** Q3 2026
+- [ ] `services/dashboard/` — Python/FastAPI server with `watchfiles` + WebSocket hot-reload
+- [ ] `docker/dashboard/Dockerfile` — `python:3.14-alpine`, exposes port `4242`
+- [ ] `mec dashboard start | stop | status | open` subcommands
+- [ ] Web UI: session list + detail (raw log + AI analysis side-by-side), auto-refreshes when new analysis arrives
+- [ ] `davidcardoso/my-ez-cli:dashboard-latest` Docker Hub image
+- [ ] `ai.dashboard.port` config key (default: `4242`)
 
-**Features:**
-- [ ] Simple Web UI (Vue.js + Vite)
-  - Log viewer with search/filter
-  - Container monitoring dashboard
-  - Tool management UI
-  - Configuration editor
-- [ ] PostgreSQL log storage (opt-in)
-- [ ] Enhanced log querying
-
-**Note:** Focus on log viewer first. Advanced dashboards and metrics can wait.
+**Deliverables:**
+- Long-running dashboard container managed by `mec dashboard`
+- Hot-reload UI replaces terminal output as the primary analysis surface
 
 ---
 
-### v1.3.0 - Security & Encryption
+## Future Ideas
 
-**Status:** Planned
-**Priority:** P2 (Medium)
-**Target:** Q4 2026
+Items below are not scheduled — they may become implementation phases once v1.0.0 is stable.
 
-**Features:**
-- [ ] Log encryption (AES-256-GCM, opt-in)
-- [ ] Selective field encryption
-- [ ] Key management
-- [ ] Compliance features
-
----
-
-### v1.4.0 - Advanced Analytics
-
-**Status:** Planned
-**Priority:** P3 (Low)
-**Target:** 2027
-
-**Features:**
-- [ ] Elasticsearch integration
-- [ ] Advanced log querying
-- [ ] Kibana dashboard integration
-- [ ] Performance analytics
-
----
-
-### Future Considerations (TBD)
-
-**Not yet scheduled:**
-- NPM publishing (@my-ez-cli/core)
-- Remote execution (curl, install script, npx)
-- Debian packages
-- Local AI Stack integration (separate project)
+- Shell completion (`mec` CLI, zsh/bash)
+- `mec doctor` — health checks (Docker, tools, auth, disk)
+- `mec help <tool>` — tool-specific help with examples
+- Homebrew formula (`brew install my-ez-cli`)
 - Claude Code MCP server for my-ez-cli tools
+- Better error messages and onboarding
+- PostgreSQL log storage (opt-in)
+- Full configuration editor UI
+- Log encryption (AES-256-GCM, opt-in)
+- Prompt injection hardening — tool output passed to Claude as inline prompt content could contain adversarial instructions; sanitization beyond control-char stripping (e.g. delimiters, input validation, output sandboxing)
+- CVE / security advisory scanning — cross-reference tool execution logs and AI analysis results against known CVE databases (NVD, OSV, GitHub Advisory) and security issue DBs; flag vulnerable package versions, deprecated images, or insecure patterns detected at runtime (needs proper planning: data sources, update cadence, false-positive rate, opt-in UX)
+- Elasticsearch + Kibana integration
+- NPM publishing (`@my-ez-cli/core`)
+- Remote execution (curl install script)
+- Local AI Stack integration (separate project)
 
 **Cut from scope:**
 - Docker Compose generation (users can create compose files directly)
 - Warp workflow integration (terminal-specific, low priority)
-- Unity Catalog integration (enterprise feature, separate project)
-
----
-
-## Version Roadmap
-
-### v1.0.0 - First Stable Release 🎯
-
-**Status:** Release Candidate
-**Target:** March 2026
-
-**Includes:**
-- ✅ Fixed path resolution
-- ✅ Multi-select installation
-- ✅ GitHub workflows for Docker builds
-- ✅ Comprehensive test coverage (73 bats tests + 29 Python tests)
-- ✅ Claude Code integration
-- ✅ I/O filter-only Python middleware (no rule-based analyzers)
-- ✅ I/O filter engine
-- ✅ Single-path AI analysis via Claude Code
-- ✅ `mec ai` CLI commands
-- ✅ Log persistence system (immutable log files + AI sidecar)
-- ✅ Configuration system
-
----
-
-### v1.1.0 - Enhanced UX
-
-**Target:** Q2 2026
-
-**Includes:**
-- Shell completion (zsh/bash)
-- `mec doctor` health checks
-- Tool-specific help with examples
-- Homebrew formula
-- Claude Code MCP investigation
-- Better error messages
-
----
-
-### v1.2.0 - Web UI & Logs
-
-**Target:** Q3 2026
-
-**Includes:**
-- Simple Web UI (log viewer + dashboards)
-- PostgreSQL log storage
-- Enhanced log querying
-- Container monitoring
-
----
-
-### v1.3.0 - Security
-
-**Target:** Q4 2026
-
-**Includes:**
-- Log encryption (AES-256-GCM)
-- Key management
-- Compliance features
-
----
-
-### v1.4.0 - Analytics
-
-**Target:** 2027
-
-**Includes:**
-- Elasticsearch integration
-- Kibana dashboards
-- Performance analytics
+- Unity Catalog integration (belongs in "Local AI Stack" project)
+- Debian packages (low ROI)
 
 ---
 
@@ -525,16 +438,18 @@ mec ai status
 | Claude Code integration | 2 | P0 | High | High | ✅ Complete |
 | Shell integration | 2 | P0 | High | Medium | ✅ Complete |
 | Provider removal | 2 | P0 | High | Low | ✅ Complete |
-| Shell completion | 3 | P1 | Medium | Low | ⏳ Planned |
-| `mec doctor` | 3 | P1 | High | Medium | ⏳ Planned |
-| Help system | 3 | P1 | High | Low | ⏳ Planned |
-| Homebrew formula | 3 | P1 | Medium | Medium | ⏳ Planned |
-| Web UI | 4 | P2 | Medium | High | ⏳ Planned |
-| PostgreSQL logs | 4 | P2 | Low | Medium | ⏳ Planned |
-| Log encryption | 5 | P2 | Medium | Medium | ⏳ Planned |
-| Elasticsearch | 6 | P3 | Low | High | ⏳ Planned |
-| NPM publish | TBD | P1 | High | Medium | ⏳ Future |
-| Remote execution | TBD | P1 | Medium | Medium | ⏳ Future |
+| Async AI analysis | 3.1 | P0 | High | Low | ✅ Complete |
+| mec ai last/logs/show | 3.1 | P0 | High | Low | ✅ Complete |
+| Dashboard daemon | 3.2 | P0 | High | High | ⏳ Planned |
+| Dashboard Web UI | 3.2 | P0 | High | High | ⏳ Planned |
+| Shell completion | Future | P1 | Medium | Low | 💡 Future |
+| `mec doctor` | Future | P1 | High | Medium | 💡 Future |
+| Homebrew formula | Future | P1 | Medium | Medium | 💡 Future |
+| PostgreSQL logs | Future | P2 | Low | Medium | 💡 Future |
+| Log encryption | Future | P2 | Medium | Medium | 💡 Future |
+| Prompt injection hardening | Future | P2 | High | Medium | 💡 Future |
+| CVE / security advisory scanning | Future | P2 | High | High | 💡 Future |
+| Elasticsearch | Future | P3 | Low | High | 💡 Future |
 
 ---
 
@@ -618,4 +533,4 @@ mec ai status
 
 *This roadmap is a living document. Update as implementation progresses.*
 
-**Last updated:** 2026-02-20
+**Last updated:** 2026-03-25

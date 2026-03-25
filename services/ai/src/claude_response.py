@@ -89,23 +89,20 @@ def write_ai_analysis(
     sidecar_data: dict[str, Any]
     if path.exists():
         try:
-            with path.open() as f:
-                sidecar_data = json.load(f)
+            content = path.read_text().strip()
+            sidecar_data = json.loads(content) if content else {}
         except (OSError, json.JSONDecodeError) as e:
-            logger.error("Failed to read sidecar file %s: %s", ai_analysis_path, e, exc_info=True)
-            raise ClaudeResponseParseError(
-                f"Cannot read sidecar file '{ai_analysis_path}': {e}",
-                original_error=e,
-            ) from e
+            logger.debug("Sidecar file unreadable or empty, starting fresh: %s", e)
+            sidecar_data = {}
     else:
-        sidecar_data = {
-            "log_session_id": log_session_id,
-            "log_file": log_file_path,
-            "analyses": {},
-        }
+        sidecar_data = {}
+
+    sidecar_data.setdefault("log_session_id", log_session_id)
+    sidecar_data.setdefault("log_file", log_file_path)
+    sidecar_data.setdefault("analyses", {})
 
     entry_key: str = claude_session_id if claude_session_id else "unknown"
-    sidecar_data.setdefault("analyses", {})[entry_key] = {
+    sidecar_data["analyses"][entry_key] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "result": result,
     }

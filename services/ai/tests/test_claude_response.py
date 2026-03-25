@@ -207,15 +207,31 @@ class TestWriteAiAnalysis:
                 mock_logger,
             )
 
-    def test_corrupt_sidecar_raises_parse_error(self, tmp_path: Path, mock_logger: Mock) -> None:
-        """Corrupt existing sidecar raises ClaudeResponseParseError."""
+    def test_corrupt_sidecar_starts_fresh(self, tmp_path: Path, mock_logger: Mock) -> None:
+        """Corrupt existing sidecar is discarded and a fresh one is written."""
         ai_path = tmp_path / "ai-analyses.json"
         ai_path.write_text("{ not valid json }")
 
-        with pytest.raises(ClaudeResponseParseError):
-            write_ai_analysis(
-                str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
-            )
+        write_ai_analysis(
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
+        )
+
+        sidecar: dict[str, Any] = json.loads(ai_path.read_text())
+        assert "s1" in sidecar["analyses"]
+        assert sidecar["analyses"]["s1"]["result"] == "result"
+
+    def test_empty_sidecar_starts_fresh(self, tmp_path: Path, mock_logger: Mock) -> None:
+        """Empty pre-created sidecar (touch) is treated as missing and written fresh."""
+        ai_path = tmp_path / "ai-analyses.json"
+        ai_path.write_text("")  # simulates `touch`
+
+        write_ai_analysis(
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
+        )
+
+        sidecar: dict[str, Any] = json.loads(ai_path.read_text())
+        assert "s1" in sidecar["analyses"]
+        assert sidecar["analyses"]["s1"]["result"] == "result"
 
     def test_output_is_valid_json_ending_with_newline(
         self, tmp_path: Path, mock_logger: Mock

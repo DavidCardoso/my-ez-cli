@@ -111,7 +111,12 @@ ai:
     # Ignored for sonnet/haiku
     effort_level: medium
 
-    # Firewall configuration for Claude Code container network isolation
+  # Dashboard settings
+  dashboard:
+    # Port for the mec-dashboard web server container
+    port: 4242
+
+  # Firewall configuration for Claude Code container network isolation
     # Domains are pre-resolved at Docker build time and baked into the image
     # Run 'mec claude firewall rebuild' after changing domains
     firewall:
