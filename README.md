@@ -44,6 +44,8 @@ CLI tools over Docker.
     - [Promptfoo Server](#promptfoo-server)
     - [Claude Code](#claude-code)
   - [AI Features](#ai-features)
+    - [AI TUI](#tui----mec-ai)
+    - [Dashboard](#web-dashboard----mec-dashboard)
   - [Author](#author)
   - [Contributors](#contributors)
 
@@ -667,20 +669,84 @@ claude --version
 
 ## AI Features
 
-My Ez CLI includes AI-powered analysis via Claude Code — the sole analysis engine. Requires an API key or OAuth token for automated use (see [authentication methods](./docker/claude/README.md#authentication)).
+My Ez CLI automatically analyses every tool execution with Claude Code when `MEC_AI_ENABLED=true`. Requires an API key or OAuth token — see [authentication methods](./docker/claude/README.md#authentication).
+
+### TUI — `mec ai`
 
 ```shell
-# Check AI status
+# Check AI status and enabled state
 mec ai status
 
-# Enable AI integration
+# Enable / disable automated analysis
 mec ai enable
+mec ai disable
 
-# Test Claude Code availability
+# Test that Claude Code is reachable
 mec ai test
 
-# Analyze a log file with Claude Code
+# Show the most recent AI analysis
+mec ai last
+
+# Show analysis for a specific session
+mec ai show <session_id>
+
+# List recent sessions with AI status
+mec ai logs
+
+# Analyze a log file manually
 mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
+```
+
+After each tool execution the terminal prints:
+
+```
+[mec-ai] Analysis running in background...
+[mec-ai] Session:  mec-node-1774467258
+[mec-ai] Results:  http://localhost:4242/sessions/mec-node-1774467258
+[mec-ai]           (or: mec ai last)
+```
+
+When `mec ai last` or `mec ai show` reports a completed analysis it also prints a **resume hint** so you can continue the conversation in Claude Code:
+
+```
+Resume:    claude --resume <claude_session_id>
+```
+
+### Web Dashboard — `mec dashboard`
+
+A local web UI that shows all sessions, live stats, and AI analysis results.
+
+```shell
+# Start the dashboard (API + Vue UI served on the same port)
+mec dashboard start
+
+# Stop the dashboard
+mec dashboard stop
+
+# Restart the dashboard
+mec dashboard restart
+
+# Show status of the running container
+mec dashboard status
+
+# Open the dashboard in the default browser
+mec dashboard open
+```
+
+The dashboard runs as a Docker container on port 4242 (configurable):
+
+| URL | What |
+|-----|------|
+| `http://localhost:4242/` | Home — stat cards + activity charts |
+| `http://localhost:4242/sessions` | Session list with search and filters |
+| `http://localhost:4242/sessions/<id>` | Session detail — log output + AI analysis |
+| `http://localhost:4242/tools` | Tool registry |
+| `http://localhost:4242/api/` | REST API (used by the UI) |
+
+**Change the default port:**
+```shell
+mec config set ai.dashboard.port 8080
+mec dashboard restart
 ```
 
 For detailed AI documentation, see [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
