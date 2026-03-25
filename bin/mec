@@ -431,13 +431,14 @@ _mec_ai_logs() {
         return 0
     fi
 
-    printf "%-21s %-12s %-6s %-10s\n" "TIMESTAMP" "TOOL" "EXIT" "AI"
-    printf "%-21s %-12s %-6s %-10s\n" "---------------------" "------------" "------" "----------"
+    printf "%-21s %-12s %-6s %-10s %s\n" "TIMESTAMP" "TOOL" "EXIT" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %s\n" "---------------------" "------------" "------" "----------" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
 
-        local tool exit_code start_time ai_status
+        local session_id tool exit_code start_time ai_status
+        session_id=$(grep '"session_id"' "$log_file" 2>/dev/null | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
         start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
@@ -450,7 +451,6 @@ _mec_ai_logs() {
         local ai_file
         ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
         if [ -f "$ai_file" ]; then
-            # Check if result field is populated
             local has_result
             has_result=$(grep '"result"' "$ai_file" 2>/dev/null | grep -v '"result"[[:space:]]*:[[:space:]]*""' | head -1)
             if [ -n "$has_result" ]; then
@@ -462,7 +462,7 @@ _mec_ai_logs() {
             ai_status="none"
         fi
 
-        printf "%-21s %-12s %-6s %-10s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status"
+        printf "%-21s %-12s %-6s %-10s %s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status" "${session_id:-?}"
     done
 }
 
