@@ -1,3 +1,21 @@
+# ===========================================================================
+# Stage 1: Build Vue 3 + PrimeVue frontend
+# ===========================================================================
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# Copy registry config and manifests first for better layer caching
+COPY frontend/.npmrc frontend/package.json frontend/package-lock.json* ./
+RUN npm ci
+
+# Copy source and build — output lands in /frontend/dist/
+COPY frontend/ ./
+RUN npx vite build
+
+# ===========================================================================
+# Stage 2: Python / FastAPI runtime
+# ===========================================================================
 FROM python:3.12-alpine
 
 LABEL org.opencontainers.image.title="mec-dashboard" \
@@ -8,13 +26,17 @@ LABEL org.opencontainers.image.title="mec-dashboard" \
 
 WORKDIR /app
 
-# Install dependencies — watchfiles has binary wheels for manylinux; prefer them
+# Install Python dependencies — watchfiles has binary wheels; prefer them
 RUN pip install --no-cache-dir --prefer-binary \
     fastapi==0.115.12 \
     "uvicorn[standard]==0.34.0" \
     watchfiles==1.0.5
 
+# Copy FastAPI source
 COPY src/ ./src/
+
+# Copy built Vue app into the static directory FastAPI serves
+COPY --from=frontend-builder /frontend/dist/ ./src/static/
 
 # /data is mounted from ~/.my-ez-cli on the host (read-only)
 VOLUME ["/data"]
