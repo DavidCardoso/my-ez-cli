@@ -52,6 +52,7 @@ Usage: mec <command> [arguments]
 Commands:
   config              Manage configuration
   ai                  AI analysis (Claude Code)
+  dashboard           Log and AI analysis web UI (start|stop|status|open)
   logs                Log management
   claude              Run Claude Code
   claude firewall     Manage Claude Code container firewall
@@ -1064,6 +1065,106 @@ mec_uninstall() {
 }
 
 # ----------------------------------------------------------------------------
+# Dashboard Commands
+# ----------------------------------------------------------------------------
+
+MEC_DASHBOARD_CONTAINER="mec-dashboard"
+
+mec_dashboard() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    local dashboard_port
+    dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+
+    case "$subcmd" in
+        start)
+            if docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
+                local state
+                state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
+                if [ "$state" = "running" ]; then
+                    echo "Dashboard is already running at http://localhost:${dashboard_port}"
+                    return 0
+                fi
+                # Container exists but stopped — remove it first
+                docker rm "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1 || true
+            fi
+
+            if ! docker image inspect "$MEC_IMAGE_DASHBOARD" >/dev/null 2>&1; then
+                echo "[mec] ERROR: Dashboard image not found: $MEC_IMAGE_DASHBOARD" >&2
+                echo "  Pull it with: docker pull $MEC_IMAGE_DASHBOARD" >&2
+                return 1
+            fi
+
+            docker run -d \
+                --name "$MEC_DASHBOARD_CONTAINER" \
+                --restart unless-stopped \
+                -p "${dashboard_port}:4242" \
+                --volume "${HOME}/.my-ez-cli:/data:ro" \
+                "$MEC_IMAGE_DASHBOARD" >/dev/null
+
+            echo "Dashboard started at http://localhost:${dashboard_port}"
+            ;;
+        stop)
+            if ! docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
+                echo "Dashboard is not running."
+                return 0
+            fi
+            docker stop "$MEC_DASHBOARD_CONTAINER" >/dev/null
+            docker rm "$MEC_DASHBOARD_CONTAINER" >/dev/null
+            echo "Dashboard stopped."
+            ;;
+        status)
+            if ! docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
+                echo "Dashboard: not running"
+                return 0
+            fi
+            local state
+            state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
+            echo "Dashboard: $state"
+            if [ "$state" = "running" ]; then
+                echo "URL:       http://localhost:${dashboard_port}"
+            fi
+            ;;
+        open)
+            if command -v open >/dev/null 2>&1; then
+                open "http://localhost:${dashboard_port}"
+            elif command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "http://localhost:${dashboard_port}"
+            else
+                echo "http://localhost:${dashboard_port}"
+            fi
+            ;;
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec dashboard <command>
+
+Commands:
+  start   Start the dashboard container (http://localhost:4242)
+  stop    Stop and remove the dashboard container
+  status  Show dashboard container status
+  open    Open dashboard in the default browser
+  help    Show this help message
+
+Configuration:
+  ai.dashboard.port  Port for the dashboard (default: 4242)
+  Set with: mec config set ai.dashboard.port <port>
+
+Examples:
+  mec dashboard start
+  mec dashboard open
+  mec dashboard stop
+EOF
+            ;;
+        *)
+            echo "Unknown dashboard command: $subcmd" >&2
+            echo "Run 'mec dashboard help' for usage" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # Main Dispatch
 # ----------------------------------------------------------------------------
 
@@ -1103,6 +1204,10 @@ case "$COMMAND" in
     uninstall)
         shift
         mec_uninstall "$@"
+        ;;
+    dashboard)
+        shift
+        mec_dashboard "${1:-help}" "${@:2}"
         ;;
     version|--version|-v)
         show_version

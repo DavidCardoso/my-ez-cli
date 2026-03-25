@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mec dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --text: #e2e8f0; --muted: #718096; --accent: #7c6af7;
+      --green: #48bb78; --red: #fc8181; --yellow: #f6c90e;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 15px; font-weight: 600; color: var(--accent); }
+    header .subtitle { color: var(--muted); font-size: 12px; }
+    #ws-status { margin-left: auto; font-size: 11px; color: var(--muted); }
+    #ws-status.connected { color: var(--green); }
+    main { padding: 20px 24px; max-width: 1100px; }
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .toolbar label { color: var(--muted); font-size: 12px; }
+    .toolbar select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover td { background: var(--surface); cursor: pointer; }
+    .tool-badge { display: inline-block; background: #2a2d3a; border-radius: 3px; padding: 2px 7px; font-size: 11px; }
+    .exit-ok { color: var(--green); } .exit-fail { color: var(--red); }
+    .ai-done { color: var(--green); } .ai-pending { color: var(--yellow); } .ai-none { color: var(--muted); }
+    .session-id { color: var(--muted); font-size: 11px; }
+    #empty { display: none; text-align: center; color: var(--muted); padding: 48px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>mec dashboard</h1>
+    <span class="subtitle">log &amp; AI analysis viewer</span>
+    <span id="ws-status">⬤ connecting</span>
+  </header>
+  <main>
+    <div class="toolbar">
+      <label for="limit-select">Show last</label>
+      <select id="limit-select">
+        <option value="20">20</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+    <table id="sessions-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Tool</th>
+          <th>Exit</th>
+          <th>AI</th>
+          <th>Session ID</th>
+        </tr>
+      </thead>
+      <tbody id="sessions-body"></tbody>
+    </table>
+    <div id="empty">No sessions found. Run any tool with <code>MEC_AI_ENABLED=true</code> and <code>MEC_LOGS_ENABLED=true</code>.</div>
+  </main>
+  <script>
+    const body = document.getElementById('sessions-body');
+    const empty = document.getElementById('empty');
+    const limitSelect = document.getElementById('limit-select');
+    const wsStatus = document.getElementById('ws-status');
+
+    function fmt(ts) {
+      if (!ts) return '—';
+      return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace('Z', '');
+    }
+    function aiClass(s) { return s === 'done' ? 'ai-done' : s === 'pending' ? 'ai-pending' : 'ai-none'; }
+
+    async function load() {
+      const limit = limitSelect.value;
+      const res = await fetch(`/api/sessions?limit=${limit}`);
+      if (!res.ok) return;
+      const sessions = await res.json();
+      body.innerHTML = '';
+      if (sessions.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      for (const s of sessions) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${fmt(s.timestamp)}</td>
+          <td><span class="tool-badge">${s.tool || '—'}</span></td>
+          <td class="${s.exit_code === 0 ? 'exit-ok' : s.exit_code === null ? '' : 'exit-fail'}">${s.exit_code ?? '—'}</td>
+          <td class="${aiClass(s.ai_status)}">${s.ai_status}</td>
+          <td class="session-id">${s.session_id}</td>`;
+        tr.addEventListener('click', () => { window.location = `/sessions/${s.session_id}`; });
+        body.appendChild(tr);
+      }
+    }
+
+    limitSelect.addEventListener('change', load);
+    load();
+
+    // WebSocket for live refresh
+    function connectWS() {
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+      ws.onopen = () => { wsStatus.textContent = '⬤ live'; wsStatus.className = 'connected'; };
+      ws.onmessage = (e) => { if (e.data === 'refresh') load(); };
+      ws.onclose = () => { wsStatus.textContent = '⬤ disconnected'; wsStatus.className = ''; setTimeout(connectWS, 3000); };
+    }
+    connectWS();
+  </script>
+</body>
+</html>

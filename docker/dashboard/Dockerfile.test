@@ -1,0 +1,19 @@
+FROM python:3.12-alpine
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir --prefer-binary \
+    fastapi==0.115.12 \
+    "uvicorn[standard]==0.34.0" \
+    watchfiles==1.0.5 \
+    pytest==9.0.2 \
+    pytest-asyncio==1.3.0 \
+    httpx==0.28.1
+
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+ENV PYTHONPATH=/app
+
+ENTRYPOINT ["python", "-m", "pytest"]
+CMD ["tests/", "-v"]
