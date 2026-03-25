@@ -294,6 +294,8 @@ analyze_with_claude() {
     ai_analyses_dir=$(echo "$log_dir" | sed 's|/logs/|/ai-analyses/|')
     mkdir -p "$ai_analyses_dir"
     local ai_file="${ai_analyses_dir}/$(basename "$log_file")"
+    # Pre-create the sidecar file so Docker mounts it as a file, not a directory
+    touch "$ai_file"
 
     # Ensure ~/.claude dir and ~/.claude.json exist so the volume mounts succeed
     [ ! -d "${HOME}/.claude" ] && mkdir -p "${HOME}/.claude"
