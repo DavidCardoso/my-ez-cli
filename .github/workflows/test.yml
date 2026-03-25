@@ -230,7 +230,7 @@ jobs:
           cache-dependency-path: services/dashboard/frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: cd services/dashboard/frontend && npm ci
+        run: cd services/dashboard/frontend && npm install
 
       - name: Run Vitest unit tests
         run: cd services/dashboard/frontend && npm test

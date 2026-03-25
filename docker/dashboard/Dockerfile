@@ -7,7 +7,7 @@ WORKDIR /frontend
 
 # Copy registry config and manifests first for better layer caching
 COPY frontend/.npmrc frontend/package.json frontend/package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 # Copy source and build — output lands in /frontend/dist/
 COPY frontend/ ./
