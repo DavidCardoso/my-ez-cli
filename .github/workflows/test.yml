@@ -158,6 +158,11 @@ jobs:
           ./bin/mec purge help
           echo "✓ mec purge help passed"
 
+      - name: Test mec dashboard rebuild help
+        run: |
+          ./bin/mec dashboard help | grep -q 'rebuild'
+          echo "✓ mec dashboard rebuild documented in help"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest
@@ -168,6 +173,7 @@ jobs:
         test-suite:
           - aws
           - common-utils
+          - dashboard
           - doctor
           - node
           - npm
