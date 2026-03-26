@@ -32,3 +32,4 @@ data/
 
 # Claude - ignoring local settings
 .claude/*.local.json
+.worktrees/
