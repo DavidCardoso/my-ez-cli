@@ -118,6 +118,41 @@ jobs:
           ./setup.sh status
           echo "✓ setup.sh status command passed"
 
+      - name: Test mec CLI help
+        run: |
+          ./bin/mec help
+          echo "✓ mec help passed"
+
+      - name: Test mec version
+        run: |
+          ./bin/mec version
+          echo "✓ mec version passed"
+
+      - name: Test mec doctor help
+        run: |
+          ./bin/mec doctor help
+          echo "✓ mec doctor help passed"
+
+      - name: Test mec config help
+        run: |
+          ./bin/mec config --help
+          echo "✓ mec config help passed"
+
+      - name: Test mec logs help
+        run: |
+          ./bin/mec logs --help
+          echo "✓ mec logs help passed"
+
+      - name: Test mec ai help
+        run: |
+          ./bin/mec ai --help
+          echo "✓ mec ai help passed"
+
+      - name: Test mec dashboard help
+        run: |
+          ./bin/mec dashboard help
+          echo "✓ mec dashboard help passed"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest
@@ -128,6 +163,7 @@ jobs:
         test-suite:
           - aws
           - common-utils
+          - doctor
           - node
           - npm
           - python

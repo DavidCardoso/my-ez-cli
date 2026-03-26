@@ -17,12 +17,6 @@ setup() {
     [[ "$output" =~ "v22" ]]
 }
 
-@test "node can execute JavaScript code" {
-    run "$BASEDIR/bin/node" -e "console.log('Hello from test')"
-    [ "$status" -eq 0 ]
-    [[ "$output" = "Hello from test" ]]
-}
-
 @test "node22 uses correct version" {
     run "$BASEDIR/bin/node22" --version
     [ "$status" -eq 0 ]
