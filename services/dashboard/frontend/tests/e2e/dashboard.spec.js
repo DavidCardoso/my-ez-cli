@@ -17,7 +17,7 @@ test.describe('mec dashboard', () => {
 
   test('sessions page search input works', async ({ page }) => {
     await page.goto('/sessions')
-    const search = page.locator('input[placeholder="Search session ID…"]')
+    const search = page.locator('input[placeholder="Search sessions…"]')
     await expect(search).toBeVisible()
     await search.fill('mec-')
     // After typing, the filter is applied (table still rendered)
