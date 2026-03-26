@@ -1157,7 +1157,8 @@ Usage: mec dashboard <command>
 Commands:
   start     Start the dashboard (API + UI served from the same container)
   stop      Stop and remove the dashboard container
-  restart   Stop then start the dashboard container
+  restart   Stop then start (add --rebuild to also rebuild the image first)
+  rebuild   Build the dashboard Docker image locally
   status    Show dashboard container status
   open      Open the dashboard in the default browser
   help      Show this help message
@@ -1169,12 +1170,28 @@ Configuration:
 Examples:
   mec dashboard start
   mec dashboard restart
+  mec dashboard rebuild
+  mec dashboard restart --rebuild
   mec dashboard open
   mec dashboard stop
 EOF
             ;;
+        rebuild)
+            local _dockerfile_dir
+            _dockerfile_dir="${BASE_DIR}/docker/dashboard"
+            if [ ! -f "$_dockerfile_dir/Dockerfile" ]; then
+                echo "[mec] ERROR: Dockerfile not found at $_dockerfile_dir/Dockerfile" >&2
+                return 1
+            fi
+            echo "Building $MEC_IMAGE_DASHBOARD ..."
+            docker build -t "$MEC_IMAGE_DASHBOARD" "$_dockerfile_dir"
+            echo "Build complete. Run 'mec dashboard restart' to use the new image."
+            ;;
         restart)
+            local _do_rebuild=0
+            for _arg in "$@"; do [ "$_arg" = "--rebuild" ] && _do_rebuild=1; done
             mec_dashboard "stop"
+            [ "$_do_rebuild" -eq 1 ] && mec_dashboard "rebuild"
             mec_dashboard "start"
             ;;
         *)
