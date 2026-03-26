@@ -1,6 +1,12 @@
 #!/usr/bin/env bats
 # ============================================================================
-# Tests for mec dashboard subcommand (rebuild and restart --rebuild)
+# Unit tests for mec dashboard subcommand
+#
+# These tests verify structure, help output, static code properties, and
+# guard logic that does not require Docker or a live container.
+#
+# Real container lifecycle tests (start/stop/status/restart) live in:
+#   tests/integration/test-dashboard.bats
 # ============================================================================
 
 BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/.." && pwd)"
@@ -24,11 +30,34 @@ teardown() {
 }
 
 # ============================================================================
-# Help
+# Structure
 # ============================================================================
 
 @test "bin/mec has mec_dashboard function" {
     grep -q 'mec_dashboard' "$BASEDIR/bin/mec"
+}
+
+@test "mec_dashboard container name constant is defined" {
+    grep -q 'MEC_DASHBOARD_CONTAINER=' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard dispatcher wires all subcommands" {
+    grep -q 'start)'   "$BASEDIR/bin/mec"
+    grep -q 'stop)'    "$BASEDIR/bin/mec"
+    grep -q 'restart)' "$BASEDIR/bin/mec"
+    grep -q 'rebuild)' "$BASEDIR/bin/mec"
+    grep -q 'status)'  "$BASEDIR/bin/mec"
+    grep -q 'open)'    "$BASEDIR/bin/mec"
+}
+
+# ============================================================================
+# Help
+# ============================================================================
+
+@test "mec dashboard with no args prints usage" {
+    run "$BASEDIR/bin/mec" dashboard
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Usage: mec dashboard" ]]
 }
 
 @test "mec dashboard help prints usage" {
@@ -43,16 +72,21 @@ teardown() {
     [[ "$output" =~ "Usage: mec dashboard" ]]
 }
 
-@test "mec dashboard help lists rebuild subcommand" {
-    run "$BASEDIR/bin/mec" dashboard help
+@test "mec dashboard -h prints usage" {
+    run "$BASEDIR/bin/mec" dashboard -h
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "rebuild" ]]
+    [[ "$output" =~ "Usage: mec dashboard" ]]
 }
 
-@test "mec dashboard help lists restart subcommand" {
+@test "mec dashboard help lists all subcommands" {
     run "$BASEDIR/bin/mec" dashboard help
     [ "$status" -eq 0 ]
+    [[ "$output" =~ "start"   ]]
+    [[ "$output" =~ "stop"    ]]
     [[ "$output" =~ "restart" ]]
+    [[ "$output" =~ "rebuild" ]]
+    [[ "$output" =~ "status"  ]]
+    [[ "$output" =~ "open"    ]]
 }
 
 @test "mec dashboard help mentions --rebuild flag for restart" {
@@ -61,59 +95,116 @@ teardown() {
     [[ "$output" =~ "--rebuild" ]]
 }
 
+@test "mec dashboard help mentions default port 4242" {
+    run "$BASEDIR/bin/mec" dashboard help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "4242" ]]
+}
+
 @test "mec dashboard unknown subcommand exits non-zero" {
     run "$BASEDIR/bin/mec" dashboard badcmd
     [ "$status" -ne 0 ]
+    [[ "$output" =~ "Unknown dashboard command" ]]
+}
+
+@test "mec dashboard unknown subcommand suggests help" {
+    run "$BASEDIR/bin/mec" dashboard badcmd
+    [ "$status" -ne 0 ]
+    [[ "$output" =~ "mec dashboard help" ]]
 }
 
 # ============================================================================
-# mec dashboard rebuild — no Docker required
+# Port configuration
 # ============================================================================
 
-@test "mec dashboard rebuild fails with clear error when Dockerfile is missing" {
-    # Verify the guard logic in bin/mec: rebuild must error when Dockerfile absent.
-    # We test the code path by grepping for the guard rather than running Docker.
-    grep -q 'Dockerfile not found' "$BASEDIR/bin/mec"
+@test "mec dashboard default port 4242 is hardcoded as fallback" {
+    grep -q '"4242"' "$BASEDIR/bin/mec" || grep -q "'4242'" "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard config key for port is ai.dashboard.port" {
+    grep -q 'ai.dashboard.port' "$BASEDIR/bin/mec"
+}
+
+# ============================================================================
+# mec dashboard open — code-level checks
+# ============================================================================
+
+@test "mec dashboard open falls back to echo URL when no browser is found" {
+    # Verify the fallback else branch exists in the script
+    grep -q 'echo.*http://localhost' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard open supports open command for macOS" {
+    grep -q 'command -v open' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard open supports xdg-open for Linux" {
+    grep -q 'xdg-open' "$BASEDIR/bin/mec"
+}
+
+# ============================================================================
+# mec dashboard start — guard logic
+# ============================================================================
+
+@test "mec dashboard start guard message references docker pull" {
+    grep -q 'docker pull' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard start guard exits non-zero when image absent (no Docker)" {
+    if docker info >/dev/null 2>&1; then
+        skip "Docker available"
+    fi
+    run "$BASEDIR/bin/mec" dashboard start
+    [ "$status" -ne 0 ]
+}
+
+@test "mec dashboard start already-running message is present in script" {
+    grep -q 'already running' "$BASEDIR/bin/mec"
+}
+
+# ============================================================================
+# mec dashboard stop — guard logic
+# ============================================================================
+
+@test "mec dashboard stop not-running message is present in script" {
+    grep -q 'not running' "$BASEDIR/bin/mec"
+}
+
+# ============================================================================
+# mec dashboard rebuild — guard logic
+# ============================================================================
+
+@test "mec dashboard rebuild guard checks for Dockerfile presence" {
     grep -q '! -f.*Dockerfile' "$BASEDIR/bin/mec"
+    grep -q 'Dockerfile not found' "$BASEDIR/bin/mec"
 }
 
-@test "mec dashboard rebuild subcommand is wired in mec dispatcher" {
-    grep -q '"rebuild"' "$BASEDIR/bin/mec" || grep -q 'rebuild)' "$BASEDIR/bin/mec"
-}
-
-# ============================================================================
-# mec dashboard rebuild — Docker required
-# ============================================================================
-
-@test "mec dashboard rebuild prints Building message before docker build" {
-    # Verify the output prefix is present in the script (Docker build itself is
-    # an integration concern covered by docker-build-dashboard.yml workflow)
-    grep -q '"Building' "$BASEDIR/bin/mec" || grep -q '"Building ' "$BASEDIR/bin/mec"
+@test "mec dashboard rebuild prints Building and Build complete messages" {
+    grep -q 'Building' "$BASEDIR/bin/mec"
     grep -q 'Build complete' "$BASEDIR/bin/mec"
 }
 
 # ============================================================================
-# mec dashboard restart --rebuild flag parsing
+# mec dashboard restart — flag parsing logic
 # ============================================================================
 
-@test "mec dashboard restart --rebuild flag is parsed without error (dry run via rebuild path)" {
-    # Verify flag-parsing logic: --rebuild triggers mec_dashboard "rebuild" call.
-    # Without Docker we can confirm the code path is reached by checking that
-    # the error is Dockerfile-not-found (rebuild ran) rather than unknown-flag.
+@test "mec dashboard restart --rebuild flag parsing logic is present in script" {
+    grep -q '_do_rebuild' "$BASEDIR/bin/mec"
+    grep -q '"--rebuild"' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard restart --rebuild does not produce unknown-flag error (no Docker)" {
     if docker info >/dev/null 2>&1; then
-        skip "Docker available — this test targets no-Docker path only"
+        skip "Docker available — rebuild would actually run"
     fi
     run "$BASEDIR/bin/mec" dashboard restart --rebuild
-    # Should NOT produce "Unknown" or "unrecognized" flag error
     [[ ! "$output" =~ "Unknown" ]]
     [[ ! "$output" =~ "unrecognized" ]]
 }
 
-@test "mec dashboard restart without --rebuild does not trigger rebuild" {
-    # Confirm that restart without --rebuild does not mention "Building"
-    # when Docker is unavailable (rebuild would print "Building <image>")
+@test "mec dashboard restart without --rebuild does not trigger rebuild (no Docker)" {
     if docker info >/dev/null 2>&1; then
-        skip "Docker available — cannot isolate rebuild path"
+        skip "Docker available — cannot isolate rebuild output"
     fi
     run "$BASEDIR/bin/mec" dashboard restart
     [[ ! "$output" =~ "Building" ]]
