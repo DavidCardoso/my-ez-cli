@@ -212,12 +212,25 @@ class SessionDetail(SessionSummary):
 
 
 def _read_json(path: Path) -> dict[str, object]:
-    """Read and parse a JSON file; return empty dict on any error."""
+    """Read and parse a JSON file; return empty dict on any error.
+
+    If the file contains raw ANSI/control characters that make it invalid JSON,
+    strip them and retry once — this recovers sessions logged before escape_json
+    was hardened to strip terminal control sequences.
+    """
+    import re
+
     try:
         content = path.read_text().strip()
         if not content:
             return {}
-        return json.loads(content)  # type: ignore[no-any-return]
+        try:
+            return json.loads(content)  # type: ignore[no-any-return]
+        except json.JSONDecodeError:
+            # Strip ANSI escape sequences and C0 control characters, then retry
+            clean = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", content)
+            clean = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", clean)
+            return json.loads(clean)  # type: ignore[no-any-return]
     except (OSError, json.JSONDecodeError) as exc:
         logger.debug("Could not read %s: %s", path, exc)
         return {}
@@ -261,12 +274,17 @@ def _sidecar_path(log_path: Path, data_root: Path) -> Path:
         return log_path  # fallback (should not happen)
 
 
-def list_sessions(data_root: Path, limit: int = 50) -> list[SessionSummary]:
-    """Return up to `limit` sessions, newest-first."""
+def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
+    """Return up to `limit` sessions newest-first, plus the total count of valid sessions."""
+    all_files = _log_files(data_root)
     results: list[SessionSummary] = []
-    for log_path in _log_files(data_root)[:limit]:
+    total = 0
+    for log_path in all_files:
         data = _read_json(log_path)
         if not data:
+            continue
+        total += 1
+        if len(results) >= limit:
             continue
         execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
         exit_code_raw = execution.get("exit_code")
@@ -282,7 +300,7 @@ def list_sessions(data_root: Path, limit: int = 50) -> list[SessionSummary]:
                 ai_status=status,
             )
         )
-    return results
+    return {"sessions": results, "total": total}
 
 
 def get_session(data_root: Path, session_id: str) -> SessionDetail | None:

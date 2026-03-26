@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 
 const sessions = ref([])
+const totalSessions = ref(0)
 const loading = ref(false)
 const error = ref(null)
 
@@ -15,7 +16,9 @@ async function fetchSessions({ limit = 50 } = {}) {
   try {
     const res = await fetch(`/api/sessions?limit=${limit}`)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    sessions.value = await res.json()
+    const data = await res.json()
+    sessions.value = data.sessions ?? data
+    totalSessions.value = data.total ?? sessions.value.length
   } catch (e) {
     error.value = e.message
   } finally {
@@ -65,5 +68,5 @@ export function useSessions() {
     })
   }
 
-  return { sessions, loading, error, fetchSessions, makeFiltered }
+  return { sessions, totalSessions, loading, error, fetchSessions, makeFiltered }
 }

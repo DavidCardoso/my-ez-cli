@@ -418,7 +418,6 @@ mec ai status
 Items below are not scheduled — they may become implementation phases once v1.0.0 is stable.
 
 - Shell completion (`mec` CLI, zsh/bash)
-- `mec doctor` — health checks (Docker, tools, auth, disk)
 - `mec help <tool>` — tool-specific help with examples
 - Homebrew formula (`brew install my-ez-cli`)
 - Claude Code MCP server for my-ez-cli tools
@@ -426,6 +425,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 - PostgreSQL log storage (opt-in)
 - Full configuration editor UI
 - Log encryption (AES-256-GCM, opt-in)
+- Custom image local fallback — when a custom Docker image pull fails (e.g. speedtest, serverless), fall back to locally-built image if available rather than failing with "image not found"
 - Prompt injection hardening — tool output passed to Claude as inline prompt content could contain adversarial instructions; sanitization beyond control-char stripping (e.g. delimiters, input validation, output sandboxing)
 - CVE / security advisory scanning — cross-reference tool execution logs and AI analysis results against known CVE databases (NVD, OSV, GitHub Advisory) and security issue DBs; flag vulnerable package versions, deprecated images, or insecure patterns detected at runtime (needs proper planning: data sources, update cadence, false-positive rate, opt-in UX)
 - Elasticsearch + Kibana integration

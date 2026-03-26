@@ -4,7 +4,10 @@
       <div class="page-header-content">
         <div class="page-header-left">
           <h1 class="page-title">Sessions</h1>
-          <span v-if="!loading" class="session-count">{{ filteredSessions.length }} session{{ filteredSessions.length !== 1 ? 's' : '' }}</span>
+          <span v-if="!loading" class="session-count">
+            {{ filteredSessions.length }} session{{ filteredSessions.length !== 1 ? 's' : '' }}
+            <template v-if="totalSessions > sessions.length"> of {{ totalSessions }} total</template>
+          </span>
         </div>
       </div>
     </div>
@@ -80,13 +83,14 @@ import { useSessions } from '../composables/useSessions.js'
 import { useWebSocket } from '../composables/useWebSocket.js'
 
 const router = useRouter()
-const { sessions, loading, fetchSessions, makeFiltered } = useSessions()
+const { sessions, totalSessions, loading, fetchSessions, makeFiltered } = useSessions()
 const { onRefresh } = useWebSocket()
 
 const search = ref('')
 const selectedTools = ref([])
 const selectedAiStatus = ref('all')
 const selectedExitCode = ref('all')
+const allToolNames = ref([])
 
 const aiStatusOptions = [
   { label: 'All AI statuses', value: 'all' },
@@ -101,7 +105,9 @@ const exitCodeOptions = [
   { label: 'Failure (≠0)', value: 'failure' },
 ]
 
+// Use the full tool list from stats (covers all tools ever used, not just the fetched window)
 const availableTools = computed(() => {
+  if (allToolNames.value.length > 0) return allToolNames.value
   const tools = new Set(sessions.value.map((s) => s.tool).filter(Boolean))
   return [...tools].sort()
 })
@@ -126,8 +132,16 @@ function clearFilters() {
   selectedExitCode.value = 'all'
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchSessions({ limit: 100 })
+  // Fetch stats to get the full list of tools (not limited by the sessions fetch window)
+  try {
+    const res = await fetch('/api/stats')
+    if (res.ok) {
+      const stats = await res.json()
+      allToolNames.value = Object.keys(stats.sessions_by_tool || {}).sort()
+    }
+  } catch (_) { /* fallback to session-derived list */ }
   const cleanup = onRefresh(() => fetchSessions({ limit: 100 }))
   onUnmounted(cleanup)
 })
