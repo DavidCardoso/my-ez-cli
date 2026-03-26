@@ -1,6 +1,6 @@
 # My Ez CLI - v1.0.0 Roadmap
 
-**Status:** Phase 3 Complete — Phase 3.4 In Progress - v1.0.0 Release Candidate
+**Status:** Phase 3.4 Complete - v1.0.0 Release Candidate
 **Target:** First Stable Release (v1.0.0)
 **Previous Versions:** 0.x.y (beta releases)
 **Phase 1 Completed:** 2026-01-20
@@ -395,6 +395,24 @@ mec ai status
 
 ---
 
+### Phase 3.4: mec doctor ✅
+
+**Status:** Complete
+**Priority:** P1
+**Completed:** 2026-03-26
+**Goal:** Health-check subcommand for Docker, Zsh, AI, dashboard, data directory, and auth
+
+- ✅ `mec doctor` prints ✓/⚠/✗ per check with summary line
+- ✅ Exits 1 if any check fails (scriptable: `mec doctor && deploy`)
+- ✅ Checks: Docker daemon, Zsh + Oh My Zsh, data dir, config file, logs, AI enabled/images/auth, dashboard image/running
+- ✅ Unit tests in `tests/unit/test-doctor.bats` (14 tests)
+
+**Deliverables:**
+- Single `mec doctor` command for full environment health check
+- Structured pass/warn/fail output with actionable hints
+
+---
+
 ## Future Ideas
 
 Items below are not scheduled — they may become implementation phases once v1.0.0 is stable.
@@ -444,7 +462,7 @@ Items below are not scheduled — they may become implementation phases once v1.
 | Dashboard daemon | 3.2 | P0 | High | High | ✅ Complete |
 | Dashboard Web UI | 3.2 | P0 | High | High | ✅ Complete |
 | Shell completion | Future | P1 | Medium | Low | 💡 Future |
-| `mec doctor` | Future | P1 | High | Medium | 💡 Future |
+| `mec doctor` | 3.4 | P1 | High | Medium | ✅ Complete |
 | Homebrew formula | Future | P1 | Medium | Medium | 💡 Future |
 | PostgreSQL logs | Future | P2 | Low | Medium | 💡 Future |
 | Log encryption | Future | P2 | Medium | Medium | 💡 Future |
