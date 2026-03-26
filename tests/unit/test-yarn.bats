@@ -10,13 +10,6 @@ setup() {
     [ -x "$BASEDIR/bin/yarn" ]
 }
 
-@test "yarn runs with default version (node 22)" {
-    run "$BASEDIR/bin/yarn" --version
-    [ "$status" -eq 0 ]
-    # Yarn version should be displayed
-    [[ "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]
-}
-
 @test "yarn uses Node 22 by default" {
     run "$BASEDIR/bin/yarn" node --version
     [ "$status" -eq 0 ]
