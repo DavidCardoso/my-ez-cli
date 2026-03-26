@@ -110,7 +110,7 @@ describe('useSessions — makeFiltered', () => {
     expect(filtered.value).toHaveLength(1)
   })
 
-  it('does not match sessions where search term is only in tool name', async () => {
+  it('matches when search term appears in command even if it is also the tool name', async () => {
     const { useSessions } = await import('./useSessions.js')
     const { sessions, makeFiltered } = useSessions()
     sessions.value = [

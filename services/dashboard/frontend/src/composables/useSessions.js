@@ -62,7 +62,7 @@ export function useSessions() {
       if (search.trim()) {
         const q = search.trim().toLowerCase()
         result = result.filter((s) =>
-          s.session_id.toLowerCase().includes(q) ||
+          (s.session_id ?? '').toLowerCase().includes(q) ||
           (s.command ?? '').toLowerCase().includes(q) ||
           (s.cwd ?? '').toLowerCase().includes(q)
         )
