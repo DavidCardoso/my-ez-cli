@@ -1417,7 +1417,7 @@ mec_purge() {
     fi
 
     case "$subcmd" in
-        all)
+        data)
             local log_dir="${HOME}/.my-ez-cli/logs"
             local ai_dir="${HOME}/.my-ez-cli/ai-analyses"
 
@@ -1476,7 +1476,7 @@ mec_purge() {
 Usage: mec purge <command> [flags]
 
 Commands:
-  all       Delete log and AI analysis files (interactive by default)
+  data      Delete log and AI analysis files (interactive by default)
 
 Flags:
   --tool <name>        Only purge files for a specific tool (e.g. node, aws)
@@ -1487,12 +1487,12 @@ Flags:
   -y, --yes            Skip confirmation prompts
 
 Examples:
-  mec purge all                           # purge all logs + AI analyses (interactive)
-  mec purge all --dry-run                 # preview only
-  mec purge all --tool node               # only node logs + analyses
-  mec purge all --older-than 30           # only files older than 30 days
-  mec purge all --only-logs --tool aws    # only aws logs (keep AI analyses)
-  mec purge all -y                        # skip confirmation
+  mec purge data                           # purge all logs + AI analyses (interactive)
+  mec purge data --dry-run                 # preview only
+  mec purge data --tool node               # only node logs + analyses
+  mec purge data --older-than 30           # only files older than 30 days
+  mec purge data --only-logs --tool aws    # only aws logs (keep AI analyses)
+  mec purge data -y                        # skip confirmation
 EOF
             ;;
         *)
