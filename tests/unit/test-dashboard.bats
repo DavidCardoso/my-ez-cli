@@ -175,8 +175,13 @@ teardown() {
 # ============================================================================
 
 @test "mec dashboard rebuild guard checks for Dockerfile presence" {
-    grep -q '! -f.*Dockerfile' "$BASEDIR/bin/mec"
+    grep -q '! -f.*_dockerfile' "$BASEDIR/bin/mec"
     grep -q 'Dockerfile not found' "$BASEDIR/bin/mec"
+}
+
+@test "mec dashboard rebuild guard checks for build context directory" {
+    grep -q '! -d.*_build_context' "$BASEDIR/bin/mec"
+    grep -q 'Build context not found' "$BASEDIR/bin/mec"
 }
 
 @test "mec dashboard rebuild prints Building and Build complete messages" {

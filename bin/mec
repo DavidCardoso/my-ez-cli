@@ -1177,14 +1177,20 @@ Examples:
 EOF
             ;;
         rebuild)
-            local _dockerfile_dir
-            _dockerfile_dir="${BASE_DIR}/docker/dashboard"
-            if [ ! -f "$_dockerfile_dir/Dockerfile" ]; then
-                echo "[mec] ERROR: Dockerfile not found at $_dockerfile_dir/Dockerfile" >&2
+            local _dockerfile
+            _dockerfile="${BASE_DIR}/docker/dashboard/Dockerfile"
+            local _build_context
+            _build_context="${BASE_DIR}/services/dashboard"
+            if [ ! -f "$_dockerfile" ]; then
+                echo "[mec] ERROR: Dockerfile not found at $_dockerfile" >&2
+                return 1
+            fi
+            if [ ! -d "$_build_context" ]; then
+                echo "[mec] ERROR: Build context not found at $_build_context" >&2
                 return 1
             fi
             echo "Building $MEC_IMAGE_DASHBOARD ..."
-            docker build -t "$MEC_IMAGE_DASHBOARD" "$_dockerfile_dir"
+            docker build -t "$MEC_IMAGE_DASHBOARD" --file "$_dockerfile" "$_build_context"
             echo "Build complete. Run 'mec dashboard restart' to use the new image."
             ;;
         restart)
