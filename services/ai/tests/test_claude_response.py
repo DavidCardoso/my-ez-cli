@@ -60,30 +60,50 @@ class TestParseClaudeResponse:
         self, sample_claude_json: str, mock_logger: Mock
     ) -> None:
         """Valid JSON produces correct session_id and result."""
-        session_id, result = parse_claude_response(sample_claude_json, mock_logger)
+        session_id, result, _, _ = parse_claude_response(sample_claude_json, mock_logger)
         assert session_id == "abc-123-def"
         assert result == "The command succeeded. No issues found."
 
     def test_missing_session_id_returns_empty_string(self, mock_logger: Mock) -> None:
         """Missing session_id field returns empty string, not error."""
         raw = json.dumps({"result": "Some result"})
-        session_id, result = parse_claude_response(raw, mock_logger)
+        session_id, result, _, _ = parse_claude_response(raw, mock_logger)
         assert session_id == ""
         assert result == "Some result"
 
     def test_missing_result_returns_empty_string(self, mock_logger: Mock) -> None:
         """Missing result field returns empty string, not error."""
         raw = json.dumps({"session_id": "xyz-999"})
-        session_id, result = parse_claude_response(raw, mock_logger)
+        session_id, result, _, _ = parse_claude_response(raw, mock_logger)
         assert session_id == "xyz-999"
         assert result == ""
 
     def test_both_fields_missing_returns_empty_strings(self, mock_logger: Mock) -> None:
         """JSON with no relevant fields returns two empty strings."""
         raw = json.dumps({"stop_reason": "end_turn"})
-        session_id, result = parse_claude_response(raw, mock_logger)
+        session_id, result, _, _ = parse_claude_response(raw, mock_logger)
         assert session_id == ""
         assert result == ""
+
+    def test_parse_response_returns_token_counts(self, mock_logger: Mock) -> None:
+        """Valid JSON with usage block returns correct token counts."""
+        raw = json.dumps(
+            {
+                "session_id": "abc",
+                "result": "ok",
+                "usage": {"input_tokens": 3200, "output_tokens": 512},
+            }
+        )
+        session_id, result, input_tok, output_tok = parse_claude_response(raw, mock_logger)
+        assert input_tok == 3200
+        assert output_tok == 512
+
+    def test_parse_response_tokens_default_zero_when_missing(self, mock_logger: Mock) -> None:
+        """JSON without usage block returns zero token counts."""
+        raw = json.dumps({"session_id": "abc", "result": "ok"})
+        _, _, input_tok, output_tok = parse_claude_response(raw, mock_logger)
+        assert input_tok == 0
+        assert output_tok == 0
 
     def test_malformed_json_raises_parse_error(self, mock_logger: Mock) -> None:
         """Malformed JSON raises ClaudeResponseParseError."""
@@ -106,7 +126,7 @@ class TestParseClaudeResponse:
         """Multi-line result text is preserved exactly."""
         expected: str = "Line 1\nLine 2\nLine 3"
         raw = json.dumps({"session_id": "s1", "result": expected})
-        _, result = parse_claude_response(raw, mock_logger)
+        _, result, _, _ = parse_claude_response(raw, mock_logger)
         assert result == expected
 
     def test_parse_error_chains_original_exception(self, mock_logger: Mock) -> None:
@@ -245,3 +265,28 @@ class TestWriteAiAnalysis:
         content: str = ai_path.read_text()
         assert content.endswith("\n")
         json.loads(content)  # Must parse without error
+
+    def test_write_ai_analysis_includes_tokens(self, tmp_path: Path, mock_logger: Mock) -> None:
+        """write_ai_analysis stores tokens field when provided."""
+        path = tmp_path / "ai.json"
+        write_ai_analysis(
+            str(path),
+            "/log.json",
+            "sess-1",
+            "claude-1",
+            "result",
+            mock_logger,
+            input_tokens=100,
+            output_tokens=50,
+        )
+        data: dict[str, Any] = json.loads(path.read_text())
+        entry = data["analyses"]["claude-1"]
+        assert entry["tokens"] == {"input": 100, "output": 50}
+
+    def test_write_ai_analysis_tokens_default_zero(self, tmp_path: Path, mock_logger: Mock) -> None:
+        """write_ai_analysis stores zero tokens when not provided."""
+        path = tmp_path / "ai.json"
+        write_ai_analysis(str(path), "/log.json", "sess-1", "claude-1", "result", mock_logger)
+        data: dict[str, Any] = json.loads(path.read_text())
+        entry = data["analyses"]["claude-1"]
+        assert entry["tokens"] == {"input": 0, "output": 0}

@@ -191,7 +191,9 @@ def _handle_parse_claude_response(_config: dict[str, Any], logger: Any) -> None:
     try:
         session_id: str
         result: str
-        session_id, result = parse_claude_response(raw_json, logger)
+        input_tokens: int
+        output_tokens: int
+        session_id, result, input_tokens, output_tokens = parse_claude_response(raw_json, logger)
     except ClaudeResponseParseError as e:
         logger.error("Failed to parse Claude response: %s", e, exc_info=True)
         _print_error_and_exit(str(e), "ClaudeResponseParseError")
@@ -209,6 +211,8 @@ def _handle_parse_claude_response(_config: dict[str, Any], logger: Any) -> None:
                 claude_session_id=session_id,
                 result=result,
                 logger=logger,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
             )
         except ClaudeResponseParseError as e:
             logger.error("Failed to write AI analysis sidecar: %s", e, exc_info=True)

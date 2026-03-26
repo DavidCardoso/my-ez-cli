@@ -209,6 +209,9 @@ class SessionDetail(SessionSummary):
     log_file: str = ""
     ai_file: str = ""
     extra: dict[str, object] = field(default_factory=dict)
+    ai_execution_time_ms: int | None = None
+    ai_tokens_input: int | None = None
+    ai_tokens_output: int | None = None
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -236,24 +239,32 @@ def _read_json(path: Path) -> dict[str, object]:
         return {}
 
 
-def _ai_status(ai_path: Path) -> tuple[str, str, str]:
-    """Return (status, result_text, claude_session_id) from a sidecar file."""
+def _ai_status(ai_path: Path) -> tuple[str, str, str, int | None, int | None, int | None]:
+    """Return (status, result_text, claude_session_id, exec_time_ms, tokens_in, tokens_out) from a sidecar file."""
     if not ai_path.exists() or ai_path.is_dir():
-        return "none", "", ""
+        return "none", "", "", None, None, None
     data = _read_json(ai_path)
     analyses: dict[str, object] = data.get("analyses", {})  # type: ignore[assignment]
     if not analyses:
-        return "pending", "", ""
+        return "pending", "", "", None, None, None
     # Pick the latest entry by timestamp
     items = sorted(
         analyses.items(),  # type: ignore[union-attr]
         key=lambda kv: kv[1].get("timestamp", ""),  # type: ignore[union-attr]
     )
     claude_session_id: str = items[-1][0] if items else ""
-    result: str = items[-1][1].get("result", "") if items else ""  # type: ignore[union-attr]
+    entry: dict[str, object] = items[-1][1]  # type: ignore[assignment]
+    exec_time_raw = entry.get("execution_time_ms")
+    exec_time: int | None = int(exec_time_raw) if exec_time_raw is not None else None  # type: ignore[arg-type]
+    tokens: dict[str, object] = entry.get("tokens", {})  # type: ignore[assignment]
+    tok_in_raw = tokens.get("input", 0)
+    tok_out_raw = tokens.get("output", 0)
+    tok_in: int | None = int(tok_in_raw) if tok_in_raw else None  # type: ignore[arg-type]
+    tok_out: int | None = int(tok_out_raw) if tok_out_raw else None  # type: ignore[arg-type]
+    result: str = entry.get("result", "")  # type: ignore[union-attr, assignment]
     if result:
-        return "done", result, claude_session_id
-    return "pending", "", claude_session_id
+        return "done", result, claude_session_id, exec_time, tok_in, tok_out
+    return "pending", "", claude_session_id, exec_time, tok_in, tok_out
 
 
 def _log_files(data_root: Path) -> list[Path]:
@@ -290,7 +301,7 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         ai_path = _sidecar_path(log_path, data_root)
-        status, _, _claude_id = _ai_status(ai_path)
+        status, _, _claude_id, *_ = _ai_status(ai_path)
         results.append(
             SessionSummary(
                 session_id=str(data.get("session_id", "")),
@@ -314,7 +325,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
         ai_path = _sidecar_path(log_path, data_root)
-        status, result, claude_session_id = _ai_status(ai_path)
+        status, result, claude_session_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         return SessionDetail(
             session_id=session_id,
             tool=str(data.get("tool", "")),
@@ -329,6 +340,9 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
             claude_session_id=claude_session_id,
             log_file=str(log_path),
             ai_file=str(ai_path) if ai_path.exists() else "",
+            ai_execution_time_ms=exec_time,
+            ai_tokens_input=tok_in,
+            ai_tokens_output=tok_out,
         )
     return None
 
@@ -413,7 +427,7 @@ def get_stats(data_root: Path) -> dict[str, object]:
             exit_dist["failure"] += 1
 
         ai_path = _sidecar_path(log_path, data_root)
-        status, _, _claude_id = _ai_status(ai_path)
+        status, _, _claude_id, *_ = _ai_status(ai_path)
         ai_rate[status] = ai_rate.get(status, 0) + 1
 
         # Accumulate per-tool breakdown
