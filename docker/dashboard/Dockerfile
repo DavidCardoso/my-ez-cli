@@ -34,8 +34,9 @@ RUN pip install --no-cache-dir --prefer-binary \
     watchfiles==1.0.5 \
     pytest==8.3.5
 
-# Copy FastAPI source
+# Copy FastAPI source and tests
 COPY src/ ./src/
+COPY tests/ ./tests/
 
 # Copy built Vue app into the static directory FastAPI serves
 COPY --from=frontend-builder /frontend/dist/ ./src/static/
