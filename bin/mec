@@ -54,6 +54,7 @@ Commands:
   ai                  AI analysis (Claude Code)
   dashboard           Log and AI analysis web UI (start|stop|status|open)
   doctor              Health check (Docker, Zsh, tools, AI, dashboard, data dir)
+  purge               Purge log and AI analysis files
   logs                Log management
   claude              Run Claude Code
   claude firewall     Manage Claude Code container firewall
@@ -1378,6 +1379,115 @@ _mec_doctor_run() {
 }
 
 # ----------------------------------------------------------------------------
+# Purge Commands
+# ----------------------------------------------------------------------------
+
+mec_purge() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    local opt_tool="" opt_older_than="" opt_only_logs=0 opt_only_ai=0 opt_dry_run=0 opt_yes=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --tool)             opt_tool="$2";        shift 2 ;;
+            --older-than)       opt_older_than="$2";  shift 2 ;;
+            --only-logs)        opt_only_logs=1;      shift ;;
+            --only-ai-analyses) opt_only_ai=1;        shift ;;
+            --dry-run)          opt_dry_run=1;        shift ;;
+            -y|--yes)           opt_yes=1;            shift ;;
+            *)                  break ;;
+        esac
+    done
+
+    case "$subcmd" in
+        all)
+            local log_dir="${HOME}/.my-ez-cli/logs"
+            local ai_dir="${HOME}/.my-ez-cli/ai-analyses"
+
+            local purge_logs=1 purge_ai=1
+            [ "$opt_only_ai"   -eq 1 ] && purge_logs=0
+            [ "$opt_only_logs" -eq 1 ] && purge_ai=0
+
+            for _entry in "logs:${log_dir}:${purge_logs}" "ai-analyses:${ai_dir}:${purge_ai}"; do
+                local _label _dir _enabled _rest
+                _label="${_entry%%:*}"
+                _rest="${_entry#*:}"
+                _dir="${_rest%%:*}"
+                _enabled="${_rest##*:}"
+                [ "$_enabled" -eq 0 ] && continue
+                [ ! -d "$_dir" ] && continue
+
+                local _find_args
+                _find_args=()
+                if [ -n "$opt_tool" ]; then
+                    _find_args+=(-path "*/${opt_tool}/*.json")
+                else
+                    _find_args+=(-name "*.json")
+                fi
+                _find_args+=(! -name "*.bak")
+                [ -n "$opt_older_than" ] && _find_args+=(-mtime "+${opt_older_than}")
+
+                local _files _count
+                _files=$(find "$_dir" "${_find_args[@]}" 2>/dev/null || true)
+                if [ -z "$_files" ]; then
+                    echo "No files to purge in $_label."
+                    continue
+                fi
+                _count=$(printf '%s\n' "$_files" | wc -l | tr -d ' ')
+
+                if [ "$opt_dry_run" -eq 1 ]; then
+                    echo "[dry-run] Would delete $_count file(s) from $_dir"
+                    printf '%s\n' "$_files" | head -5
+                    [ "$_count" -gt 5 ] && echo "  ... and $(( _count - 5 )) more"
+                    continue
+                fi
+
+                if [ "$opt_yes" -eq 0 ]; then
+                    printf "Delete %s file(s) from %s? [y/N] " "$_count" "$_dir"
+                    read -r _answer
+                    case "$_answer" in
+                        y|Y) ;;
+                        *) echo "Skipped $_label."; continue ;;
+                    esac
+                fi
+
+                printf '%s\n' "$_files" | xargs rm -f
+                echo "Deleted $_count file(s) from $_dir"
+            done
+            ;;
+        help|--help|-h|"")
+            cat <<'EOF'
+Usage: mec purge <command> [flags]
+
+Commands:
+  all       Delete log and AI analysis files (interactive by default)
+
+Flags:
+  --tool <name>        Only purge files for a specific tool (e.g. node, aws)
+  --older-than <days>  Only purge files older than N days
+  --only-logs          Only purge ~/.my-ez-cli/logs/
+  --only-ai-analyses   Only purge ~/.my-ez-cli/ai-analyses/
+  --dry-run            Preview what would be deleted without deleting
+  -y, --yes            Skip confirmation prompts
+
+Examples:
+  mec purge all                           # purge all logs + AI analyses (interactive)
+  mec purge all --dry-run                 # preview only
+  mec purge all --tool node               # only node logs + analyses
+  mec purge all --older-than 30           # only files older than 30 days
+  mec purge all --only-logs --tool aws    # only aws logs (keep AI analyses)
+  mec purge all -y                        # skip confirmation
+EOF
+            ;;
+        *)
+            echo "Unknown purge command: $subcmd" >&2
+            echo "Run 'mec purge help' for usage" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # Main Dispatch
 # ----------------------------------------------------------------------------
 
@@ -1425,6 +1535,10 @@ case "$COMMAND" in
     doctor)
         shift
         mec_doctor "${@}"
+        ;;
+    purge)
+        shift
+        mec_purge "$@"
         ;;
     version|--version|-v)
         show_version
