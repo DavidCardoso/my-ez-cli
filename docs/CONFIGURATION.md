@@ -388,6 +388,32 @@ mec config list
 - [AI Integration Guide](./AI_INTEGRATION.md) - AI features documentation (coming soon)
 - [README](../README.md) - Main project documentation
 
+## Docker Container Management
+
+All My Ez CLI containers use consistent naming and labeling for easy management.
+
+**Naming pattern:** `mec-{tool}-{timestamp}` (e.g., `mec-node-1700000000`)
+
+**Labels applied to every container:**
+- `com.my-ez-cli.project=my-ez-cli` — project identifier
+- `com.my-ez-cli.tool={tool}` — tool name
+- `com.my-ez-cli.image={image}` — source Docker image
+
+**Useful commands:**
+```shell
+# List all My Ez CLI containers
+docker ps -a --filter "name=mec-"
+
+# List by label
+docker ps -a --filter "label=com.my-ez-cli.project=my-ez-cli"
+
+# Remove stopped My Ez CLI containers
+docker container prune --filter "label=com.my-ez-cli.project=my-ez-cli"
+
+# List all My Ez CLI images
+docker images --filter "label=com.my-ez-cli.project=my-ez-cli"
+```
+
 ## Support
 
 For issues or questions:
@@ -396,5 +422,5 @@ For issues or questions:
 
 ---
 
-Last updated: 2026-01-15
+Last updated: 2026-03-26
 Version: 1.0.0-rc
