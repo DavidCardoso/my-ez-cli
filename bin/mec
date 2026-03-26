@@ -54,6 +54,7 @@ Commands:
   ai                  AI analysis (Claude Code)
   dashboard           Log and AI analysis web UI (start|stop|status|open)
   doctor              Health check (Docker, Zsh, tools, AI, dashboard, data dir)
+  purge               Purge log and AI analysis files
   logs                Log management
   claude              Run Claude Code
   claude firewall     Manage Claude Code container firewall
@@ -1378,6 +1379,132 @@ _mec_doctor_run() {
 }
 
 # ----------------------------------------------------------------------------
+# Purge Commands
+# ----------------------------------------------------------------------------
+
+mec_purge() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    local opt_tool="" opt_older_than="" opt_only_logs=0 opt_only_ai=0 opt_dry_run=0 opt_yes=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --tool)             opt_tool="$2";        shift 2 ;;
+            --older-than)       opt_older_than="$2";  shift 2 ;;
+            --only-logs)        opt_only_logs=1;      shift ;;
+            --only-ai-analyses) opt_only_ai=1;        shift ;;
+            --dry-run)          opt_dry_run=1;        shift ;;
+            -y|--yes)           opt_yes=1;            shift ;;
+            *)
+                echo "Unknown flag: $1" >&2
+                echo "Run 'mec purge help' for usage" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    # Validate --older-than is a positive integer
+    if [ -n "$opt_older_than" ] && ! printf '%s' "$opt_older_than" | grep -qE '^[0-9]+$'; then
+        echo "Error: --older-than requires a positive integer (days), got: $opt_older_than" >&2
+        return 1
+    fi
+
+    # Validate --tool has no path separators
+    if [ -n "$opt_tool" ]; then
+        case "$opt_tool" in
+            */* | *..*) echo "Error: --tool must not contain path separators or '..'" >&2; return 1 ;;
+        esac
+    fi
+
+    case "$subcmd" in
+        data)
+            local _data_dir="${MEC_DATA_DIR:-${HOME}/.my-ez-cli}"
+            local log_dir="${MEC_LOG_DIR:-${_data_dir}/logs}"
+            local ai_dir="${_data_dir}/ai-analyses"
+
+            local purge_logs=1 purge_ai=1
+            [ "$opt_only_ai"   -eq 1 ] && purge_logs=0
+            [ "$opt_only_logs" -eq 1 ] && purge_ai=0
+
+            local _label _rest _dir _enabled _find_args _count _answer
+            for _entry in "logs:${log_dir}:${purge_logs}" "ai-analyses:${ai_dir}:${purge_ai}"; do
+                _label="${_entry%%:*}"
+                _rest="${_entry#*:}"
+                _dir="${_rest%%:*}"
+                _enabled="${_rest##*:}"
+                [ "$_enabled" -eq 0 ] && continue
+                [ ! -d "$_dir" ] && continue
+
+                _find_args=()
+                if [ -n "$opt_tool" ]; then
+                    _find_args+=(-path "*/${opt_tool}/*.json")
+                else
+                    _find_args+=(-name "*.json")
+                fi
+                _find_args+=(! -name "*.bak")
+                [ -n "$opt_older_than" ] && _find_args+=(-mtime "+${opt_older_than}")
+
+                # Count matching files safely
+                _count=$(find "$_dir" "${_find_args[@]}" 2>/dev/null | wc -l | tr -d ' ')
+
+                if [ "$_count" -eq 0 ]; then
+                    echo "No files to purge in $_label."
+                    continue
+                fi
+
+                if [ "$opt_dry_run" -eq 1 ]; then
+                    echo "[dry-run] Would delete $_count file(s) from $_dir"
+                    find "$_dir" "${_find_args[@]}" 2>/dev/null | head -5
+                    [ "$_count" -gt 5 ] && echo "  ... and $(( _count - 5 )) more"
+                    continue
+                fi
+
+                if [ "$opt_yes" -eq 0 ]; then
+                    printf "Delete %s file(s) from %s? [y/N] " "$_count" "$_dir"
+                    read -r _answer
+                    case "$_answer" in
+                        y|Y) ;;
+                        *) echo "Skipped $_label."; continue ;;
+                    esac
+                fi
+
+                find "$_dir" "${_find_args[@]}" -print0 2>/dev/null | xargs -0 rm -f
+                echo "Deleted $_count file(s) from $_dir"
+            done
+            ;;
+        help|--help|-h|"")
+            cat <<'EOF'
+Usage: mec purge <command> [flags]
+
+Commands:
+  data      Delete log and AI analysis files (interactive by default)
+
+Flags:
+  --tool <name>        Only purge files for a specific tool (e.g. node, aws)
+  --older-than <days>  Only purge files older than N days
+  --only-logs          Only purge ~/.my-ez-cli/logs/
+  --only-ai-analyses   Only purge ~/.my-ez-cli/ai-analyses/
+  --dry-run            Preview what would be deleted without deleting
+  -y, --yes            Skip confirmation prompts
+
+Examples:
+  mec purge data                           # purge all logs + AI analyses (interactive)
+  mec purge data --dry-run                 # preview only
+  mec purge data --tool node               # only node logs + analyses
+  mec purge data --older-than 30           # only files older than 30 days
+  mec purge data --only-logs --tool aws    # only aws logs (keep AI analyses)
+  mec purge data -y                        # skip confirmation
+EOF
+            ;;
+        *)
+            echo "Unknown purge command: $subcmd" >&2
+            echo "Run 'mec purge help' for usage" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # Main Dispatch
 # ----------------------------------------------------------------------------
 
@@ -1425,6 +1552,10 @@ case "$COMMAND" in
     doctor)
         shift
         mec_doctor "${@}"
+        ;;
+    purge)
+        shift
+        mec_purge "$@"
         ;;
     version|--version|-v)
         show_version
