@@ -356,7 +356,8 @@ analyze_with_claude() {
 
         local _end_ms
         _end_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
-        local _elapsed=$(( _end_ms - _start_ms ))
+        local _elapsed
+        _elapsed=$(( _end_ms - _start_ms ))
 
         # Patch execution_time_ms into the latest sidecar entry
         if [ -f "$ai_file" ] && command -v python3 >/dev/null 2>&1 && [ "$_elapsed" -gt 0 ]; then

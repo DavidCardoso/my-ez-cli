@@ -259,8 +259,8 @@ def _ai_status(ai_path: Path) -> tuple[str, str, str, int | None, int | None, in
     tokens: dict[str, object] = entry.get("tokens", {})  # type: ignore[assignment]
     tok_in_raw = tokens.get("input", 0)
     tok_out_raw = tokens.get("output", 0)
-    tok_in: int | None = int(tok_in_raw) if tok_in_raw else None  # type: ignore[arg-type]
-    tok_out: int | None = int(tok_out_raw) if tok_out_raw else None  # type: ignore[arg-type]
+    tok_in: int | None = int(tok_in_raw) if tok_in_raw is not None else None  # type: ignore[arg-type]
+    tok_out: int | None = int(tok_out_raw) if tok_out_raw is not None else None  # type: ignore[arg-type]
     result: str = entry.get("result", "")  # type: ignore[union-attr, assignment]
     if result:
         return "done", result, claude_session_id, exec_time, tok_in, tok_out
