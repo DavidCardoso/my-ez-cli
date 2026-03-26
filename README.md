@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml)
 [![Docker Builds](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 
 CLI tools over Docker — managed by `mec`.
 
