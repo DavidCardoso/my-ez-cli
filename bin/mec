@@ -1395,9 +1395,26 @@ mec_purge() {
             --only-ai-analyses) opt_only_ai=1;        shift ;;
             --dry-run)          opt_dry_run=1;        shift ;;
             -y|--yes)           opt_yes=1;            shift ;;
-            *)                  break ;;
+            *)
+                echo "Unknown flag: $1" >&2
+                echo "Run 'mec purge help' for usage" >&2
+                return 1
+                ;;
         esac
     done
+
+    # Validate --older-than is a positive integer
+    if [ -n "$opt_older_than" ] && ! printf '%s' "$opt_older_than" | grep -qE '^[0-9]+$'; then
+        echo "Error: --older-than requires a positive integer (days), got: $opt_older_than" >&2
+        return 1
+    fi
+
+    # Validate --tool has no path separators
+    if [ -n "$opt_tool" ]; then
+        case "$opt_tool" in
+            */* | *..*) echo "Error: --tool must not contain path separators or '..'" >&2; return 1 ;;
+        esac
+    fi
 
     case "$subcmd" in
         all)
@@ -1408,8 +1425,8 @@ mec_purge() {
             [ "$opt_only_ai"   -eq 1 ] && purge_logs=0
             [ "$opt_only_logs" -eq 1 ] && purge_ai=0
 
+            local _label _rest _dir _enabled _find_args _count _answer
             for _entry in "logs:${log_dir}:${purge_logs}" "ai-analyses:${ai_dir}:${purge_ai}"; do
-                local _label _dir _enabled _rest
                 _label="${_entry%%:*}"
                 _rest="${_entry#*:}"
                 _dir="${_rest%%:*}"
@@ -1417,7 +1434,6 @@ mec_purge() {
                 [ "$_enabled" -eq 0 ] && continue
                 [ ! -d "$_dir" ] && continue
 
-                local _find_args
                 _find_args=()
                 if [ -n "$opt_tool" ]; then
                     _find_args+=(-path "*/${opt_tool}/*.json")
@@ -1427,17 +1443,17 @@ mec_purge() {
                 _find_args+=(! -name "*.bak")
                 [ -n "$opt_older_than" ] && _find_args+=(-mtime "+${opt_older_than}")
 
-                local _files _count
-                _files=$(find "$_dir" "${_find_args[@]}" 2>/dev/null || true)
-                if [ -z "$_files" ]; then
+                # Count matching files safely
+                _count=$(find "$_dir" "${_find_args[@]}" 2>/dev/null | wc -l | tr -d ' ')
+
+                if [ "$_count" -eq 0 ]; then
                     echo "No files to purge in $_label."
                     continue
                 fi
-                _count=$(printf '%s\n' "$_files" | wc -l | tr -d ' ')
 
                 if [ "$opt_dry_run" -eq 1 ]; then
                     echo "[dry-run] Would delete $_count file(s) from $_dir"
-                    printf '%s\n' "$_files" | head -5
+                    find "$_dir" "${_find_args[@]}" 2>/dev/null | head -5
                     [ "$_count" -gt 5 ] && echo "  ... and $(( _count - 5 )) more"
                     continue
                 fi
@@ -1451,7 +1467,7 @@ mec_purge() {
                     esac
                 fi
 
-                printf '%s\n' "$_files" | xargs rm -f
+                find "$_dir" "${_find_args[@]}" -print0 2>/dev/null | xargs -0 rm -f
                 echo "Deleted $_count file(s) from $_dir"
             done
             ;;
