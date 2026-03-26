@@ -1,5 +1,9 @@
 # My Ez CLI
 
+[![CI](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml)
+[![Docker Builds](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml)
+
+
 CLI tools over Docker — managed by `mec`.
 
 > Docker-based dev tools + AI analysis powered by Claude Code. See [docs/ROADMAP.md](./docs/ROADMAP.md) for current status.
@@ -205,6 +209,21 @@ mec dashboard stop
 mec config set ai.dashboard.port 8080
 mec dashboard restart
 ```
+
+<details>
+<summary>Architecture overview</summary>
+
+```mermaid
+flowchart TD
+    A["bin/* tool scripts\n(node, aws, terraform, …)"] -->|"exec_with_ai()"| B["log-manager.sh\nimmutable log\n~/.my-ez-cli/logs/<tool>/<ts>.json"]
+    B -->|"MEC_AI_ENABLED=true"| C["analyze_with_claude()\nbackground subshell"]
+    C -->|"docker run"| D["Claude Code CLI\n--output-format json"]
+    D -->|"stdout JSON"| E["parse-claude-response\n(services/ai middleware)"]
+    E -->|"sidecar"| F["~/.my-ez-cli/ai-analyses/<tool>/<ts>.json"]
+    B & F --> G["mec dashboard\nFastAPI + Vue 3\nlocalhost:4242"]
+```
+
+</details>
 
 For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
 
