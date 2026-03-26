@@ -22,6 +22,10 @@
       </div>
 
       <div class="navbar-right">
+        <LogsStatus :enabled="logsEnabled" />
+        <span class="navbar-sep"></span>
+        <AIStatus :enabled="aiEnabled" />
+        <span class="navbar-sep"></span>
         <WsStatus />
       </div>
     </div>
@@ -29,10 +33,35 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import WsStatus from './WsStatus.vue'
+import LogsStatus from './LogsStatus.vue'
+import AIStatus from './AIStatus.vue'
+import { useWebSocket } from '../composables/useWebSocket.js'
 
 const route = useRoute()
+const { onRefresh } = useWebSocket()
+
+const logsEnabled = ref(false)
+const aiEnabled = ref(false)
+
+async function fetchFeatureFlags() {
+  try {
+    const res = await fetch('/api/stats')
+    if (res.ok) {
+      const stats = await res.json()
+      logsEnabled.value = stats.logs_enabled ?? false
+      aiEnabled.value = stats.ai_enabled ?? false
+    }
+  } catch (_) { /* silently fail */ }
+}
+
+onMounted(() => {
+  fetchFeatureFlags()
+  const cleanup = onRefresh(fetchFeatureFlags)
+  onUnmounted(cleanup)
+})
 </script>
 
 <style scoped>
@@ -119,5 +148,13 @@ const route = useRoute()
   margin-left: auto;
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+.navbar-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--mec-border);
+  margin: 0 6px;
 }
 </style>
