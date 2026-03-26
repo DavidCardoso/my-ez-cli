@@ -70,7 +70,7 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 - `bin/mec`: added `_ai_sidecar_exists()` helper; replaced all four `ai_analyses` grep/python checks with sidecar file existence checks
 - `TestWriteAiAnalysis` replaces `TestAppendToLog` in `services/ai/tests/test_claude_response.py`
 
-#### Phase 3 — Dashboard & Web UI
+#### Phase 3.1–3.3 — Dashboard & Web UI
 
 - `mec dashboard` subcommand: `start`, `stop`, `restart`, `status`, `open`, `help`
 - FastAPI + Vue 3 dashboard at `http://localhost:4242` (multi-stage Docker build)

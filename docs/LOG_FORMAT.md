@@ -154,6 +154,8 @@ When `MEC_AI_ENABLED=true` and Claude Code runs after a tool execution, an AI si
 }
 ```
 
+#### Field Descriptions
+
 - `log_session_id`: tool session ID (matches the log file's `session_id`)
 - `log_file`: absolute path to the corresponding tool log file
 - `analyses`: dict keyed by Claude session ID — allows re-analysis without overwriting
@@ -273,6 +275,7 @@ Example:
 
 ## Change History
 
+- **2026-03-26**: Added `execution_time_ms`, `tokens.input`, `tokens.output` to AI sidecar analyses entries
 - **2026-02-20**: AI sidecar directory; immutable log files
   - Tool log files are immutable after finalization
   - AI analyses written to parallel `ai-analyses/` directory tree
