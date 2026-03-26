@@ -217,6 +217,61 @@ Tool log files are **immutable after finalization**. AI analyses are written to 
 
 ---
 
+## Dashboard
+
+The mec dashboard is a local web UI (Vue 3 + FastAPI) that visualises all session logs and AI analysis results in real time.
+
+### Commands
+
+```shell
+mec dashboard start    # Start the container (API + UI on same port)
+mec dashboard stop     # Stop and remove the container
+mec dashboard restart  # Restart the container
+mec dashboard status   # Show running state and URL
+mec dashboard open     # Open in default browser
+```
+
+### Pages
+
+| Page | URL | What |
+|------|-----|------|
+| Home | `/` | Stat cards (total sessions, success rate, AI rate, tools used) + 3 charts (sessions by tool, exit code distribution, last 7 days) |
+| Sessions | `/sessions` | Paginated session list with search and filters (tool, AI status, exit code) |
+| Session Detail | `/sessions/<id>` | Meta bar, command, log output, and AI analysis (markdown rendered). Shows **Resume AI** row with `claude --resume <id>` command when an AI analysis exists. |
+| Tools | `/tools` | Read-only registry of all mec Docker tool wrappers |
+
+### Architecture
+
+The dashboard is a single Docker container (`davidcardoso/my-ez-cli:dashboard-latest`) built from a multi-stage Dockerfile:
+
+- **Stage 1** (`node:22-alpine`): builds the Vue 3 + Vite + PrimeVue frontend into `/frontend/dist/`
+- **Stage 2** (`python:3.12-alpine`): runs FastAPI + uvicorn; serves the built Vue assets from `/assets` and the REST API from `/api`
+
+The frontend connects to a WebSocket (`/ws`) for live updates whenever new sessions are written to `~/.my-ez-cli/`.
+
+### Configuration
+
+```shell
+# Change the default port (4242)
+mec config set ai.dashboard.port <port>
+mec dashboard restart
+```
+
+### Development (frontend)
+
+When working on the Vue frontend, run the Vite dev server alongside the API container:
+
+```shell
+mec dashboard start   # start the API container on :4242
+
+# in services/dashboard/frontend/:
+MEC_BIND_PORTS="5173:5173" npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+The Vite dev server auto-detects when it runs inside Docker (via `/.dockerenv`) and proxies `/api` and `/ws` to `host.docker.internal:4242` instead of `localhost:4242`.
+
+---
+
 ## I/O Filtering
 
 The filter engine reduces noise in tool output before sending to Claude Code, optimizing token usage. `ai.filters` is the **single filtering layer** — tool-specific noise patterns (npm, yarn, terraform, python, aws) are all expressed here as regex patterns.

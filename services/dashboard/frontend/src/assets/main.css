@@ -1,0 +1,319 @@
+/* =========================================================
+   MEC Dashboard — Global Styles
+   Design: Terminal-IDE aesthetic, deep navy + electric violet
+   ========================================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Core palette */
+  --mec-bg: #080b14;
+  --mec-surface-1: #0f1220;
+  --mec-surface-2: #141829;
+  --mec-surface-3: #1c2136;
+  --mec-border: #232843;
+  --mec-border-subtle: #1a1f35;
+
+  /* Typography */
+  --mec-text: #dde4f0;
+  --mec-text-dim: #8b95b0;
+  --mec-text-faint: #4a5270;
+
+  /* Accent */
+  --mec-accent: #7c6af7;
+  --mec-accent-bright: #9d8fff;
+  --mec-accent-dim: #3d3578;
+  --mec-accent-glow: rgba(124, 106, 247, 0.15);
+
+  /* Status */
+  --mec-green: #3ddc84;
+  --mec-green-dim: rgba(61, 220, 132, 0.15);
+  --mec-red: #ff6b6b;
+  --mec-red-dim: rgba(255, 107, 107, 0.15);
+  --mec-yellow: #ffd93d;
+  --mec-yellow-dim: rgba(255, 217, 61, 0.15);
+  --mec-blue: #60a5fa;
+
+  /* Font stacks */
+  --font-mono: 'IBM Plex Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--mec-bg);
+  color: var(--mec-text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mec-surface-1);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mec-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mec-text-faint);
+}
+
+/* Selection */
+::selection {
+  background: var(--mec-accent-dim);
+  color: var(--mec-text);
+}
+
+/* PrimeVue overrides — surface token remapping to our palette */
+.p-dark {
+  --p-surface-0: var(--mec-bg);
+  --p-surface-50: var(--mec-surface-1);
+  --p-surface-100: var(--mec-surface-2);
+  --p-surface-200: var(--mec-surface-3);
+  --p-surface-300: var(--mec-border);
+  --p-surface-400: var(--mec-text-faint);
+  --p-surface-500: var(--mec-text-dim);
+  --p-surface-600: #6b7899;
+  --p-surface-700: #8b95b0;
+  --p-surface-800: var(--mec-text);
+  --p-surface-900: #eef2ff;
+  --p-surface-950: #f8faff;
+
+  --p-primary-color: var(--mec-accent);
+  --p-primary-contrast-color: #ffffff;
+  --p-primary-hover-color: var(--mec-accent-bright);
+}
+
+/* PrimeVue DataTable */
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--mec-surface-2) !important;
+  border-color: var(--mec-border) !important;
+  color: var(--mec-text-dim) !important;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 14px !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: transparent !important;
+  border-color: var(--mec-border-subtle) !important;
+  transition: background 0.12s;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: var(--mec-surface-2) !important;
+  cursor: pointer;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--mec-border-subtle) !important;
+  padding: 9px 14px !important;
+}
+
+/* PrimeVue Card */
+.p-card {
+  background: var(--mec-surface-1) !important;
+  border: 1px solid var(--mec-border) !important;
+  border-radius: 10px !important;
+}
+
+.p-card .p-card-content {
+  padding: 0 !important;
+}
+
+/* PrimeVue Tag */
+.p-tag {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+  letter-spacing: 0.02em;
+}
+
+/* PrimeVue Button */
+.p-button {
+  font-family: var(--font-ui) !important;
+  font-size: 13px !important;
+}
+
+/* PrimeVue InputText */
+.p-inputtext {
+  background: var(--mec-surface-2) !important;
+  border-color: var(--mec-border) !important;
+  color: var(--mec-text) !important;
+  font-family: var(--font-ui) !important;
+  font-size: 13px !important;
+}
+
+.p-inputtext:focus {
+  border-color: var(--mec-accent) !important;
+  box-shadow: 0 0 0 2px var(--mec-accent-glow) !important;
+}
+
+/* PrimeVue Select / MultiSelect */
+.p-select,
+.p-multiselect {
+  background: var(--mec-surface-2) !important;
+  border-color: var(--mec-border) !important;
+}
+
+.p-select-label,
+.p-multiselect-label {
+  color: var(--mec-text) !important;
+  font-size: 13px !important;
+}
+
+/* PrimeVue Paginator */
+.p-paginator {
+  background: var(--mec-surface-1) !important;
+  border-color: var(--mec-border) !important;
+}
+
+/* Markdown prose styles */
+.prose {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--mec-text);
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--mec-accent-bright);
+  font-weight: 600;
+  margin: 1.2em 0 0.5em;
+  line-height: 1.3;
+}
+
+.prose h1 { font-size: 1.2em; }
+.prose h2 { font-size: 1.1em; }
+.prose h3 { font-size: 1em; }
+
+.prose p {
+  margin: 0.6em 0;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--mec-surface-3);
+  border: 1px solid var(--mec-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--mec-accent-bright);
+}
+
+.prose pre {
+  background: var(--mec-surface-3) !important;
+  border: 1px solid var(--mec-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+
+.prose pre code {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 12px;
+  color: var(--mec-text);
+}
+
+.prose ul, .prose ol {
+  padding-left: 1.5em;
+  margin: 0.6em 0;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+.prose strong {
+  color: var(--mec-text);
+  font-weight: 600;
+}
+
+.prose em {
+  color: var(--mec-text-dim);
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--mec-accent);
+  padding-left: 12px;
+  color: var(--mec-text-dim);
+  margin: 0.8em 0;
+  font-style: italic;
+}
+
+.prose a {
+  color: var(--mec-accent-bright);
+  text-decoration: none;
+}
+
+.prose a:hover {
+  text-decoration: underline;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--mec-border);
+  margin: 1em 0;
+}
+
+/* Utility classes */
+.mono {
+  font-family: var(--font-mono) !important;
+}
+
+.text-muted {
+  color: var(--mec-text-dim);
+}
+
+.text-faint {
+  color: var(--mec-text-faint);
+}
+
+.text-accent {
+  color: var(--mec-accent);
+}
+
+/* Fade-in animation for page transitions */
+.page-enter-active {
+  animation: pageFadeIn 0.18s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Loading skeleton pulse */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.skeleton-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}

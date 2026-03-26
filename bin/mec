@@ -306,15 +306,22 @@ _mec_ai_print_session() {
     local ai_file ai_status result
     ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
 
+    local claude_session_id=""
     if [ -f "$ai_file" ]; then
         if command -v python3 >/dev/null 2>&1; then
             result=$(python3 -c "
-import json, sys
+import json
 with open('$ai_file') as f:
     d = json.load(f)
-analyses = d.get('analyses', {})
-entry = sorted(analyses.values(), key=lambda x: x.get('timestamp',''))[-1] if analyses else {}
-print(entry.get('result', ''), end='')
+items = sorted(d.get('analyses', {}).items(), key=lambda kv: kv[1].get('timestamp', ''))
+print(items[-1][1].get('result', '') if items else '', end='')
+" 2>/dev/null)
+            claude_session_id=$(python3 -c "
+import json
+with open('$ai_file') as f:
+    d = json.load(f)
+items = sorted(d.get('analyses', {}).items(), key=lambda kv: kv[1].get('timestamp', ''))
+print(items[-1][0] if items else '', end='')
 " 2>/dev/null)
         else
             result=$(grep '"result"' "$ai_file" 2>/dev/null | sed 's/.*"result"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/' | head -1 | sed 's/\\n/\n/g; s/\\t/\t/g')
@@ -337,6 +344,9 @@ print(entry.get('result', ''), end='')
     echo "Exit code: ${exit_code:-unknown}"
     echo "AI status: $ai_status"
     echo "Dashboard: http://localhost:${dashboard_port}/sessions/${session_id}"
+    if [ -n "$claude_session_id" ]; then
+        echo "Resume:    claude --resume ${claude_session_id}"
+    fi
     echo ""
 
     case "$ai_status" in
@@ -1103,7 +1113,9 @@ mec_dashboard() {
                 --volume "${HOME}/.my-ez-cli:/data:ro" \
                 "$MEC_IMAGE_DASHBOARD" >/dev/null
 
-            echo "Dashboard started at http://localhost:${dashboard_port}"
+            echo "Dashboard started"
+            echo "  UI  →  http://localhost:${dashboard_port}"
+            echo "  API →  http://localhost:${dashboard_port}/api"
             ;;
         stop)
             if ! docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
@@ -1123,7 +1135,8 @@ mec_dashboard() {
             state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
             echo "Dashboard: $state"
             if [ "$state" = "running" ]; then
-                echo "URL:       http://localhost:${dashboard_port}"
+                echo "  UI  →  http://localhost:${dashboard_port}"
+                echo "  API →  http://localhost:${dashboard_port}/api"
             fi
             ;;
         open)
@@ -1140,11 +1153,12 @@ mec_dashboard() {
 Usage: mec dashboard <command>
 
 Commands:
-  start   Start the dashboard container (http://localhost:4242)
-  stop    Stop and remove the dashboard container
-  status  Show dashboard container status
-  open    Open dashboard in the default browser
-  help    Show this help message
+  start     Start the dashboard (API + UI served from the same container)
+  stop      Stop and remove the dashboard container
+  restart   Stop then start the dashboard container
+  status    Show dashboard container status
+  open      Open the dashboard in the default browser
+  help      Show this help message
 
 Configuration:
   ai.dashboard.port  Port for the dashboard (default: 4242)
@@ -1152,9 +1166,14 @@ Configuration:
 
 Examples:
   mec dashboard start
+  mec dashboard restart
   mec dashboard open
   mec dashboard stop
 EOF
+            ;;
+        restart)
+            mec_dashboard "stop"
+            mec_dashboard "start"
             ;;
         *)
             echo "Unknown dashboard command: $subcmd" >&2

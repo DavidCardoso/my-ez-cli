@@ -188,6 +188,103 @@ jobs:
             config-service-test \
             -m pytest tests/ -v
 
+  # Dashboard API unit tests — pytest inside the Docker image
+  unit-tests-dashboard-api:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build dashboard image for testing
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --file ./docker/dashboard/Dockerfile \
+            --tag dashboard-test \
+            ./services/dashboard
+
+      - name: Run pytest inside dashboard image
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            dashboard-test \
+            -m pytest tests/ -v
+
+  # Dashboard frontend unit tests — Vitest
+  unit-tests-dashboard-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: services/dashboard/frontend/package.json
+
+      - name: Install frontend dependencies
+        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install
+
+      - name: Run Vitest unit tests
+        run: cd services/dashboard/frontend && npm test
+
+  # Dashboard E2E tests — Playwright against live FastAPI + built frontend
+  e2e-tests-dashboard:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: services/dashboard/frontend/package.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install fastapi==0.115.12 "uvicorn[standard]==0.34.0" watchfiles==1.0.5
+
+      - name: Install frontend dependencies and build
+        run: |
+          cd services/dashboard/frontend
+          rm -f package-lock.json
+          npm install
+          npm run build
+          # Copy built assets to where FastAPI's static mount expects them
+          mkdir -p ../src/static
+          cp -r dist/* ../src/static/
+
+      - name: Install Playwright browsers
+        run: cd services/dashboard/frontend && npx playwright install --with-deps chromium
+
+      - name: Start FastAPI server with mock data
+        run: |
+          mkdir -p /tmp/mec-test-data/logs/node
+          echo '{"session_id":"mec-node-test","tool":"node","execution":{"exit_code":0,"start_time":"2026-01-01T00:00:00Z"},"output":{"stdout":"v22.0.0","stderr":""}}' \
+            > /tmp/mec-test-data/logs/node/2026-01-01_00-00-00.json
+          MEC_DATA_ROOT=/tmp/mec-test-data uvicorn src.main:app --host 0.0.0.0 --port 4242 &
+          sleep 3
+        working-directory: services/dashboard
+
+      - name: Run Playwright E2E tests
+        run: cd services/dashboard/frontend && CI=true npx playwright test
+        env:
+          CI: true
+
   # Integration tests - run on main branch, releases, and workflow_dispatch
   integration-tests:
     runs-on: ubuntu-latest
@@ -223,7 +320,7 @@ jobs:
   # Summary job - aggregate results
   summary:
     runs-on: ubuntu-latest
-    needs: [smoke-tests, unit-tests, unit-tests-config-service, integration-tests]
+    needs: [smoke-tests, unit-tests, unit-tests-config-service, unit-tests-dashboard-api, unit-tests-dashboard-frontend, e2e-tests-dashboard, integration-tests]
     if: always()
     steps:
       - name: Test Summary
@@ -236,6 +333,9 @@ jobs:
           echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests (config-service) | ${{ needs.unit-tests-config-service.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests (dashboard-api) | ${{ needs.unit-tests-dashboard-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests (dashboard-frontend) | ${{ needs.unit-tests-dashboard-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests (dashboard) | ${{ needs.e2e-tests-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

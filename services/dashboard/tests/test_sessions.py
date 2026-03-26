@@ -134,3 +134,29 @@ class TestGetSession:
         detail = get_session(data_root, "mec-npm-1")
         assert detail is not None
         assert detail.exit_code == 1
+
+    def test_cwd_defaults_to_empty_when_missing(self, tmp_path: Path) -> None:
+        """cwd field should be empty string when not present in log data."""
+        _write_log(tmp_path, "node", "2026-01-01_00-00-01", "mec-node-1", exit_code=0)
+        detail = get_session(tmp_path, "mec-node-1")
+        assert detail is not None
+        assert detail.cwd == ""
+
+    def test_cwd_populated_from_log_data(self, tmp_path: Path) -> None:
+        """cwd field should be populated from log data when present."""
+        log_dir = tmp_path / "logs" / "node"
+        log_dir.mkdir(parents=True)
+        (log_dir / "2026-01-01_00-00-01.json").write_text(
+            json.dumps(
+                {
+                    "session_id": "mec-node-cwd",
+                    "tool": "node",
+                    "cwd": "/home/user/myproject",
+                    "execution": {"exit_code": 0, "start_time": "2026-01-01T00:00:01Z"},
+                    "output": {"stdout": "", "stderr": ""},
+                }
+            )
+        )
+        detail = get_session(tmp_path, "mec-node-cwd")
+        assert detail is not None
+        assert detail.cwd == "/home/user/myproject"

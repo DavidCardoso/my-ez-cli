@@ -9,11 +9,12 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.api.sessions import router as sessions_router
+from src.api.stats import router as stats_router
 from src.api.ws import router as ws_router
 from src.watcher import watch_data_dir
 
@@ -53,15 +54,17 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     app.include_router(sessions_router)
     app.include_router(ws_router)
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    app.include_router(stats_router)
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
-    @app.get("/")
-    async def index() -> FileResponse:
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str) -> FileResponse:
+        """Serve index.html for all non-API, non-assets paths (Vue Router SPA)."""
+        if full_path.startswith(("api/", "assets/")):
+            raise HTTPException(status_code=404)
         return FileResponse(str(STATIC_DIR / "index.html"))
-
-    @app.get("/sessions/{session_id}")
-    async def session_page(session_id: str) -> FileResponse:
-        return FileResponse(str(STATIC_DIR / "session.html"))
 
     return app
 
