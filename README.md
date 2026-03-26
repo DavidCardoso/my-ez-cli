@@ -1,671 +1,156 @@
 # My Ez CLI
 
-CLI tools over Docker.
+CLI tools over Docker — managed by `mec`.
 
-> **v1.0.0**: Docker-based dev tools + AI integration powered by Claude Code. See [ROADMAP.md](./docs/ROADMAP.md) for details.
+> Docker-based dev tools + AI analysis powered by Claude Code. See [docs/ROADMAP.md](./docs/ROADMAP.md) for current status.
 
 ## Table of Contents
 
-- [My Ez CLI](#my-ez-cli)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Setup](#setup)
-  - [Docker Container Management](#docker-container-management)
-  - [Documentation](#documentation)
-  - [Usage examples](#usage-examples)
-    - [AWS CLI](#aws-cli)
-      - [AWS Get Session Token](#aws-get-session-token)
-      - [AWS SSO](#aws-sso)
-      - [AWS SSO Get Credentials](#aws-sso-get-credentials)
-    - [Python](#python)
-      - [Using other Python versions](#using-other-python-versions)
-    - [NodeJS](#nodejs)
-      - [Using other NodeJS versions](#using-other-nodejs-versions)
-      - [Using NodeJS, npm, npx, and yarn with custom ports](#using-nodejs-npm-npx-and-yarn-with-custom-ports)
-      - [Using NPM and Yarn with NPM token](#using-npm-and-yarn-with-npm-token)
-    - [NPM](#npm)
-      - [Using NPM with other NodeJS versions](#using-npm-with-other-nodejs-versions)
-    - [NPX](#npx)
-    - [Yarn](#yarn)
-      - [Using Yarn with other NodeJS versions](#using-yarn-with-other-nodejs-versions)
-      - [Yarn Berry (v2+)](#yarn-berry-v2)
-      - [Yarn Plus](#yarn-plus)
-    - [Serverless Framework](#serverless-framework)
-    - [Terraform](#terraform)
-      - [`CONTEXT` variable](#context-variable)
-      - [`DOTENV_FILE` variable](#dotenv_file-variable)
-      - [`TF_RC_FILE` variable](#tf_rc_file-variable)
-      - [`AWS_CREDENTIALS_FOLDER` variable](#aws_credentials_folder-variable)
-      - [`GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables](#gcloud_credentials_folder-and-google_application_credentials-variables)
-    - [Ookla Speedtest CLI](#ookla-speedtest-cli)
-    - [Google Cloud CLI](#google-cloud-cli)
-    - [Playwright](#playwright)
-    - [Promptfoo](#promptfoo)
-    - [Promptfoo Server](#promptfoo-server)
-    - [Claude Code](#claude-code)
-  - [AI Features](#ai-features)
-    - [AI TUI](#tui----mec-ai)
-    - [Dashboard](#web-dashboard----mec-dashboard)
-  - [Author](#author)
-  - [Contributors](#contributors)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [`mec` CLI Reference](#mec-cli-reference)
+  - [Setup & Installation](#setup--installation)
+  - [Configuration](#configuration)
+  - [Log Management](#log-management)
+  - [AI Analysis](#ai-analysis----mec-ai)
+  - [Dashboard](#dashboard----mec-dashboard)
+  - [Health Check](#health-check----mec-doctor)
+  - [Claude Code](#claude-code----mec-claude)
+- [AI Features](#ai-features)
+  - [TUI](#tui----mec-ai)
+  - [Web Dashboard](#web-dashboard----mec-dashboard)
+- [Documentation](#documentation)
+- [Tools](#tools)
+  - [AWS CLI](#aws-cli)
+  - [Python](#python)
+  - [NodeJS](#nodejs)
+  - [NPM](#npm)
+  - [NPX](#npx)
+  - [Yarn](#yarn)
+  - [Serverless Framework](#serverless-framework)
+  - [Terraform](#terraform)
+  - [Ookla Speedtest CLI](#ookla-speedtest-cli)
+  - [Google Cloud CLI](#google-cloud-cli)
+  - [Playwright](#playwright)
+  - [Promptfoo](#promptfoo)
+  - [Claude Code (tool)](#claude-code-tool)
+- [Author](#author)
+- [Contributors](#contributors)
 
 ## Prerequisites
 
-- [Docker](https://www.docker.com/get-started).
-- [Zshell + Oh My Zsh](https://ohmyz.sh/).
+- [Docker](https://www.docker.com/get-started)
+- [Zshell + Oh My Zsh](https://ohmyz.sh/)
 
-## Setup
+## Getting Started
 
-Run the interactive setup script to install tools:
-
-```shell
-./setup.sh
-```
-
-The setup script adds symbolic links to `/usr/local/bin/` and aliases to `~/.zshrc`.
-
-For detailed setup documentation, see [SETUP.md](./docs/SETUP.md).
-
-## Docker Container Management
-
-All My Ez CLI containers use consistent naming and labeling for easy management:
-
-**Container Naming**: `mec-{tool}-{timestamp}` (e.g., `mec-node-1700000000`)
-
-**Container Labels**:
-- `com.my-ez-cli.project=my-ez-cli` - Identifies project
-- `com.my-ez-cli.tool={tool}` - Identifies the tool
-- `com.my-ez-cli.image={image}` - Source Docker image
-
-**Useful Commands**:
-```shell
-# List all My Ez CLI containers
-docker ps -a --filter "name=mec-"
-
-# List by label
-docker ps -a --filter "label=com.my-ez-cli.project=my-ez-cli"
-
-# Remove stopped My Ez CLI containers
-docker container prune --filter "label=com.my-ez-cli.project=my-ez-cli"
-
-# List all My Ez CLI images
-docker images --filter "label=com.my-ez-cli.project=my-ez-cli"
-```
-
-## Documentation
-
-- **[SETUP.md](./docs/SETUP.md)** - Comprehensive setup guide with installation modes, troubleshooting, and advanced usage
-- **[DOCKER_HUB.md](./docs/DOCKER_HUB.md)** - Docker Hub setup, image management, CI/CD workflows, and GitHub Secrets configuration
-- **[AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)** - AI architecture: Claude Code integration, I/O middleware, filtering
-- **[ROADMAP.md](./docs/ROADMAP.md)** - v1.0.0 upgrade roadmap with planned features and implementation phases
-- **[CLAUDE.md](./CLAUDE.md)** - Development guidelines and architecture documentation for contributors
-- **[tests/README.md](./tests/README.md)** - Testing framework documentation, writing tests, and running test suites
-- **[config/aws/README.md](./config/aws/README.md)** - AWS CLI configuration examples and authentication setup
-
-## Usage examples
-
-### AWS CLI
-
-> See [more](config/aws).
+`mec` is the main interface for My Ez CLI. Run the setup wizard to install tools:
 
 ```shell
-# help
-aws help
-
-# list buckets
-aws s3 ls --profile my-aws-profile
-
-# download a file from a bucket
-aws s3 cp s3://my-bucket/my-file /path/to/local/file --profile my-aws-profile
+mec setup
 ```
 
-#### AWS Get Session Token
+Or install specific tools directly:
 
 ```shell
-# authenticate using MFA
-aws-get-session-token <MFA_DIGITS>
+mec install node terraform aws
 ```
 
-#### AWS SSO
+<!-- TODO: remove the ./setup.sh bootstrap step once this project is distributed as an installable package (Homebrew, npm, etc.) — at that point `mec` will be available immediately after install -->
+> **First time?** If `mec` is not yet available, run `./setup.sh` once to bootstrap it, then use `mec` for everything else.
+
+After setup, `mec` manages tools, configuration, AI analysis, logs, and the dashboard. Run `mec help` to see all commands.
+
+## `mec` CLI Reference
+
+### Setup & Installation
 
 ```shell
-# authenticate using SSO
-aws-sso
-#1) configure
-#2) login
-#3) logout
-#Choose an option:
+mec setup              # Interactive TUI — install/uninstall tools
+mec setup show         # Show installation status of all tools
+mec install node aws   # Install specific tools
+mec uninstall terraform
 ```
 
-#### AWS SSO Get Credentials
+For detailed installation options, see [docs/SETUP.md](./docs/SETUP.md).
 
-> [Building the docker image](docker/aws-sso-cred/).
-
-If you need to get/know the SSO credentials being used, run:
+### Configuration
 
 ```shell
-aws-sso-cred $AWS_PROFILE
-# or specify a profile of your choice
-aws-sso-cred my-working-profile
+mec config list                        # Show all config
+mec config get ai.dashboard.port       # Get a specific value
+mec config set ai.enabled true         # Set a value
+mec config set ai.dashboard.port 8080
+mec config edit                        # Edit config file in $EDITOR
+mec config reset                       # Reset to defaults
 ```
 
-### Python
+Config is stored at `~/.my-ez-cli/config.yaml`. See [docs/CONFIGURATION.md](./docs/CONFIGURATION.md) for all keys.
 
-> It is using version `3.12.4` as default.
+### Log Management
 
 ```shell
-# see version
-python --version
-
-# run interpreter
-python
-
-# run a script
-python main.py
+mec logs status                        # Show logging status
+mec logs enable                        # Enable log persistence
+mec logs disable
+mec logs list                          # List recent sessions
+mec logs list --tool node --last 20
+mec logs failures                      # Show only failed sessions (exit code != 0)
+mec logs stats                         # Per-tool statistics
 ```
 
-#### Using other Python versions
-
-This script is using the same env var used by [PyEnv](https://github.com/pyenv/pyenv?tab=readme-ov-file#understanding-python-version-selection).
-
-So all you need to do is to declare the `PYENV_VERSION` before calling the `python` command.
+### AI Analysis — `mec ai`
 
 ```shell
-# Export directly or add it to your profile configs (e.g.,`.zshrc`).
-export PYENV_VERSION=3.9.19
-python main.py
-
-# or pass it inline
-PYENV_VERSION=3.9.19 python main.py
-
-# Note: the respective docker image will be downloaded if not found locally
-# Unable to find image 'python:3.9.19' locally
-# 3.9.19: Pulling from library/python
-# 21988c13fd96: Download complete
-# 42d758104bc9: Download complete
-# 6d0099138f57: Download complete
-# Digest: sha256:47d6f16aa0de11f2748c73e7af8d40eaf44146c6dc059b1d0aa1f917f8c5cc58
-# Status: Downloaded newer image for python:3.9.19
+mec ai status            # Show AI status and configuration
+mec ai enable            # Enable automated analysis after each tool run
+mec ai disable
+mec ai test              # Test Claude Code connectivity
+mec ai last              # Show most recent AI analysis
+mec ai show <session_id> # Show analysis for a specific session
+mec ai logs              # List recent sessions with AI status
+mec ai analyze <log>     # Analyze a log file manually
 ```
 
-### NodeJS
+See [AI Features](#ai-features) for the full workflow.
 
-> It is using Node 24 (current LTS version) as default.
+### Dashboard — `mec dashboard`
 
 ```shell
-# see node version
-node -v
-
-# run node interpreter
-node
-
-# run a node script
-node somefile.js
+mec dashboard start      # Start the web UI (Docker container on port 4242)
+mec dashboard stop
+mec dashboard restart
+mec dashboard status
+mec dashboard open       # Open the dashboard in the default browser
 ```
 
-#### Using other NodeJS versions
+See [Web Dashboard](#web-dashboard----mec-dashboard) for page reference.
+
+### Health Check — `mec doctor`
 
 ```shell
-# Node 20, 22, and 24 LTS are supported
-node20 -v
-node22 -v
-node24 -v  # default
+mec doctor               # Check Docker, tools, AI, dashboard, and data directory health
 ```
 
-#### Using NodeJS, npm, npx, and yarn with custom ports
+Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check and a summary. Exits `1` if any check fails — scriptable.
 
-Use `MEC_BIND_PORTS` env var if you want to bind ports between the host and container:
+### Claude Code — `mec claude`
 
 ```shell
-MEC_BIND_PORTS="8080:80 9090:5634" node
-MEC_BIND_PORTS="8080:80 9090:5634" npm
-MEC_BIND_PORTS="8080:80 9090:5634" npx
-MEC_BIND_PORTS="8080:80 9090:5634" yarn
-
-# or
-export MEC_BIND_PORTS="8080:80 9090:5634"
-node
-npm
-yarn
+mec claude                                      # Launch interactive Claude Code session
+mec claude firewall status                      # Show network firewall config
+mec claude firewall enable                      # Enable container firewall
+mec claude firewall add dns registry.npmjs.org  # Allow a domain (requires image rebuild: mec claude firewall rebuild)
 ```
 
-#### Using NPM and Yarn with NPM token
-
-To be able to install NPM packages from a private repository,
-you need to inform the respective `NPM_TOKEN`.
-
-Method 1: Export the `NPM_TOKEN` on demand
-```shell
-NPM_TOKEN=your-token-here yarn
-NPM_TOKEN=your-token-here npm
-
-# or
-export NPM_TOKEN=your-token-here
-yarn
-npm
-```
-
-Method 2: Setting it up in the `~/.npmrc` config file
-```shell
-# ~/.npmrc example
-
-# Set the default registry
-registry=https://private.npm.registry.com/
-
-# Example for accessing private repos using NPM_TOKEN
-//private.npm.registry.com/:_authToken=${NPM_TOKEN}
-```
-
-> **Hint**: you can set the token(s) on your default shell config file.\
-> Example for zsh: `echo "export NPM_TOKEN=your-token-here" >> ~/.zshrc`
-
-### NPM
-
-> It is using NodeJS 24 as default.
+### Other
 
 ```shell
-# see npm version
-npm -v
-
-# start the package.json from a JS project
-npm init
-
-# install a package as dev dependency
-npm install some-pkg --save-dev
-
-# install a package globally
-npm install -g another-pkg
+mec version   # Show version (e.g., my-ez-cli version 1.0.0)
+mec help      # Full command reference
 ```
 
-#### Using NPM with other NodeJS versions
-
-> Some NPM packages aren't compatible with older or newer NodeJS versions.
-
-```shell
-# just add the node version as a suffix
-npm20 -v
-npm22 -v
-```
-
-### NPX
-
-> It is using NodeJS 24 as default.
-
-```shell
-# exec a standalone package
-npx cowsay "Hello!"
-# Need to install the following packages:
-# cowsay@1.6.0
-# Ok to proceed? (y) y
-
-#  _______
-# < Hello >
-#  -------
-#         \   ^__^
-#          \  (oo)\_______
-#             (__)\       )\/\
-#                 ||----w |
-#                 ||     ||
-```
-
-### Yarn
-
-> It is using Node 24.
-
-```shell
-# see yarn version
-yarn -v
-
-# start the package.json from a JS project
-yarn init
-
-# install a package as dev dependency
-yarn add some-pkg --dev
-
-# install a package globally
-yarn global add another-pkg
-```
-
-#### Using Yarn with other NodeJS versions
-
-> Some NPM packages aren't compatible with older or newer NodeJS versions.
-
-```shell
-# just add the node version as a suffix
-yarn20 -v
-yarn22 -v
-```
-
-#### Yarn Berry (v2+)
-
-```shell
-# if you have replaced yarn
-yarn --version # it should show 3.6+
-
-# otherwise
-yarn-berry --version # it should show 3.6+
-```
-
-#### Yarn Plus
-
-Yarn with extra tools (git, curl, jq) pre-installed. Useful for workflows that require these tools alongside package management, such as [Projen](https://projen.io/).
-
-```shell
-# see version
-yarn-plus --version
-
-# install dependencies in a Projen project
-yarn-plus install
-```
-
-### Serverless Framework
-
-It is ready to work with AWS.
-
-> [See more about the docker image](docker/serverless).
-
-```shell
-# see versions
-serverless -v
-
-# help
-serverless --help
-
-# Starting from a template
-# note: replace "template-name" below with the folder name of the example you want to use
-
-# method 1
-serverless create \
-  -u https://github.com/serverless/examples/tree/master/template-name \
-  -n my-project-folder
-
-# method 2 [recommended]
-serverless init \
-  template-name \
-  -n my-project-folder
-
-# Hint: if you get build errors, try it
-cd my-project-folder && yarn
-
-# Serverless.com account login
-# note: It is also possible to use an access key to authenticate via serverless CLI
-serverless login
-
-# Deploy your project
-serverless deploy
-
-# Invoke a Lambda Function
-serverless invoke -f hello
-
-# Invoke and display lambda logs
-serverless invoke -f hello --log
-
-# Fetch lambda logs
-serverless logs -f hello
-serverless logs -f hello --tail
-```
-
-> [Serverless Getting Started docs](https://www.serverless.com/framework/docs/getting-started).
-
-> [Serverless templates](https://github.com/serverless/examples).
-
-### Terraform
-
-> **Important**: ensure you are using the right provider credentials/roles/permissions before executing any command.
-
-> Take a look at Terraform AWS modules [public registry](https://registry.terraform.io/browse/modules?provider=aws) and [usage examples](https://github.com/terraform-aws-modules).
-
-```shell
-# help
-terraform -help
-
-# start the terraform in a project
-mkdir my-terraform-project
-cd my-terraform-project
-terraform init
-
-# set the right environment
-# useful for multiple environments
-# hint: avoid using default environment
-terraform workspace list
-terraform workspace new ${ENVIRONMENT}
-terraform workspace select ${ENVIRONMENT}
-
-# validate terraform files
-terraform validate
-
-# see  changes
-terraform plan
-# save changes to an output file (recommended)
-terraform plan -out=tfplan
-
-# apply changes to the providers (aws, gcp, azure, etc)
-terraform apply
-# apply changes using tfplan output file (recommended)
-terraform apply tfplan
-
-# destroy created resources on the providers
-# warning: do not run it in production! ;D
-terraform destroy
-```
-
-#### `CONTEXT` variable
-
-By default, the parent directory is mounted on the container.
-This allows files inside parent folder to be referenced in the Terraform files.
-
-For instance, if you need to use a Terraform `module` that is located two levels up
-in the filesystem, you can use `CONTEXT` variable before the `terraform` command
-to define the absolute path to that module (or another folder).
-
-```shell
-# option 1
-CONTEXT=$(cd "$PWD/../../" && pwd) terraform --version
-CONTEXT=$(cd "$PWD/../../" && pwd) terraform init
-
-# option 2
-CONTEXT=$(cd "$PWD/../../" && pwd)
-CONTEXT=$CONTEXT terraform --version
-CONTEXT=$CONTEXT terraform init
-
-# option 3
-export CONTEXT=$(cd "$PWD/../../" && pwd)
-terraform --version
-terraform init
-```
-
-#### `DOTENV_FILE` variable
-
-All variables in `DOTENV_FILE` file will be available inside the container.
-
-By default, the terraform container will use `${PWD}/.env` file.
-
-Inform a different value if you want to point to another one.
-
-```shell
-export DOTENV_FILE=local.env
-terraform init
-terraform plan
-
-# or
-DOTENV_FILE=local.env terraform init
-DOTENV_FILE=local.env terraform plan
-```
-
-#### `TF_RC_FILE` variable
-
-This is used for Terraform Cloud login.
-
-By default, the terraform container will use `${HOME}/.terraformrc` file.
-
-Inform a different value if you want to point to another one.
-
-```shell
-export TF_RC_FILE=/another/path/to/terraform-credentials/file
-terraform init
-# it should recognize the backend config pointing to your TF Cloud workspace(s)
-```
-
-#### `AWS_CREDENTIALS_FOLDER` variable
-
-This is used for AWS CLI authentication.
-
-By default, the terraform container will use `${HOME}/.aws` folder.
-
-Inform a different value if you want to point to another one.
-
-```shell
-export AWS_PROFILE=your-aws-profile
-export AWS_CREDENTIALS_FOLDER=/another/path/to/credentials/folder/
-terraform init
-terraform plan
-terraform apply
-# it should be able to deploy to your aws account based on the credentials used
-```
-
-> See [more about AWS auth configs](config/aws).
-
-#### `GCLOUD_CREDENTIALS_FOLDER` and `GOOGLE_APPLICATION_CREDENTIALS` variables
-
-This is used for GCP CLI authentication.
-
-By default, the terraform container will use `${HOME}/.config/gcloud` folder,
-and `/root/.config/gcloud/application_default_credentials.json` file, respectively.
-
-> `GOOGLE_APPLICATION_CREDENTIALS` path starts with `/root/` because this is the default user inside the container. Therefore you should not change it to your local user.
-
-Inform different values if you want to point to another one.
-
-```shell
-export GCLOUD_CREDENTIALS_FOLDER=/another/path/to/credentials/folder/
-export GOOGLE_APPLICATION_CREDENTIALS=/root/another/path/to/credentials/file
-terraform init
-terraform plan
-terraform apply
-# it should be able to deploy to your cloud account based on the credentials used
-```
-
-### Ookla Speedtest CLI
-
-[Building the docker image](docker/speedtest/README.md).
-
-```shell
-# help
-speedtest --help
-
-# run a speed test
-speedtest
-```
-
-### Google Cloud CLI
-
-```shell
-# If are not logged in, run the command below and follow the steps:
-# 1. Copy/paste the provided URL in your browser
-# 2. Authorize using your Google account
-# 3. Copy/paste the generated auth code back in your terminal
-gcloud-login
-
-# If your current project is [None] or you wanna change it, set one.
-gcloud config set project <PROJECT_ID>
-
-# Test if it is working...
-gcloud version
-gcloud help
-gcloud storage ls
-```
-
-> [gcloud CLI overview](https://cloud.google.com/sdk/gcloud).
-
-> [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
-
-### Playwright
-
-```shell
-playwright # it will open the /bin/bash inside the container
-# then you can run the other test related commands
-npx playwright install chromium
-npm run test
-# etc...
-```
-
-> For more info, please check its [official documentation](https://playwright.dev/docs/docker).
-
-### Promptfoo
-
-> LLM model and prompt evaluation tool. For more info, check [official documentation](https://www.promptfoo.dev/docs/getting-started/).
-
-```shell
-# Environment variables that can be used:
-export PROMPTFOO_CONFIG_DIR="/app/data"              # folder to store promptfoo config and data
-export PROMPTFOO_REMOTE_API_BASE_URL="http://localhost:33333"  # API base URL
-export PROMPTFOO_REMOTE_APP_BASE_URL="http://localhost:33333"  # UI base URL
-export OPENAI_API_KEY="your-key-here"               # OpenAI API key
-export ANTHROPIC_API_KEY="your-key-here"            # Anthropic API key
-export AZURE_API_KEY="your-key-here"                # Azure API key
-export LITELLM_API_KEY="your-key-here"              # LiteLLM API key
-export GITHUB_TOKEN="your-token-here"               # GitHub token
-
-# see version
-promptfoo --version
-
-# help
-promptfoo --help
-
-# run an evaluation
-promptfoo eval
-
-# share the evaluation results with your team
-promptfoo share
-
-# or do both in one command
-promptfoo eval --share
-```
-
-### Promptfoo Server
-
-> Self-hosted Promptfoo server for API and UI. For more info, check [official documentation](https://www.promptfoo.dev/docs/usage/self-hosting/).
-
-```shell
-# Environment variables that can be used:
-export PROMPTFOO_CONTAINER_SUFFIX="my-suffix"        # unique identifier for container name (default: timestamp)
-export PROMPTFOO_CONFIG_DIR="/app/data"              # folder to store promptfoo config and data
-export PROMPTFOO_API_PORT=33333                      # port for API and UI (default: 33333)
-export OPENAI_API_KEY="your-key-here"               # OpenAI API key
-export ANTHROPIC_API_KEY="your-key-here"            # Anthropic API key
-export AZURE_API_KEY="your-key-here"                # Azure API key
-export LITELLM_API_KEY="your-key-here"              # LiteLLM API key
-export GITHUB_TOKEN="your-token-here"               # GitHub token
-
-# start the server (it runs in detached mode)
-promptfoo-server
-
-# check if the server is running
-docker ps | grep promptfoo_server
-
-# access the UI
-open http://localhost:33333
-```
-
-### Claude Code
-
-> AI-powered coding assistant. Requires authentication on host first (run `claude` natively or set `ANTHROPIC_API_KEY`).
-
-```shell
-# interactive mode
-claude
-
-# single-shot prompt
-claude -p "help me debug this error"
-
-# check version
-claude --version
-```
-
-**Prerequisites:** Three authentication methods are supported — see [docker/claude/README.md](./docker/claude/README.md#authentication) for details.
-- **API key** (`ANTHROPIC_API_KEY`) — uses Anthropic Console credits
-- **OAuth long-lived token** (`CLAUDE_CODE_OAUTH_TOKEN`) — uses Claude.ai subscription
-- **OAuth web login** — run `claude` interactively; session persists via `~/.claude/`
+---
 
 ## AI Features
 
@@ -674,27 +159,11 @@ My Ez CLI automatically analyses every tool execution with Claude Code when `MEC
 ### TUI — `mec ai`
 
 ```shell
-# Check AI status and enabled state
-mec ai status
-
-# Enable / disable automated analysis
-mec ai enable
-mec ai disable
-
-# Test that Claude Code is reachable
-mec ai test
-
-# Show the most recent AI analysis
-mec ai last
-
-# Show analysis for a specific session
+mec ai enable            # Enable automated analysis
+mec ai status            # Check status
+mec ai last              # Show most recent analysis
 mec ai show <session_id>
-
-# List recent sessions with AI status
-mec ai logs
-
-# Analyze a log file manually
-mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
+mec ai logs              # List sessions with AI status
 ```
 
 After each tool execution the terminal prints:
@@ -706,7 +175,7 @@ After each tool execution the terminal prints:
 [mec-ai]           (or: mec ai last)
 ```
 
-When `mec ai last` or `mec ai show` reports a completed analysis it also prints a **resume hint** so you can continue the conversation in Claude Code:
+When `mec ai last` or `mec ai show` reports a completed analysis it also prints a **resume hint**:
 
 ```
 Resume:    claude --resume <claude_session_id>
@@ -714,26 +183,13 @@ Resume:    claude --resume <claude_session_id>
 
 ### Web Dashboard — `mec dashboard`
 
-A local web UI that shows all sessions, live stats, and AI analysis results.
+A local web UI showing all sessions, live stats, and AI analysis results.
 
 ```shell
-# Start the dashboard (API + Vue UI served on the same port)
-mec dashboard start
-
-# Stop the dashboard
+mec dashboard start    # start
+mec dashboard open     # open in browser
 mec dashboard stop
-
-# Restart the dashboard
-mec dashboard restart
-
-# Show status of the running container
-mec dashboard status
-
-# Open the dashboard in the default browser
-mec dashboard open
 ```
-
-The dashboard runs as a Docker container on port 4242 (configurable):
 
 | URL | What |
 |-----|------|
@@ -741,15 +197,311 @@ The dashboard runs as a Docker container on port 4242 (configurable):
 | `http://localhost:4242/sessions` | Session list with search and filters |
 | `http://localhost:4242/sessions/<id>` | Session detail — log output + AI analysis |
 | `http://localhost:4242/tools` | Tool registry |
-| `http://localhost:4242/api/` | REST API (used by the UI) |
+| `http://localhost:4242/api/` | REST API |
 
 **Change the default port:**
+
 ```shell
 mec config set ai.dashboard.port 8080
 mec dashboard restart
 ```
 
-For detailed AI documentation, see [AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
+For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
+
+---
+
+## Documentation
+
+### For users
+
+- **[docs/SETUP.md](./docs/SETUP.md)** — Installation guide, conflict detection, advanced options
+- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — All config keys, environment variables, Docker container management
+- **[docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)** — AI workflow, Claude Code integration, authentication
+- **[services/dashboard/README.md](./services/dashboard/README.md)** — Dashboard stack, pages, API reference, development guide
+- **[config/aws/README.md](./config/aws/README.md)** — AWS CLI configuration examples
+
+### For contributors
+
+- **[CLAUDE.md](./CLAUDE.md)** — Architecture reference and contributor guide
+- **[docs/ROADMAP.md](./docs/ROADMAP.md)** — Phase status and future plans
+- **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** — Python code standards (type hints, error handling, logging)
+- **[docs/LOG_FORMAT.md](./docs/LOG_FORMAT.md)** — JSON log schema, sidecar files, rotation
+- **[docs/DOCKER_HUB.md](./docs/DOCKER_HUB.md)** — Docker Hub images, CI/CD workflows, GitHub Secrets
+- **[tests/README.md](./tests/README.md)** — Testing framework, writing and running tests
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Contribution guidelines
+- **[CHANGELOG.md](./CHANGELOG.md)** — Release history
+
+### Tool image READMEs
+
+- **[docker/claude/README.md](./docker/claude/README.md)** — Claude Code image, authentication methods
+- **[docker/ai-service/README.md](./docker/ai-service/README.md)** — AI I/O middleware image
+- **[docker/serverless/README.md](./docker/serverless/README.md)** — Serverless Framework image
+- **[docker/speedtest/README.md](./docker/speedtest/README.md)** — Ookla Speedtest image
+- **[docker/yarn-berry/README.md](./docker/yarn-berry/README.md)** — Yarn Berry image
+- **[docker/yarn-plus/README.md](./docker/yarn-plus/README.md)** — Yarn Plus image
+- **[docker/aws-sso-cred/README.md](./docker/aws-sso-cred/README.md)** — AWS SSO credentials image
+
+---
+
+## Tools
+
+<details>
+<summary><strong>AWS CLI</strong></summary>
+
+> See [more](config/aws).
+
+```shell
+aws help
+aws s3 ls --profile my-aws-profile
+aws s3 cp s3://my-bucket/my-file /path/to/local/file --profile my-aws-profile
+```
+
+**AWS Get Session Token** — authenticate using MFA:
+
+```shell
+aws-get-session-token <MFA_DIGITS>
+```
+
+**AWS SSO** — authenticate using SSO:
+
+```shell
+aws-sso
+# 1) configure  2) login  3) logout
+```
+
+**AWS SSO Get Credentials** — retrieve current SSO credentials ([docker image](docker/aws-sso-cred/)):
+
+```shell
+aws-sso-cred $AWS_PROFILE
+```
+
+</details>
+
+<details>
+<summary><strong>Python</strong> — default: 3.12.4</summary>
+
+```shell
+python --version
+python main.py
+```
+
+Uses the same `PYENV_VERSION` convention as [PyEnv](https://github.com/pyenv/pyenv):
+
+```shell
+PYENV_VERSION=3.9.19 python main.py
+```
+
+</details>
+
+<details>
+<summary><strong>Node.js</strong> — default: Node 24 LTS</summary>
+
+```shell
+node -v
+node somefile.js
+```
+
+Multi-version support:
+
+```shell
+node20 -v  # maintenance LTS
+node22 -v
+node24 -v  # default
+```
+
+**Custom ports** — use `MEC_BIND_PORTS`:
+
+```shell
+MEC_BIND_PORTS="8080:80" node
+MEC_BIND_PORTS="8080:80" npm
+MEC_BIND_PORTS="8080:80" yarn
+```
+
+**Private NPM registry** — pass `NPM_TOKEN`:
+
+```shell
+NPM_TOKEN=your-token-here npm install
+```
+
+Or configure `~/.npmrc`:
+
+```
+registry=https://private.npm.registry.com/
+//private.npm.registry.com/:_authToken=${NPM_TOKEN}
+```
+
+</details>
+
+<details>
+<summary><strong>NPM</strong> — default: Node 24</summary>
+
+```shell
+npm -v
+npm init
+npm install some-pkg --save-dev
+npm install -g another-pkg
+```
+
+Version suffixes: `npm20`, `npm22`
+
+</details>
+
+<details>
+<summary><strong>NPX</strong> — default: Node 24</summary>
+
+```shell
+npx cowsay "Hello!"
+```
+
+Version suffixes: `npx20`, `npx22`
+
+</details>
+
+<details>
+<summary><strong>Yarn</strong> — default: Node 24</summary>
+
+```shell
+yarn -v
+yarn init
+yarn add some-pkg --dev
+yarn global add another-pkg
+```
+
+Version suffixes: `yarn20`, `yarn22`
+
+**Yarn Berry (v2+)**:
+
+```shell
+yarn-berry --version  # 3.6+
+```
+
+**Yarn Plus** — Yarn with `git`, `curl`, `jq` pre-installed (useful for [Projen](https://projen.io/)):
+
+```shell
+yarn-plus install
+```
+
+</details>
+
+<details>
+<summary><strong>Serverless Framework</strong> — AWS-ready</summary>
+
+> [Docker image details](docker/serverless) · [Docs](https://www.serverless.com/framework/docs/getting-started)
+
+```shell
+serverless -v
+serverless deploy
+serverless invoke -f hello
+serverless logs -f hello --tail
+```
+
+</details>
+
+<details>
+<summary><strong>Terraform</strong></summary>
+
+> **Important**: ensure correct credentials/roles before running any command.
+> [AWS modules registry](https://registry.terraform.io/browse/modules?provider=aws)
+
+```shell
+terraform init
+terraform plan
+terraform apply
+terraform destroy
+```
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CONTEXT` | parent dir | Override mounted directory (for module paths outside `$PWD`) |
+| `DOTENV_FILE` | `${PWD}/.env` | Inject env vars into container |
+| `TF_RC_FILE` | `~/.terraformrc` | Terraform Cloud credentials |
+| `AWS_CREDENTIALS_FOLDER` | `~/.aws` | AWS credentials folder |
+| `AWS_PROFILE` | — | AWS profile to use |
+| `GCLOUD_CREDENTIALS_FOLDER` | `~/.config/gcloud` | GCP credentials folder |
+| `GOOGLE_APPLICATION_CREDENTIALS` | `/root/.config/gcloud/application_default_credentials.json` | GCP service account key |
+
+</details>
+
+<details>
+<summary><strong>Ookla Speedtest CLI</strong></summary>
+
+> [Docker image details](docker/speedtest/README.md)
+
+```shell
+speedtest
+```
+
+</details>
+
+<details>
+<summary><strong>Google Cloud CLI</strong></summary>
+
+> [gcloud CLI overview](https://cloud.google.com/sdk/gcloud)
+
+```shell
+gcloud-login                           # interactive OAuth
+gcloud config set project <PROJECT_ID>
+gcloud storage ls
+```
+
+</details>
+
+<details>
+<summary><strong>Playwright</strong></summary>
+
+> [Official documentation](https://playwright.dev/docs/docker)
+
+```shell
+playwright                         # opens bash inside the container
+npx playwright install chromium
+npm run test
+```
+
+</details>
+
+<details>
+<summary><strong>Promptfoo</strong> — LLM evaluation tool</summary>
+
+> [Official docs](https://www.promptfoo.dev/docs/getting-started)
+
+```shell
+export PROMPTFOO_CONFIG_DIR="/app/data"
+export ANTHROPIC_API_KEY="your-key-here"
+
+promptfoo eval
+promptfoo eval --share
+```
+
+**Promptfoo Server** — self-hosted UI ([docs](https://www.promptfoo.dev/docs/usage/self-hosting/)):
+
+```shell
+export PROMPTFOO_API_PORT=33333
+promptfoo-server       # starts in detached mode
+open http://localhost:33333
+```
+
+</details>
+
+<details>
+<summary><strong>Claude Code</strong> — AI coding assistant</summary>
+
+> Requires authentication — see [docker/claude/README.md](./docker/claude/README.md#authentication)
+
+```shell
+claude                          # interactive mode
+claude -p "help me debug this"  # single-shot prompt
+claude --version
+```
+
+Authentication methods:
+
+- **API key** (`ANTHROPIC_API_KEY`) — uses Anthropic Console credits
+- **OAuth long-lived token** (`CLAUDE_CODE_OAUTH_TOKEN`) — uses Claude.ai subscription
+- **OAuth web login** — run `claude` interactively; session persists via `~/.claude/`
+
+</details>
+
+---
 
 ## Author
 

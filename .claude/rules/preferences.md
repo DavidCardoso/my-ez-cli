@@ -24,12 +24,8 @@ Activate plan mode before:
 
 ## Model Usage
 
-**Default**: Haiku (configured in settings.json)
-- Use for: simple tasks, file edits, searches, straightforward implementations
-
-**Override to Sonnet**: When complexity requires it
-- Complex refactoring, architectural decisions, difficult debugging
-- Override: `claude --model sonnet`
+**Default**: Sonnet (configured in settings.json)
+- Use for: most tasks including refactoring, debugging, feature implementation
 
 **Override to Opus**: Rarely needed
 - Most complex reasoning only

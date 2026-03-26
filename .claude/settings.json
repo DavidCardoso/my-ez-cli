@@ -56,12 +56,13 @@
         "aws-sso-cred",
         "speedtest",
         "ai-service",
-        "claude"
+        "claude",
+        "dashboard"
       ]
     },
     "testing": {
       "framework": "bats-core",
-      "total_tests": 147,
+      "total_tests": 164,
       "custom_images_in_ci": false,
       "custom_images_in_ci_reason": "Avoid long build times (e.g., CDKTF timeout issues)"
     }
