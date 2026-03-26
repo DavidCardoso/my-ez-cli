@@ -153,6 +153,11 @@ jobs:
           ./bin/mec dashboard help
           echo "✓ mec dashboard help passed"
 
+      - name: Test mec purge help
+        run: |
+          ./bin/mec purge help
+          echo "✓ mec purge help passed"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest
@@ -166,6 +171,7 @@ jobs:
           - doctor
           - node
           - npm
+          - purge
           - python
           - setup
           - terraform
