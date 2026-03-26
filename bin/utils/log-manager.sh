@@ -216,8 +216,14 @@ get_log_environment() {
 # Escape string for JSON
 escape_json() {
     STRING="$1"
-    # Basic escaping for JSON
-    printf '%s' "$STRING" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n\r' | sed 's/\\n$//'
+    # Strip ANSI/terminal escape sequences (e.g. \x1b[1G\x1b[0K cursor controls, colour codes)
+    # then escape backslashes and double-quotes, collapse newlines to \n
+    printf '%s' "$STRING" \
+        | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1b[()]//g' \
+        | tr -d '\000-\010\013\014\016-\037\177' \
+        | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' \
+        | tr -d '\n\r' \
+        | sed 's/\\n$//'
 }
 
 # Redact sensitive data from string

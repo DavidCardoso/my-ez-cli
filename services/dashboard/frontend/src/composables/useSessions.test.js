@@ -10,7 +10,7 @@ const mockSessions = [
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve(mockSessions),
+    json: () => Promise.resolve({ sessions: mockSessions, total: mockSessions.length }),
   }))
 })
 

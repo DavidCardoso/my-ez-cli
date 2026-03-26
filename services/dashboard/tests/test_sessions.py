@@ -54,56 +54,83 @@ class TestListSessions:
     """Tests for list_sessions()."""
 
     def test_empty_data_root_returns_empty(self, data_root: Path) -> None:
-        assert list_sessions(data_root) == []
+        result = list_sessions(data_root)
+        assert result["sessions"] == []
+        assert result["total"] == 0
 
     def test_returns_session_summary(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        sessions = list_sessions(data_root)
+        result = list_sessions(data_root)
+        sessions = result["sessions"]
         assert len(sessions) == 1
         assert isinstance(sessions[0], SessionSummary)
         assert sessions[0].session_id == "mec-npm-1"
         assert sessions[0].tool == "npm"
         assert sessions[0].exit_code == 0
 
+    def test_total_reflects_valid_sessions_not_raw_files(self, data_root: Path) -> None:
+        for i in range(5):
+            _write_log(data_root, "npm", f"2026-03-25_1{i}-00-00", f"mec-npm-{i}")
+        # Add an empty (invalid) JSON file — should NOT be counted in total
+        empty = data_root / "logs" / "npm" / "2026-03-25_19-00-00.json"
+        empty.write_text("")
+        result = list_sessions(data_root, limit=3)
+        assert result["total"] == 5  # 5 valid, 1 empty skipped
+        assert len(result["sessions"]) == 3
+
     def test_ai_status_none_when_no_sidecar(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        assert list_sessions(data_root)[0].ai_status == "none"
+        assert list_sessions(data_root)["sessions"][0].ai_status == "none"
 
     def test_ai_status_pending_when_sidecar_empty(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         _write_sidecar(data_root, "npm", "2026-03-25_12-00-00", result="")
-        assert list_sessions(data_root)[0].ai_status == "pending"
+        assert list_sessions(data_root)["sessions"][0].ai_status == "pending"
 
     def test_ai_status_done_when_result_present(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         _write_sidecar(data_root, "npm", "2026-03-25_12-00-00", result="All good.")
-        assert list_sessions(data_root)[0].ai_status == "done"
+        assert list_sessions(data_root)["sessions"][0].ai_status == "done"
 
     def test_sorted_newest_first(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_10-00-00", "mec-npm-old")
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-new")
-        sessions = list_sessions(data_root)
+        sessions = list_sessions(data_root)["sessions"]
         assert sessions[0].session_id == "mec-npm-new"
         assert sessions[1].session_id == "mec-npm-old"
 
     def test_limit_respected(self, data_root: Path) -> None:
         for i in range(5):
             _write_log(data_root, "npm", f"2026-03-25_1{i}-00-00", f"mec-npm-{i}")
-        assert len(list_sessions(data_root, limit=3)) == 3
+        assert len(list_sessions(data_root, limit=3)["sessions"]) == 3
 
     def test_multiple_tools_sorted_by_filename(self, data_root: Path) -> None:
         _write_log(data_root, "terraform", "2026-03-25_10-00-00", "mec-terraform-1")
         _write_log(data_root, "npm", "2026-03-25_11-00-00", "mec-npm-1")
-        sessions = list_sessions(data_root)
+        sessions = list_sessions(data_root)["sessions"]
         # npm session is newer — must come first despite "terraform" > "npm" alphabetically
         assert sessions[0].session_id == "mec-npm-1"
+
+    def test_recovers_session_with_ansi_escape_sequences(self, data_root: Path) -> None:
+        """Sessions with ANSI control chars in stdout (pre-fix logs) are still readable."""
+        log_dir = data_root / "logs" / "npm"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        # Simulate a log written before escape_json was hardened
+        (log_dir / "2026-03-25_12-00-00.json").write_text(
+            '{"session_id": "mec-npm-ansi", "tool": "npm", '
+            '"execution": {"exit_code": 0, "start_time": "2026-03-25T12:00:00Z"}, '
+            '"output": {"stdout": "10.9.4\\n\x1b[1G\x1b[0K", "stderr": ""}}'
+        )
+        sessions = list_sessions(data_root)["sessions"]
+        assert len(sessions) == 1
+        assert sessions[0].session_id == "mec-npm-ansi"
 
     def test_skips_directory_entries(self, data_root: Path) -> None:
         # Simulate old directory-style sidecar artifacts in logs dir
         fake_dir = data_root / "logs" / "npm" / "2026-03-25_09-00-00.json"
         fake_dir.mkdir(parents=True)
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        sessions = list_sessions(data_root)
+        sessions = list_sessions(data_root)["sessions"]
         assert all(s.session_id == "mec-npm-1" for s in sessions)
 
 

@@ -17,9 +17,11 @@ def _data_root(request: Request) -> Path:
 
 
 @router.get("")
-def sessions_list(request: Request, limit: int = 50) -> list[dict[str, object]]:
-    """Return up to `limit` sessions, newest-first."""
-    return [asdict(s) for s in list_sessions(_data_root(request), limit=limit)]
+def sessions_list(request: Request, limit: int = 50) -> dict[str, object]:
+    """Return up to `limit` sessions newest-first, plus the total count."""
+    result = list_sessions(_data_root(request), limit=limit)
+    sessions = result["sessions"]  # type: ignore[index]
+    return {"sessions": [asdict(s) for s in sessions], "total": result["total"]}  # type: ignore[arg-type]
 
 
 @router.get("/{session_id}")
