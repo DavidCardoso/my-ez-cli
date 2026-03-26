@@ -187,3 +187,30 @@ class TestGetSession:
         detail = get_session(tmp_path, "mec-node-cwd")
         assert detail is not None
         assert detail.cwd == "/home/user/myproject"
+
+    def test_get_session_returns_ai_metadata_fields(self, tmp_path: Path) -> None:
+        """get_session populates ai_execution_time_ms and token fields from sidecar."""
+        _write_log(tmp_path, "node", "2026-01-01_00-00-01", "mec-node-1")
+        log_file = sorted((tmp_path / "logs" / "node").glob("*.json"))[0]
+        ai_dir = tmp_path / "ai-analyses" / "node"
+        ai_dir.mkdir(parents=True)
+        sidecar = ai_dir / log_file.name
+        sidecar.write_text(
+            json.dumps(
+                {
+                    "analyses": {
+                        "uuid-1": {
+                            "timestamp": "2026-01-01T00:00:01Z",
+                            "result": "ok",
+                            "execution_time_ms": 5000,
+                            "tokens": {"input": 100, "output": 50},
+                        }
+                    }
+                }
+            )
+        )
+        detail = get_session(tmp_path, "mec-node-1")
+        assert detail is not None
+        assert detail.ai_execution_time_ms == 5000
+        assert detail.ai_tokens_input == 100
+        assert detail.ai_tokens_output == 50

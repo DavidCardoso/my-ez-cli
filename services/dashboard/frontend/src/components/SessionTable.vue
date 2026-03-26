@@ -60,6 +60,16 @@
       </template>
     </Column>
 
+    <Column field="ai_execution_time_ms" header="AI Time" sortable>
+      <template #body="{ data }">
+        <span class="mono col-ai-time">
+          {{ data.ai_execution_time_ms != null
+             ? (data.ai_execution_time_ms / 1000).toFixed(1) + 's'
+             : '—' }}
+        </span>
+      </template>
+    </Column>
+
     <Column field="session_id" header="Session ID">
       <template #body="{ data }">
         <span class="mono session-id">{{ data.session_id }}</span>
@@ -142,5 +152,13 @@ function aiSeverity(status) {
   border-radius: 3px;
   padding: 1px 5px;
   color: var(--mec-accent-bright);
+}
+
+.col-ai-time {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--mec-text-dim);
 }
 </style>

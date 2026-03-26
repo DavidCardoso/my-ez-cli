@@ -323,6 +323,9 @@ analyze_with_claude() {
 
     # Run analysis in background — shell returns immediately
     (
+        local _start_ms
+        _start_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
+
         local analysis_output
         analysis_output=$(docker run --rm \
             --env ANTHROPIC_API_KEY="${_api_key}" \
@@ -350,6 +353,30 @@ analyze_with_claude() {
               --log-file /log.json \
               --log-session-id "${session_id}" \
             2>/dev/null || echo "")
+
+        local _end_ms
+        _end_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
+        local _elapsed
+        _elapsed=$(( _end_ms - _start_ms ))
+
+        # Patch execution_time_ms into the latest sidecar entry
+        if [ -f "$ai_file" ] && command -v python3 >/dev/null 2>&1 && [ "$_elapsed" -gt 0 ]; then
+            python3 - "$ai_file" "$_elapsed" <<'PYEOF'
+import sys, json
+path, elapsed = sys.argv[1], int(sys.argv[2])
+try:
+    data = json.loads(open(path).read())
+    analyses = data.get("analyses", {})
+    if analyses:
+        last_key = sorted(analyses, key=lambda k: analyses[k].get("timestamp", ""))[-1]
+        analyses[last_key]["execution_time_ms"] = elapsed
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+except Exception:
+    pass
+PYEOF
+        fi
 
         # Auth failure — write a marker so mec ai last can report it
         if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
