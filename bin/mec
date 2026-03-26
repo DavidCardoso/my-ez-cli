@@ -1418,8 +1418,9 @@ mec_purge() {
 
     case "$subcmd" in
         data)
-            local log_dir="${HOME}/.my-ez-cli/logs"
-            local ai_dir="${HOME}/.my-ez-cli/ai-analyses"
+            local _data_dir="${MEC_DATA_DIR:-${HOME}/.my-ez-cli}"
+            local log_dir="${MEC_LOG_DIR:-${_data_dir}/logs}"
+            local ai_dir="${_data_dir}/ai-analyses"
 
             local purge_logs=1 purge_ai=1
             [ "$opt_only_ai"   -eq 1 ] && purge_logs=0

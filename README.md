@@ -19,6 +19,7 @@ CLI tools over Docker — managed by `mec`.
   - [AI Analysis](#ai-analysis----mec-ai)
   - [Dashboard](#dashboard----mec-dashboard)
   - [Health Check](#health-check----mec-doctor)
+  - [Purge](#purge----mec-purge)
   - [Claude Code](#claude-code----mec-claude)
 - [AI Features](#ai-features)
   - [TUI](#tui----mec-ai)
@@ -137,6 +138,17 @@ mec doctor               # Check Docker, Zsh, tools, AI, dashboard, and data dir
 ```
 
 Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check and a summary. Exits `1` if any check fails — scriptable.
+
+### Purge — `mec purge`
+
+```shell
+mec purge data                           # Delete all logs + AI analyses (interactive)
+mec purge data --dry-run                 # Preview what would be deleted
+mec purge data --tool node               # Only node logs + analyses
+mec purge data --older-than 30           # Only files older than 30 days
+mec purge data --only-logs --tool aws    # Only aws logs (keep AI analyses)
+mec purge data -y                        # Skip confirmation prompt
+```
 
 ### Claude Code — `mec claude`
 
