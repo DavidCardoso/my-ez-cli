@@ -1,6 +1,6 @@
 # My Ez CLI - v1.0.0 Roadmap
 
-**Status:** Phase 3.4 Complete - v1.0.0 Release Candidate
+**Status:** Phase 3.5 In Progress - v1.0.0 Release Candidate
 **Target:** First Stable Release (v1.0.0)
 **Previous Versions:** 0.x.y (beta releases)
 **Phase 1 Completed:** 2026-01-20
@@ -410,6 +410,24 @@ mec ai status
 **Deliverables:**
 - Single `mec doctor` command for full environment health check
 - Structured pass/warn/fail output with actionable hints
+
+---
+
+### Phase 3.5: Execution Metrics & Session Insight ⏳
+
+**Status:** In Progress
+**Priority:** P1 (High)
+**Started:** 2026-03-26
+**Goal:** Capture AI execution timing and token usage in sidecars; ship `mec purge`; improve dashboard UX; project documentation hygiene.
+
+**Completed Tasks:**
+- ✅ CHANGELOG backfill (Phase 3.1–3.4 + ad-hoc fixes)
+- ✅ README status badges + Mermaid architecture diagram
+- ✅ AI sidecar schema extended: `execution_time_ms`, `tokens.input`, `tokens.output`
+- ✅ `mec purge` subcommand
+- ✅ `mec dashboard rebuild` + `restart --rebuild`
+- ✅ Session search extended to command + cwd
+- ✅ NavBar status chips auto-refresh fix
 
 ---
 

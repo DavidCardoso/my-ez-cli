@@ -70,8 +70,33 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 - `bin/mec`: added `_ai_sidecar_exists()` helper; replaced all four `ai_analyses` grep/python checks with sidecar file existence checks
 - `TestWriteAiAnalysis` replaces `TestAppendToLog` in `services/ai/tests/test_claude_response.py`
 
+#### Phase 3 — Dashboard & Web UI
+
+- `mec dashboard` subcommand: `start`, `stop`, `restart`, `status`, `open`, `help`
+- FastAPI + Vue 3 dashboard at `http://localhost:4242` (multi-stage Docker build)
+- `/api/sessions` — list sessions (limit=50, newest-first), returns `{sessions, total}`
+- `/api/sessions/{id}` — session detail view
+- `/api/stats` — aggregate stats: total_sessions, sessions_by_tool, tool_stats, exit_code_distribution, ai_analysis_rate, last_7_days, logs_enabled, ai_enabled
+- WebSocket `/ws` — file-system-change hot reload
+- Home page: stat cards, tool stats table, bar/donut/line charts
+- Sessions page: session list with tool/AI/exit-code filters + session ID search
+- Session detail modal: command, cwd, stdout/stderr, AI analysis result
+- NavBar: `LogsStatus` and `AIStatus` chips (reads config), WebSocket live indicator
+- `tool_stats` per-tool breakdown in `/api/stats` (sessions, success, ai_done)
+- `logs_enabled` / `ai_enabled` flags in `/api/stats` (reads `~/.my-ez-cli/config.yaml`)
+- ANSI/control-char stripping in `_read_json()` — recovers corrupted log files
+- Session total fix: `total` counts only valid JSON sessions, not raw file count
+- Tool filter sourced from `/api/stats` (all-time) not just the current fetch window
+
+#### Phase 3.4 — Health Check
+
+- `mec doctor` subcommand: full environment health check (Docker, images, config, credentials, dashboard)
+- Exit code 0 = healthy, non-zero = one or more checks failed
+
 ### Changed
 
+- `escape_json()` in `bin/utils/log-manager.sh` now strips ANSI escape sequences before writing stdout/stderr to log JSON
+- `/api/sessions` response shape changed from plain array to `{"sessions": [...], "total": N}`
 - All bin scripts use `get_container_name()` and `get_container_labels()` from `common.sh`
 - Path resolution fixed across all scripts using `SCRIPT_DIR`-based sourcing
 - `setup.sh` rewritten with full command-line and interactive multi-select support

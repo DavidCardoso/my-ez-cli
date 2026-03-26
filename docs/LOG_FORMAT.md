@@ -141,9 +141,14 @@ When `MEC_AI_ENABLED=true` and Claude Code runs after a tool execution, an AI si
   "log_session_id": "mec-node-1705318245",
   "log_file": "/Users/username/.my-ez-cli/logs/node/2026-01-15_10-30-45.json",
   "analyses": {
-    "abc-123-def": {
-      "timestamp": "2026-02-20T10:30:45Z",
-      "result": "The command succeeded. No issues found."
+    "<claude_session_id>": {
+      "timestamp": "2026-03-26T14:30:45.123456+00:00",
+      "result": "Analysis text…",
+      "execution_time_ms": 12450,
+      "tokens": {
+        "input": 3200,
+        "output": 512
+      }
     }
   }
 }
@@ -152,6 +157,9 @@ When `MEC_AI_ENABLED=true` and Claude Code runs after a tool execution, an AI si
 - `log_session_id`: tool session ID (matches the log file's `session_id`)
 - `log_file`: absolute path to the corresponding tool log file
 - `analyses`: dict keyed by Claude session ID — allows re-analysis without overwriting
+- `execution_time_ms` — wall-clock milliseconds from start to end of Claude Code analysis
+- `tokens.input` — input token count from Claude's `usage` response field
+- `tokens.output` — output token count from Claude's `usage` response field
 
 `mec logs list` and `mec logs stats` report the `AI` column by checking for the sidecar file — the tool log is never read for this purpose.
 
