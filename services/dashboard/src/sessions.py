@@ -333,6 +333,52 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
     return None
 
 
+def _read_config(data_root: Path) -> dict[str, object]:
+    """Read ~/.my-ez-cli/config.yaml using a minimal YAML subset parser.
+
+    Handles the simple nested structure used by mec config:
+      logs:
+        enabled: true
+      ai:
+        enabled: false
+    """
+    import re
+
+    config_path = data_root / "config.yaml"
+    try:
+        content = config_path.read_text()
+    except OSError as exc:
+        logger.debug("Could not read config %s: %s", config_path, exc)
+        return {}
+
+    result: dict[str, object] = {}
+    current_section: str | None = None
+    for line in content.splitlines():
+        # Top-level key (no leading whitespace, ends with colon)
+        top = re.match(r"^([a-z_][a-z0-9_]*)\s*:\s*$", line)
+        if top:
+            current_section = top.group(1)
+            result[current_section] = {}
+            continue
+        # Nested key under current section
+        if current_section:
+            nested = re.match(r"^\s+([a-z_][a-z0-9_]*)\s*:\s*(.+)$", line)
+            if nested:
+                key, raw = nested.group(1), nested.group(2).strip()
+                val: object
+                if raw.lower() == "true":
+                    val = True
+                elif raw.lower() == "false":
+                    val = False
+                elif re.match(r"^\d+$", raw):
+                    val = int(raw)
+                else:
+                    val = raw.strip("\"'")
+                section: dict[str, object] = result[current_section]  # type: ignore[assignment]
+                section[key] = val
+    return result
+
+
 def get_stats(data_root: Path) -> dict[str, object]:
     """Aggregate statistics across all sessions for the dashboard home page."""
     from datetime import datetime, timedelta
@@ -341,6 +387,8 @@ def get_stats(data_root: Path) -> dict[str, object]:
     by_tool: dict[str, int] = {}
     exit_dist = {"success": 0, "failure": 0}
     ai_rate = {"done": 0, "pending": 0, "none": 0}
+    # Per-tool breakdown: {tool: {"sessions": N, "success": N, "ai_done": N}}
+    tool_stats: dict[str, dict[str, int]] = {}
 
     # Build last-7-days bucket map (today - 6 days through today)
     today = datetime.now(UTC).date()
@@ -358,7 +406,8 @@ def get_stats(data_root: Path) -> dict[str, object]:
         execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
-        if exit_code == 0:
+        is_success = exit_code == 0
+        if is_success:
             exit_dist["success"] += 1
         else:
             exit_dist["failure"] += 1
@@ -366,6 +415,15 @@ def get_stats(data_root: Path) -> dict[str, object]:
         ai_path = _sidecar_path(log_path, data_root)
         status, _, _claude_id = _ai_status(ai_path)
         ai_rate[status] = ai_rate.get(status, 0) + 1
+
+        # Accumulate per-tool breakdown
+        if tool not in tool_stats:
+            tool_stats[tool] = {"sessions": 0, "success": 0, "ai_done": 0}
+        tool_stats[tool]["sessions"] += 1
+        if is_success:
+            tool_stats[tool]["success"] += 1
+        if status == "done":
+            tool_stats[tool]["ai_done"] += 1
 
         # Bucket by date
         ts_str = str(execution.get("start_time", data.get("timestamp", "")))
@@ -379,12 +437,19 @@ def get_stats(data_root: Path) -> dict[str, object]:
 
     last_7_days = [{"date": d, "count": c} for d, c in day_counts.items()]
 
+    config = _read_config(data_root)
+    logs_cfg: dict[str, object] = config.get("logs", {})  # type: ignore[assignment]
+    ai_cfg: dict[str, object] = config.get("ai", {})  # type: ignore[assignment]
+
     return {
         "total_sessions": total,
         "sessions_by_tool": by_tool,
+        "tool_stats": tool_stats,
         "exit_code_distribution": exit_dist,
         "ai_analysis_rate": ai_rate,
         "last_7_days": last_7_days,
+        "logs_enabled": bool(logs_cfg.get("enabled", False)),
+        "ai_enabled": bool(ai_cfg.get("enabled", False)),
     }
 
 

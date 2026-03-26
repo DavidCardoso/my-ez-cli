@@ -22,6 +22,33 @@
         </div>
       </div>
 
+      <!-- Tool stats table -->
+      <div class="tool-stats-card">
+        <div class="tool-stats-header">Tool Stats</div>
+        <template v-if="loading">
+          <div class="tool-stats-skeleton skeleton-pulse"></div>
+        </template>
+        <table v-else-if="toolStatsRows.length" class="tool-stats-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th class="col-num">Sessions</th>
+              <th class="col-num">Success</th>
+              <th class="col-num">AI Analyzed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in toolStatsRows" :key="row.tool">
+              <td class="col-tool">{{ row.tool }}</td>
+              <td class="col-num">{{ row.sessions }}</td>
+              <td class="col-num" :style="{ color: row.successColor }">{{ row.successRate }}</td>
+              <td class="col-num" :style="{ color: row.aiColor }">{{ row.aiRate }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="tool-stats-empty">No data</div>
+      </div>
+
       <!-- Charts row -->
       <div class="charts-grid">
         <!-- Sessions per tool (Bar) -->
@@ -125,6 +152,26 @@ const statCards = computed(() => {
     { label: 'AI Analyzed', value: `${aiRate}%`, color: 'var(--mec-accent-bright)', sub: `${aiDone} sessions` },
     { label: 'Tools Used', value: toolCount.toString(), color: 'var(--mec-blue)', sub: 'unique tools' },
   ]
+})
+
+// --- Tool stats table ---
+const toolStatsRows = computed(() => {
+  if (!stats.value) return []
+  const ts = stats.value.tool_stats ?? {}
+  return Object.entries(ts)
+    .sort(([, a], [, b]) => b.sessions - a.sessions)
+    .map(([tool, d]) => {
+      const successPct = d.sessions ? Math.round((d.success / d.sessions) * 100) : 0
+      const aiPct = d.sessions ? Math.round((d.ai_done / d.sessions) * 100) : 0
+      return {
+        tool,
+        sessions: d.sessions,
+        successRate: `${successPct}%`,
+        aiRate: `${aiPct}%`,
+        successColor: successPct >= 80 ? 'var(--mec-green)' : successPct >= 50 ? 'var(--mec-yellow)' : 'var(--mec-red)',
+        aiColor: aiPct >= 50 ? 'var(--mec-accent-bright)' : 'var(--mec-text-faint)',
+      }
+    })
 })
 
 // --- Chart data ---
@@ -327,6 +374,81 @@ const lineOptions = {
   height: 60px;
   border-radius: 6px;
   background: var(--mec-surface-3);
+}
+
+/* Tool stats table */
+.tool-stats-card {
+  background: var(--mec-surface-1);
+  border: 1px solid var(--mec-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.tool-stats-header {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--mec-border-subtle);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mec-text-dim);
+}
+
+.tool-stats-skeleton {
+  height: 120px;
+  margin: 16px;
+  border-radius: 6px;
+  background: var(--mec-surface-3);
+}
+
+.tool-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tool-stats-table th {
+  padding: 10px 18px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mec-text-faint);
+  border-bottom: 1px solid var(--mec-border-subtle);
+}
+
+.tool-stats-table td {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--mec-border-subtle);
+  color: var(--mec-text);
+}
+
+.tool-stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tool-stats-table tbody tr:hover td {
+  background: var(--mec-surface-2);
+}
+
+.col-tool {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.col-num {
+  text-align: right !important;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tool-stats-empty {
+  padding: 24px 18px;
+  color: var(--mec-text-faint);
+  font-size: 13px;
 }
 
 /* Charts */

@@ -418,6 +418,7 @@ mec ai status
 Items below are not scheduled — they may become implementation phases once v1.0.0 is stable.
 
 - Shell completion (`mec` CLI, zsh/bash)
+- Decouple from Zsh — make mec compatible with other shells (bash as default/fallback); currently requires Zsh + Oh My Zsh
 - `mec help <tool>` — tool-specific help with examples
 - Homebrew formula (`brew install my-ez-cli`)
 - Claude Code MCP server for my-ez-cli tools
