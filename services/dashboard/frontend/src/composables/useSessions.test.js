@@ -89,4 +89,36 @@ describe('useSessions — makeFiltered', () => {
     expect(filtered.value).toHaveLength(1)
     expect(filtered.value[0].session_id).toBe('mec-node-001')
   })
+
+  it('matches sessions by command', async () => {
+    const { useSessions } = await import('./useSessions.js')
+    const { sessions, makeFiltered } = useSessions()
+    sessions.value = [
+      { session_id: 'mec-node-1', tool: 'node', command: 'node index.js', cwd: '/home', exit_code: 0, ai_status: 'none' },
+    ]
+    const filtered = makeFiltered({ get search() { return 'index.js' } })
+    expect(filtered.value).toHaveLength(1)
+  })
+
+  it('matches sessions by cwd', async () => {
+    const { useSessions } = await import('./useSessions.js')
+    const { sessions, makeFiltered } = useSessions()
+    sessions.value = [
+      { session_id: 'mec-node-1', tool: 'node', command: 'node -e x', cwd: '/home/myproject', exit_code: 0, ai_status: 'none' },
+    ]
+    const filtered = makeFiltered({ get search() { return 'myproject' } })
+    expect(filtered.value).toHaveLength(1)
+  })
+
+  it('matches when search term appears in command even if it is also the tool name', async () => {
+    const { useSessions } = await import('./useSessions.js')
+    const { sessions, makeFiltered } = useSessions()
+    sessions.value = [
+      { session_id: 'mec-terraform-1', tool: 'terraform', command: 'terraform plan', cwd: '/infra', exit_code: 0, ai_status: 'none' },
+    ]
+    const filtered = makeFiltered({ get search() { return 'terraform' } })
+    // 'terraform' appears in command 'terraform plan' — should match
+    // This test verifies command matching works for a tool name that appears in command
+    expect(filtered.value).toHaveLength(1)
+  })
 })

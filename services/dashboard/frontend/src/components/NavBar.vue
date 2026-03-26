@@ -57,10 +57,15 @@ async function fetchFeatureFlags() {
   } catch (_) { /* silently fail */ }
 }
 
+let pollTimer = null
 onMounted(() => {
   fetchFeatureFlags()
-  const cleanup = onRefresh(fetchFeatureFlags)
-  onUnmounted(cleanup)
+  pollTimer = setInterval(fetchFeatureFlags, 30_000)
+})
+const cleanupRefresh = onRefresh(fetchFeatureFlags)
+onUnmounted(() => {
+  cleanupRefresh()
+  if (pollTimer) clearInterval(pollTimer)
 })
 </script>
 

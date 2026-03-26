@@ -19,7 +19,7 @@
           <i class="pi pi-search search-icon"></i>
           <InputText
             v-model="search"
-            placeholder="Search session ID…"
+            placeholder="Search sessions…"
             class="search-input"
           />
         </div>
