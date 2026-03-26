@@ -129,7 +129,7 @@ See [Web Dashboard](#web-dashboard----mec-dashboard) for page reference.
 ### Health Check — `mec doctor`
 
 ```shell
-mec doctor               # Check Docker, tools, AI, dashboard, and data directory health
+mec doctor               # Check Docker, Zsh, tools, AI, dashboard, and data directory health
 ```
 
 Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check and a summary. Exits `1` if any check fails — scriptable.

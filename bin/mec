@@ -53,6 +53,7 @@ Commands:
   config              Manage configuration
   ai                  AI analysis (Claude Code)
   dashboard           Log and AI analysis web UI (start|stop|status|open)
+  doctor              Health check (Docker, Zsh, tools, AI, dashboard, data dir)
   logs                Log management
   claude              Run Claude Code
   claude firewall     Manage Claude Code container firewall
@@ -1184,6 +1185,199 @@ EOF
 }
 
 # ----------------------------------------------------------------------------
+# Doctor Commands
+# ----------------------------------------------------------------------------
+
+mec_doctor() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        help|--help|-h)
+            cat <<'EOF'
+Usage: mec doctor
+
+Run health checks on Docker, Zsh, tools, AI integration, dashboard, and data directory.
+
+Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check.
+Exits 1 if any check fails — scriptable.
+
+Examples:
+  mec doctor
+  mec doctor && echo "all good"
+EOF
+            return 0
+            ;;
+        ""|run)
+            _mec_doctor_run
+            return $?
+            ;;
+        *)
+            echo "Unknown doctor command: $subcmd" >&2
+            echo "Run 'mec doctor help' for usage" >&2
+            return 1
+            ;;
+    esac
+}
+
+_mec_doctor_run() {
+    local failures=0
+    local warnings=0
+
+    _doc_pass() { echo "  ✓  $*"; }
+    _doc_warn() { echo "  ⚠  $*"; warnings=$((warnings + 1)); }
+    _doc_fail() { echo "  ✗  $*"; failures=$((failures + 1)); }
+
+    # ------------------------------------------------------------------
+    # 1. Docker
+    # ------------------------------------------------------------------
+    if ! command -v docker >/dev/null 2>&1; then
+        _doc_fail "Docker: not installed or not in PATH"
+    elif ! docker info >/dev/null 2>&1; then
+        _doc_fail "Docker daemon: not running  (start Docker Desktop or dockerd)"
+    else
+        local docker_version
+        docker_version=$(docker --version 2>/dev/null | sed 's/Docker version //' | cut -d',' -f1)
+        _doc_pass "Docker daemon running  (${docker_version})"
+    fi
+
+    # ------------------------------------------------------------------
+    # 2. Zsh
+    # ------------------------------------------------------------------
+    if ! command -v zsh >/dev/null 2>&1; then
+        _doc_fail "Zsh: not installed  (required — install via Homebrew: brew install zsh)"
+    else
+        local zsh_version
+        zsh_version=$(zsh --version 2>/dev/null | awk '{print $2}')
+        _doc_pass "Zsh: installed  (${zsh_version})"
+    fi
+
+    # Oh My Zsh
+    if [ -d "${HOME}/.oh-my-zsh" ]; then
+        _doc_pass "Oh My Zsh: installed  (~/.oh-my-zsh)"
+    else
+        _doc_warn "Oh My Zsh: not found  (recommended — https://ohmyz.sh)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 3. Data directory
+    # ------------------------------------------------------------------
+    local data_dir="${MEC_DATA_DIR:-${HOME}/.my-ez-cli}"
+    if [ ! -d "$data_dir" ]; then
+        _doc_fail "Data directory: not found  (${data_dir} — run 'mec logs enable' to create)"
+    elif [ ! -w "$data_dir" ]; then
+        _doc_fail "Data directory: not writable  (${data_dir})"
+    else
+        _doc_pass "Data directory: ${data_dir}  (exists, writable)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 4. Config file
+    # ------------------------------------------------------------------
+    local config_file="${CONFIG_FILE:-${HOME}/.my-ez-cli/config.yaml}"
+    if [ -f "$config_file" ]; then
+        _doc_pass "Config file: ${config_file}  (exists)"
+    else
+        _doc_warn "Config file: not found  (defaults will be used — run 'mec config reset' to create)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 5. Logging
+    # ------------------------------------------------------------------
+    local logs_enabled
+    logs_enabled=$(config_get_default "logs.enabled" "false")
+    if [ "$logs_enabled" = "true" ]; then
+        _doc_pass "Logs: enabled"
+    else
+        _doc_warn "Logs: disabled  (run 'mec logs enable' to persist sessions)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 6. AI — enabled state (informational, no failure)
+    # ------------------------------------------------------------------
+    local ai_enabled
+    ai_enabled=$(config_get_default "ai.enabled" "false")
+    if [ "$ai_enabled" = "true" ]; then
+        _doc_pass "AI: enabled"
+    else
+        _doc_warn "AI: disabled  (run 'mec ai enable' to activate)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 7. AI — middleware image
+    # ------------------------------------------------------------------
+    if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
+        _doc_pass "AI middleware image: available  (${MEC_IMAGE_AI_SERVICE})"
+    else
+        _doc_fail "AI middleware image: not found  (docker pull ${MEC_IMAGE_AI_SERVICE})"
+    fi
+
+    # ------------------------------------------------------------------
+    # 8. AI — Claude Code image
+    # ------------------------------------------------------------------
+    if docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
+        _doc_pass "Claude Code image: available  (${MEC_IMAGE_CLAUDE})"
+    else
+        _doc_fail "Claude Code image: not found  (docker pull ${MEC_IMAGE_CLAUDE})"
+    fi
+
+    # ------------------------------------------------------------------
+    # 9. AI — auth
+    # ------------------------------------------------------------------
+    if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+        _doc_pass "AI auth: ANTHROPIC_API_KEY set"
+    elif [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+        _doc_pass "AI auth: CLAUDE_CODE_OAUTH_TOKEN set"
+    elif [ -f "${HOME}/.claude/.credentials.json" ]; then
+        _doc_warn "AI auth: ~/.claude/ found  (interactive use only — set ANTHROPIC_API_KEY for automated analysis)"
+    else
+        _doc_warn "AI auth: not configured  (set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 10. Dashboard image
+    # ------------------------------------------------------------------
+    if docker image inspect "$MEC_IMAGE_DASHBOARD" >/dev/null 2>&1; then
+        _doc_pass "Dashboard image: available  (${MEC_IMAGE_DASHBOARD})"
+    else
+        _doc_warn "Dashboard image: not found  (docker pull ${MEC_IMAGE_DASHBOARD})"
+    fi
+
+    # ------------------------------------------------------------------
+    # 11. Dashboard running
+    # ------------------------------------------------------------------
+    local dashboard_port
+    dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+    if docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
+        local dash_state
+        dash_state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
+        if [ "$dash_state" = "running" ]; then
+            _doc_pass "Dashboard: running  (http://localhost:${dashboard_port})"
+        else
+            _doc_warn "Dashboard: ${dash_state}  (run 'mec dashboard start')"
+        fi
+    else
+        _doc_warn "Dashboard: not running  (run 'mec dashboard start')"
+    fi
+
+    # ------------------------------------------------------------------
+    # Summary
+    # ------------------------------------------------------------------
+    echo ""
+    if [ "$failures" -gt 0 ] && [ "$warnings" -gt 0 ]; then
+        echo "doctor: ${failures} failure(s), ${warnings} warning(s)"
+    elif [ "$failures" -gt 0 ]; then
+        echo "doctor: ${failures} failure(s)"
+    elif [ "$warnings" -gt 0 ]; then
+        echo "doctor: ${warnings} warning(s)  (no failures)"
+    else
+        echo "doctor: all checks passed"
+    fi
+
+    [ "$failures" -eq 0 ]
+}
+
+# ----------------------------------------------------------------------------
 # Main Dispatch
 # ----------------------------------------------------------------------------
 
@@ -1227,6 +1421,10 @@ case "$COMMAND" in
     dashboard)
         shift
         mec_dashboard "${1:-help}" "${@:2}"
+        ;;
+    doctor)
+        shift
+        mec_doctor "${@}"
         ;;
     version|--version|-v)
         show_version
