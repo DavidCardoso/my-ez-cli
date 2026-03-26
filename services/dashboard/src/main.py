@@ -55,7 +55,9 @@ def create_app(data_root: Path | None = None) -> FastAPI:
     app.include_router(sessions_router)
     app.include_router(ws_router)
     app.include_router(stats_router)
-    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
     @app.get("/{full_path:path}")
     async def spa_fallback(full_path: str) -> FileResponse:

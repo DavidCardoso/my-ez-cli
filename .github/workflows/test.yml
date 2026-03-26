@@ -264,6 +264,9 @@ jobs:
           rm -f package-lock.json
           npm install
           npm run build
+          # Copy built assets to where FastAPI's static mount expects them
+          mkdir -p ../src/static
+          cp -r dist/* ../src/static/
 
       - name: Install Playwright browsers
         run: cd services/dashboard/frontend && npx playwright install --with-deps chromium
