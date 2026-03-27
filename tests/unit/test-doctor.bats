@@ -36,13 +36,13 @@ teardown() {
 @test "mec doctor --help prints usage" {
     run "$BASEDIR/bin/mec" doctor --help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec doctor" ]]
+    [[ "$output" =~ "mec doctor" ]]
 }
 
 @test "mec doctor help prints usage" {
     run "$BASEDIR/bin/mec" doctor help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec doctor" ]]
+    [[ "$output" =~ "mec doctor" ]]
 }
 
 # ============================================================================

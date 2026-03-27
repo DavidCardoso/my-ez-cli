@@ -393,44 +393,46 @@ mec_config() {
             init_config "$@"
             ;;
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec config <command> [arguments]
-
-Commands:
-  get <key>           Get configuration value
-  set <key> <value>   Set configuration value
-  unset <key>         Reset configuration value to default
-  list                List all configuration
-  edit                Open config file in editor
-  validate            Validate config file
-  reset               Reset config to defaults
-  path                Show config file path
-  dir                 Show config directory path
-  export              Export config as environment variables
-  init                Initialize config directory and file
-  help                Show this help message
-
-Configurable Keys:
-  Logs:
-    logs.enabled             Enable/disable logging (true/false, default: false)
-    logs.level               Log level (debug/info/warn/error, default: info)
-
-  AI:
-    ai.enabled               Enable/disable AI analysis (true/false, default: false)
-
-  Claude settings (all under ai.claude.*):
-    ai.claude.model              Model for analysis (default: sonnet)
-                                 Accepted: sonnet, haiku, opus, or full model ID
-    ai.claude.max_output_tokens  Max tokens in response (default: 8096)
-    ai.claude.effort_level       Effort level for opus only (default: medium)
-                                 Accepted: low, medium, high
-
-Examples:
-  mec config get logs.enabled
-  mec config set logs.enabled true
-  mec config set ai.claude.model haiku
-  mec config set ai.claude.max_output_tokens 4096
-  mec config list
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec config <command> [arguments]"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  get <key>           Get configuration value"
+            printf '%s\n' "  set <key> <value>   Set configuration value"
+            printf '%s\n' "  unset <key>         Reset configuration value to default"
+            printf '%s\n' "  list                List all configuration"
+            printf '%s\n' "  edit                Open config file in editor"
+            printf '%s\n' "  validate            Validate config file"
+            printf '%s\n' "  reset               Reset config to defaults"
+            printf '%s\n' "  path                Show config file path"
+            printf '%s\n' "  dir                 Show config directory path"
+            printf '%s\n' "  export              Export config as environment variables"
+            printf '%s\n' "  init                Initialize config directory and file"
+            printf '%s\n' "  help                Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}CONFIGURABLE KEYS${_r}"
+            printf '%s\n' "  Logs:"
+            printf '%s\n' "    logs.enabled             Enable/disable logging (true/false, default: false)"
+            printf '%s\n' "    logs.level               Log level (debug/info/warn/error, default: info)"
+            printf '%s\n' ""
+            printf '%s\n' "  AI:"
+            printf '%s\n' "    ai.enabled               Enable/disable AI analysis (true/false, default: false)"
+            printf '%s\n' ""
+            printf '%s\n' "  Claude (all under ai.claude.*):"
+            printf '%s\n' "    ai.claude.model              Model for analysis (default: sonnet)"
+            printf '%s\n' "                                 Accepted: sonnet, haiku, opus, or full model ID"
+            printf '%s\n' "    ai.claude.max_output_tokens  Max tokens in response (default: 8096)"
+            printf '%s\n' "    ai.claude.effort_level       Effort level for opus only (default: medium)"
+            printf '%s\n' "                                 Accepted: low, medium, high"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec config get logs.enabled"
+            printf '%s\n' "  mec config set logs.enabled true"
+            printf '%s\n' "  mec config set ai.claude.model haiku"
+            printf '%s\n' "  mec config set ai.claude.max_output_tokens 4096"
+            printf '%s\n' "  mec config list"
   mec config edit
   mec config reset
 EOF
