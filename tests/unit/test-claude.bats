@@ -122,7 +122,7 @@ setup() {
 @test "mec claude firewall help outputs usage" {
     run "$BASEDIR/bin/mec" claude firewall help
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q 'Usage: mec claude firewall'
+    echo "$output" | grep -q 'mec claude firewall'
 }
 
 @test "docker/claude/entrypoint.sh exists and is a script" {

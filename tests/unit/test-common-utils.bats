@@ -50,7 +50,6 @@ setup() {
     MEC_SAVE_LOGS=1 setup_logging "test-tool"
     [ "$LOG_ENABLED" = "true" ]
     [ -n "$LOG_FILE" ]
-    [ -n "$RAW_LOG_FILE" ]
 }
 
 @test "setup_logging respects disabled logging" {

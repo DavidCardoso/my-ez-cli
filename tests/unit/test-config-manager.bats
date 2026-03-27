@@ -262,7 +262,7 @@ EOF
 @test "mec_config handles help command" {
     run mec_config help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage:" ]]
+    [[ "$output" =~ "mec config" ]]
 }
 
 @test "mec_config returns error for unknown command" {

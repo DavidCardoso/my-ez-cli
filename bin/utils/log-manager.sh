@@ -70,7 +70,6 @@ log_session_init() {
 
     # Create log file paths
     JSON_LOG_FILE="${TOOL_LOG_DIR}/${LOG_TIMESTAMP}.json"
-    RAW_LOG_FILE="${TOOL_LOG_DIR}/${LOG_TIMESTAMP}.raw.log"
 
     # Export session variables
     export LOG_SESSION_ENABLED="true"
@@ -81,11 +80,9 @@ log_session_init() {
     export LOG_SESSION_START_TIME="$TIMESTAMP"
     export LOG_SESSION_CWD="$(pwd)"
     export LOG_JSON_FILE="$JSON_LOG_FILE"
-    export LOG_RAW_FILE="$RAW_LOG_FILE"
 
-    # Touch log files
+    # Touch log file
     touch "$JSON_LOG_FILE"
-    touch "$RAW_LOG_FILE"
 }
 
 # Generate session ID for a tool
@@ -94,18 +91,6 @@ get_session_id() {
     TOOL_NAME="${1:-unknown}"
     TIMESTAMP=$(date +%s)
     echo "mec-${TOOL_NAME}-${TIMESTAMP}"
-}
-
-# ----------------------------------------------------------------------------
-# Output Capture
-# ----------------------------------------------------------------------------
-
-# Write raw output to raw log file
-# Usage: log_raw_output "stdout content"
-log_raw_output() {
-    if [ "$LOG_SESSION_ENABLED" = "true" ] && [ -n "$LOG_RAW_FILE" ]; then
-        echo "$1" >> "$LOG_RAW_FILE"
-    fi
 }
 
 # ----------------------------------------------------------------------------
@@ -179,8 +164,11 @@ get_log_environment() {
     ENV_JSON="{"
     FIRST=true
 
-    # Collect MEC_* variables
-    for VAR in $(env | grep '^MEC_' | cut -d= -f1); do
+    # Logging-system internals — not useful for AI analysis of tool output
+    _LOG_SKIP="MEC_LOG_DIR|MEC_LOG_LEVEL|MEC_LOG_FORMAT|MEC_LOG_COMPRESSION_DAYS|MEC_LOG_RETENTION_DAYS|MEC_SAVE_LOGS"
+
+    # Collect MEC_* variables (excluding logging internals)
+    for VAR in $(env | grep '^MEC_' | cut -d= -f1 | grep -vE "$_LOG_SKIP"); do
         VALUE=$(eval echo \$$VAR)
         # Skip sensitive variables
         if echo "$VAR" | grep -qi "token\|key\|secret\|password"; then

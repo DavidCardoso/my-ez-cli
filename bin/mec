@@ -43,39 +43,48 @@ show_version() {
 }
 
 show_help() {
-    cat <<'EOF'
-My Ez CLI - Docker-based Development Tools
+    # Use bold section headers when writing to a terminal
+    local _b="" _r=""
+    if [ -t 1 ]; then
+        _b=$(printf '\033[1m')
+        _r=$(printf '\033[0m')
+    fi
 
-Usage: mec <command> [arguments]
-       mec <command> --help
-
-Commands:
-  config              Manage configuration
-  ai                  AI analysis (Claude Code)
-  dashboard           Log and AI analysis web UI (start|stop|status|open)
-  doctor              Health check (Docker, Zsh, tools, AI, dashboard, data dir)
-  purge               Purge log and AI analysis files
-  logs                Log management
-  claude              Run Claude Code
-  claude firewall     Manage Claude Code container firewall
-  setup               Interactive setup TUI
-  install <tool...>   Install tools
-  uninstall <tool...> Uninstall tools
-  version             Show version
-  help                Show this help
-
-Run 'mec <command> --help' for subcommand details.
-
-Examples:
-  mec config --help
-  mec ai --help
-  mec logs --help
-  mec claude firewall status
-  mec install node terraform
-  mec uninstall yarn
-
-Documentation: https://github.com/davidcardoso/my-ez-cli
-EOF
+    printf '%s\n' "My Ez CLI — Docker-based Development Tools"
+    printf '%s\n' ""
+    printf '%s\n' "${_b}USAGE${_r}"
+    printf '%s\n' "  mec <command> [arguments]"
+    printf '%s\n' "  mec <command> --help"
+    printf '%s\n' ""
+    printf '%s\n' "${_b}CORE COMMANDS${_r}"
+    printf '%s\n' "  install <tool...>   Install one or more tools"
+    printf '%s\n' "  uninstall <tool...> Uninstall one or more tools"
+    printf '%s\n' "  setup               Interactive setup TUI"
+    printf '%s\n' ""
+    printf '%s\n' "${_b}MANAGEMENT COMMANDS${_r}"
+    printf '%s\n' "  config              Manage configuration"
+    printf '%s\n' "  logs                Log management"
+    printf '%s\n' "  purge               Purge log and AI analysis files"
+    printf '%s\n' "  doctor              Health check"
+    printf '%s\n' ""
+    printf '%s\n' "${_b}AI & DASHBOARD${_r}"
+    printf '%s\n' "  ai *                AI analysis (enable, status, logs, analyze)"
+    printf '%s\n' "  dashboard *         Web dashboard (start, stop, status, open, rebuild)"
+    printf '%s\n' "  claude              Run Claude Code interactively"
+    printf '%s\n' "  claude firewall *   Manage Claude Code container firewall"
+    printf '%s\n' ""
+    printf '%s\n' "${_b}OTHER COMMANDS${_r}"
+    printf '%s\n' "  version             Show version"
+    printf '%s\n' "  help                Show this help"
+    printf '%s\n' ""
+    printf '%s\n' "Run 'mec <command> --help' for subcommand details."
+    printf '%s\n' ""
+    printf '%s\n' "${_b}EXAMPLES${_r}"
+    printf '%s\n' "  mec install node terraform"
+    printf '%s\n' "  mec ai status"
+    printf '%s\n' "  mec dashboard start"
+    printf '%s\n' "  mec logs list --tool node"
+    printf '%s\n' "  mec claude firewall status"
 }
 
 # ----------------------------------------------------------------------------
@@ -247,44 +256,43 @@ mec_ai() {
                 --max-turns 1
             ;;
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec ai <command> [arguments]
-
-Commands:
-  status              Show AI integration status
-  enable              Enable AI integration
-  disable             Disable AI integration
-  test                Test Claude Code availability
-  last                Show the most recent AI analysis
-  show <session_id>   Show a specific session by ID
-  logs [--last N]     List recent sessions with AI status (default: last 20)
-  analyze <log-file>  Analyze a log file with Claude Code
-  help                Show this help message
-
-Requirements (one of):
-  ANTHROPIC_API_KEY        Anthropic API key (Console credits)
-  CLAUDE_CODE_OAUTH_TOKEN  Long-lived OAuth token (Claude.ai subscription)
-
-Claude Settings (set with 'mec config set <key> <value>'):
-  ai.claude.model              Model for analysis (default: sonnet)
-                               Accepted: sonnet, haiku, opus, or full model ID
-  ai.claude.max_output_tokens  Max tokens in response (default: 8096)
-                               Range: 1024–64000; lower = shorter, cheaper
-  ai.claude.effort_level       Effort level for opus only (default: medium)
-                               Accepted: low, medium, high (ignored for sonnet/haiku)
-  ai.dashboard.port            Dashboard port (default: 4242)
-
-Examples:
-  mec ai status
-  mec ai enable
-  mec ai test
-  mec ai last
-  mec ai logs
-  mec ai logs --last 5
-  mec ai analyze ~/.my-ez-cli/logs/node/2024-01-01_12-00-00.json
-  mec config set ai.claude.model haiku
-  mec config set ai.claude.max_output_tokens 4096
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec ai <command> [arguments]"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  status              Show AI integration status"
+            printf '%s\n' "  enable              Enable AI integration"
+            printf '%s\n' "  disable             Disable AI integration"
+            printf '%s\n' "  test                Test Claude Code availability"
+            printf '%s\n' "  last                Show the most recent AI analysis"
+            printf '%s\n' "  show <session_id>   Show a specific session by ID"
+            printf '%s\n' "  logs [--last N]     List recent sessions with AI status (default: last 20)"
+            printf '%s\n' "  analyze <log-file>  Analyze a log file with Claude Code"
+            printf '%s\n' "  help                Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}REQUIREMENTS${_r} (one of)"
+            printf '%s\n' "  ANTHROPIC_API_KEY        Anthropic API key (Console credits)"
+            printf '%s\n' "  CLAUDE_CODE_OAUTH_TOKEN  Long-lived OAuth token (Claude.ai subscription)"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}CONFIGURATION${_r} (set with 'mec config set <key> <value>')"
+            printf '%s\n' "  ai.claude.model              Model for analysis (default: sonnet)"
+            printf '%s\n' "                               Accepted: sonnet, haiku, opus, or full model ID"
+            printf '%s\n' "  ai.claude.max_output_tokens  Max tokens in response (default: 8096)"
+            printf '%s\n' "                               Range: 1024–64000; lower = shorter, cheaper"
+            printf '%s\n' "  ai.claude.effort_level       Effort level for opus only (default: medium)"
+            printf '%s\n' "                               Accepted: low, medium, high"
+            printf '%s\n' "  ai.dashboard.port            Dashboard port (default: 4242)"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec ai status"
+            printf '%s\n' "  mec ai enable"
+            printf '%s\n' "  mec ai test"
+            printf '%s\n' "  mec ai last"
+            printf '%s\n' "  mec ai logs --last 5"
+            printf '%s\n' "  mec ai analyze ~/.my-ez-cli/logs/node/2026-01-01_12-00-00.json"
+            printf '%s\n' "  mec config set ai.claude.model haiku"
             ;;
         *)
             echo "Unknown ai command: $subcmd" >&2
@@ -522,29 +530,28 @@ mec_logs() {
             _mec_logs_stats
             ;;
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec logs <command>
-
-Commands:
-  status                        Show logging status and log file count
-  enable                        Enable logging
-  disable                       Disable logging
-  list [--tool <name>] [--last N]  List recent executions (default: last 20)
-  failures [--last N]           List recent failed executions (default: last 20)
-  stats                         Show execution statistics
-  help                          Show this help message
-
-Examples:
-  mec logs status
-  mec logs enable
-  mec logs disable
-  mec logs list
-  mec logs list --tool node
-  mec logs list --last 5
-  mec logs failures
-  mec logs failures --last 10
-  mec logs stats
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec logs <command>"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  status                           Show logging status and log file count"
+            printf '%s\n' "  enable                           Enable logging"
+            printf '%s\n' "  disable                          Disable logging"
+            printf '%s\n' "  list [--tool <name>] [--last N]  List recent executions (default: last 20)"
+            printf '%s\n' "  failures [--last N]              List recent failed executions (default: last 20)"
+            printf '%s\n' "  stats                            Show execution statistics"
+            printf '%s\n' "  help                             Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec logs status"
+            printf '%s\n' "  mec logs enable"
+            printf '%s\n' "  mec logs list"
+            printf '%s\n' "  mec logs list --tool node"
+            printf '%s\n' "  mec logs list --last 5"
+            printf '%s\n' "  mec logs failures --last 10"
+            printf '%s\n' "  mec logs stats"
             ;;
         *)
             echo "Unknown logs command: $subcmd" >&2
@@ -984,36 +991,37 @@ mec_claude_firewall() {
             echo "Rebuild complete. IPs are now baked into the image."
             ;;
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec claude firewall <command> [arguments]
-
-Commands:
-  status                              Show firewall enabled state and domain lists
-  list                                List all configured domains
-  add <github-meta|dns> <domain>      Add a domain to the firewall allow list
-  remove <github-meta|dns> <domain>   Remove a domain from the allow list
-  enable                              Enable the container firewall
-  disable                             Disable the container firewall
-  rebuild                             Rebuild Docker image with fresh IP resolution
-  help                                Show this help message
-
-Domain list types:
-  github-meta   GitHub API endpoints (IPs fetched via api.github.com/meta CIDR ranges)
-  dns           Domains resolved via DNS at Docker build time
-
-Notes:
-  - IPs are resolved at 'docker build' time and baked into the image
-  - Run 'mec claude firewall rebuild' after any domain changes
-  - Firewall requires NET_ADMIN capability (added automatically when enabled)
-
-Examples:
-  mec claude firewall status
-  mec claude firewall list
-  mec claude firewall add dns custom.example.com
-  mec claude firewall remove dns custom.example.com
-  mec claude firewall enable
-  mec claude firewall rebuild
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec claude firewall <command> [arguments]"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  status                              Show firewall enabled state and domain lists"
+            printf '%s\n' "  list                                List all configured domains"
+            printf '%s\n' "  add <github-meta|dns> <domain>      Add a domain to the firewall allow list"
+            printf '%s\n' "  remove <github-meta|dns> <domain>   Remove a domain from the allow list"
+            printf '%s\n' "  enable                              Enable the container firewall"
+            printf '%s\n' "  disable                             Disable the container firewall"
+            printf '%s\n' "  rebuild                             Rebuild Docker image with fresh IP resolution"
+            printf '%s\n' "  help                                Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}DOMAIN LIST TYPES${_r}"
+            printf '%s\n' "  github-meta   GitHub API endpoints (IPs fetched via api.github.com/meta CIDR ranges)"
+            printf '%s\n' "  dns           Domains resolved via DNS at Docker build time"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}NOTES${_r}"
+            printf '%s\n' "  - IPs are resolved at 'docker build' time and baked into the image"
+            printf '%s\n' "  - Run 'mec claude firewall rebuild' after any domain changes"
+            printf '%s\n' "  - Firewall requires NET_ADMIN capability (added automatically when enabled)"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec claude firewall status"
+            printf '%s\n' "  mec claude firewall list"
+            printf '%s\n' "  mec claude firewall add dns custom.example.com"
+            printf '%s\n' "  mec claude firewall remove dns custom.example.com"
+            printf '%s\n' "  mec claude firewall enable"
+            printf '%s\n' "  mec claude firewall rebuild"
             ;;
         *)
             echo "Unknown firewall command: $subcmd" >&2
@@ -1151,30 +1159,32 @@ mec_dashboard() {
             fi
             ;;
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec dashboard <command>
-
-Commands:
-  start     Start the dashboard (API + UI served from the same container)
-  stop      Stop and remove the dashboard container
-  restart   Stop then start (add --rebuild to also rebuild the image first)
-  rebuild   Build the dashboard Docker image locally
-  status    Show dashboard container status
-  open      Open the dashboard in the default browser
-  help      Show this help message
-
-Configuration:
-  ai.dashboard.port  Port for the dashboard (default: 4242)
-  Set with: mec config set ai.dashboard.port <port>
-
-Examples:
-  mec dashboard start
-  mec dashboard restart
-  mec dashboard rebuild
-  mec dashboard restart --rebuild
-  mec dashboard open
-  mec dashboard stop
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec dashboard <command>"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  start     Start the dashboard (API + UI served from the same container)"
+            printf '%s\n' "  stop      Stop and remove the dashboard container"
+            printf '%s\n' "  restart   Stop then start (use --rebuild to also rebuild the image first)"
+            printf '%s\n' "  rebuild   Build the dashboard Docker image locally"
+            printf '%s\n' "  status    Show dashboard container status"
+            printf '%s\n' "  open      Open the dashboard in the default browser"
+            printf '%s\n' "  help      Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}CONFIGURATION${_r}"
+            printf '%s\n' "  ai.dashboard.port  Port for the dashboard (default: 4242)"
+            printf '%s\n' "  Set with: mec config set ai.dashboard.port <port>"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec dashboard start"
+            printf '%s\n' "  mec dashboard status"
+            printf '%s\n' "  mec dashboard restart"
+            printf '%s\n' "  mec dashboard restart --rebuild"
+            printf '%s\n' "  mec dashboard rebuild"
+            printf '%s\n' "  mec dashboard open"
+            printf '%s\n' "  mec dashboard stop"
             ;;
         rebuild)
             local _dockerfile
@@ -1218,18 +1228,18 @@ mec_doctor() {
 
     case "$subcmd" in
         help|--help|-h)
-            cat <<'EOF'
-Usage: mec doctor
-
-Run health checks on Docker, Zsh, tools, AI integration, dashboard, and data directory.
-
-Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check.
-Exits 1 if any check fails — scriptable.
-
-Examples:
-  mec doctor
-  mec doctor && echo "all good"
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec doctor"
+            printf '%s\n' ""
+            printf '%s\n' "Run health checks on Docker, Zsh, tools, AI integration, dashboard, and data directory."
+            printf '%s\n' "Prints a structured report with ✓ pass / ⚠ warn / ✗ fail per check."
+            printf '%s\n' "Exits 1 if any check fails — scriptable."
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec doctor"
+            printf '%s\n' "  mec doctor && echo \"all good\""
             return 0
             ;;
         ""|run)
@@ -1496,28 +1506,30 @@ mec_purge() {
             done
             ;;
         help|--help|-h|"")
-            cat <<'EOF'
-Usage: mec purge <command> [flags]
-
-Commands:
-  data      Delete log and AI analysis files (interactive by default)
-
-Flags:
-  --tool <name>        Only purge files for a specific tool (e.g. node, aws)
-  --older-than <days>  Only purge files older than N days
-  --only-logs          Only purge ~/.my-ez-cli/logs/
-  --only-ai-analyses   Only purge ~/.my-ez-cli/ai-analyses/
-  --dry-run            Preview what would be deleted without deleting
-  -y, --yes            Skip confirmation prompts
-
-Examples:
-  mec purge data                           # purge all logs + AI analyses (interactive)
-  mec purge data --dry-run                 # preview only
-  mec purge data --tool node               # only node logs + analyses
-  mec purge data --older-than 30           # only files older than 30 days
-  mec purge data --only-logs --tool aws    # only aws logs (keep AI analyses)
-  mec purge data -y                        # skip confirmation
-EOF
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec purge <command> [flags]"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  data      Delete log and AI analysis files (interactive by default)"
+            printf '%s\n' "  help      Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}FLAGS${_r}"
+            printf '%s\n' "  --tool <name>        Only purge files for a specific tool (e.g. node, aws)"
+            printf '%s\n' "  --older-than <days>  Only purge files older than N days"
+            printf '%s\n' "  --only-logs          Only purge ~/.my-ez-cli/logs/"
+            printf '%s\n' "  --only-ai-analyses   Only purge ~/.my-ez-cli/ai-analyses/"
+            printf '%s\n' "  --dry-run            Preview what would be deleted without deleting"
+            printf '%s\n' "  -y, --yes            Skip confirmation prompts"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec purge data                           # purge all logs + AI analyses (interactive)"
+            printf '%s\n' "  mec purge data --dry-run                 # preview only"
+            printf '%s\n' "  mec purge data --tool node               # only node logs + analyses"
+            printf '%s\n' "  mec purge data --older-than 30           # only files older than 30 days"
+            printf '%s\n' "  mec purge data --only-logs --tool aws    # only aws logs (keep AI analyses)"
+            printf '%s\n' "  mec purge data -y                        # skip confirmation"
             ;;
         *)
             echo "Unknown purge command: $subcmd" >&2
