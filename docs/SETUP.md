@@ -1,202 +1,94 @@
-# Setup Script Improvements - v1.0.0
+# Setup & Installation Guide
 
-## Summary of Changes
-
-The `setup.sh` script has been completely refactored to provide a better user experience with a robust terminal-based interactive mode.
+This guide covers how to install, manage, and verify `my-ez-cli` tools using the `mec` CLI.
 
 ---
 
-## ✅ Key Improvements
+## Quick Start
 
-### New Features
-- ✅ **Terminal-based interactive mode** with numbered selection
-- ✅ Pure bash implementation - no external dependencies
-- ✅ Multi-select installation (select multiple tools at once)
-- ✅ Uninstall capability directly from interactive menu
-- ✅ Installation tracking and verification
-- ✅ Improved help command handling
-- ✅ Enhanced error messages and user feedback
-- ✅ **Claude install conflict detection** — detects pre-existing `claude` (Homebrew, Anthropic script, or unknown) and offers side-by-side, replace, or skip options
-
----
-
-## 🚀 Features
-
-### 1. Terminal-Based Interactive Mode
-
-**Command:**
 ```bash
+# 1. Run the bootstrap installer (first time only)
 ./setup.sh
+
+# 2. Install tools interactively
+mec setup
+
+# 3. Or install specific tools directly
+mec install node terraform python
+
+# 4. Check what's installed
+mec setup show
 ```
 
-**Features:**
-- Shows numbered list of all 16 available tools
-- Displays installation status with checkmarks (✓)
-- Multiple selection by entering numbers: `1 2 5`
-- Install all tools at once: `all`
-- Uninstall tools: `uninstall 1 3`
-- Exit: `done` or press Enter
-- **Works in any terminal** - pure bash, no dependencies
-- **Compatible with macOS, Linux, CI/CD, SSH, any environment**
+---
 
-**Example Session:**
+## Installing Tools
+
+### Interactive TUI
+
+```bash
+mec setup
+```
+
+Shows a numbered list of all available tools with installation status. Select by number, `all`, or type `done` to exit.
+
 ```
 Available tools:
 --------------------------------------------------------------------------------
  1. [  ] aws                  - AWS CLI and SSO tools
  2. [  ] node                 - Node.js (v22, v24)
  3. [  ] npm                  - NPM package manager
- 4. [  ] npx                  - NPX package runner
- 5. [✓ ] yarn                 - Yarn package manager
- 6. [  ] yarn-plus            - Yarn + git/curl/jq tools
- 7. [  ] yarn-berry           - Yarn Berry (v2+)
- 8. [  ] serverless           - Serverless Framework
- 9. [  ] terraform            - Terraform CLI
-10. [  ] speedtest            - Ookla Speedtest CLI
-11. [  ] gcloud               - Google Cloud CLI
-12. [  ] playwright           - Playwright testing
-13. [  ] python               - Python interpreter
-14. [  ] promptfoo            - Promptfoo evaluation
-15. [  ] promptfoo-server     - Promptfoo server
-16. [  ] claude               - Claude Code CLI
+...
 --------------------------------------------------------------------------------
 
-Your selection: 2 3 8
-Installing node...
-Installing npm...
-Installing terraform...
-
-Your selection: done
-Setup complete!
+Your selection: 1 3 9
 ```
 
-### 2. Command-Line Mode (Enhanced)
+### Command-Line Install
 
-**Install specific tools:**
 ```bash
-./setup.sh install node terraform python
-```
-
-**Install all tools:**
-```bash
-./setup.sh install all
-```
-
-**Uninstall tools:**
-```bash
-./setup.sh uninstall node npm
-```
-
-**Check installation status:**
-```bash
-./setup.sh status
-```
-
-**List installed tools:**
-```bash
-./setup.sh list
-```
-
-**Show help:**
-```bash
-./setup.sh help
-./setup.sh install --help
-./setup.sh uninstall --help
+mec install node terraform python     # install specific tools
+mec install all                       # install all tools
+mec uninstall node npm                # uninstall tools
+mec setup show                        # show installation status
 ```
 
 ---
 
-## 📋 Usage Guide
+## Available Tools
 
-### Quick Start
-
-```bash
-# Interactive mode (works everywhere)
-./setup.sh
-
-# Install specific tools directly
-./setup.sh install node npm terraform
-
-# Check what's installed
-./setup.sh status
-
-# Uninstall tools
-./setup.sh uninstall node
-```
-
-### Interactive Mode Options
-
-When in interactive terminal mode, you can:
-
-1. **Install multiple tools**: Enter numbers separated by spaces
-   ```
-   Your selection: 1 2 5 8
-   ```
-
-2. **Install all tools at once**: Type `all`
-   ```
-   Your selection: all
-   ```
-
-3. **Uninstall tools**: Use `uninstall` prefix
-   ```
-   Your selection: uninstall 1 3
-   ```
-
-4. **Exit**: Type `done`, `exit`, or just press Enter
-   ```
-   Your selection: done
-   ```
+| Tool | Description |
+|------|-------------|
+| aws | AWS CLI and SSO tools |
+| node | Node.js (v22 default, v24 also available) |
+| npm | NPM package manager |
+| npx | NPX package runner |
+| yarn | Yarn package manager |
+| yarn-plus | Yarn + git/curl/jq tools |
+| yarn-berry | Yarn Berry (v2+) |
+| serverless | Serverless Framework |
+| terraform | Terraform CLI |
+| speedtest | Ookla Speedtest CLI |
+| gcloud | Google Cloud CLI |
+| playwright | Playwright testing |
+| python | Python interpreter |
+| promptfoo | Promptfoo evaluation |
+| promptfoo-server | Promptfoo server |
+| claude | Claude Code CLI |
 
 ---
 
-## 🧪 Testing
+## Installing Claude Code
 
-All modes have been tested and verified:
+The `claude` tool has conflict-detection logic because users may already have Claude Code installed via Homebrew or the Anthropic install script.
 
-- ✅ Terminal interactive mode works in all environments (macOS, Linux, CI/CD)
-- ✅ Command-line install/uninstall work correctly
-- ✅ Status and list commands display accurately
-- ✅ Help commands work from all contexts
-- ✅ Error handling for invalid input
-- ✅ Multi-select and uninstall modes work correctly
+### Fresh install
 
----
+Both `/usr/local/bin/claude` and `/usr/local/bin/mec-claude` are created as symlinks to `bin/claude`.
 
-## 📊 Available Tools
+### Conflict detected
 
-| # | Tool | Description |
-|---|------|-------------|
-| 1 | aws | AWS CLI and SSO tools |
-| 2 | node | Node.js (v22, v24 LTS) |
-| 3 | npm | NPM package manager |
-| 4 | npx | NPX package runner |
-| 5 | yarn | Yarn package manager |
-| 6 | yarn-plus | Yarn + git/curl/jq tools |
-| 7 | yarn-berry | Yarn Berry (v2+) |
-| 8 | serverless | Serverless Framework |
-| 9 | terraform | Terraform CLI |
-| 10 | speedtest | Ookla Speedtest CLI |
-| 11 | gcloud | Google Cloud CLI |
-| 12 | playwright | Playwright testing |
-| 13 | python | Python interpreter |
-| 14 | promptfoo | Promptfoo evaluation |
-| 15 | promptfoo-server | Promptfoo server |
-| 16 | claude | Claude Code CLI |
-
----
-
-## 🤖 Installing Claude Code
-
-The `claude` tool has special conflict-detection logic because users may already have Claude Code installed via Homebrew (`brew install claude`) or the Anthropic install script.
-
-### What happens on a fresh install
-
-Both `/usr/local/bin/claude` **and** `/usr/local/bin/mec-claude` are created as symlinks to `bin/claude`, so `mec-claude` is always a stable alias regardless of future changes.
-
-### What happens when a conflict is detected
-
-If a `claude` binary already exists in PATH that is not mec-managed, `setup.sh` presents three options:
+If a `claude` binary already exists in PATH that is not mec-managed, three options are presented:
 
 ```
 Conflict detected: 'claude' already exists at: /opt/homebrew/bin/claude
@@ -213,7 +105,7 @@ How would you like to proceed?
 | Option | Result |
 |--------|--------|
 | Side-by-side | Installs `/usr/local/bin/mec-claude` only; native `claude` untouched |
-| Replace | Detects install method, asks for confirmation, uninstalls native, installs both symlinks; falls back to side-by-side on failure |
+| Replace | Detects install method, asks for confirmation, uninstalls native, installs both symlinks |
 | Skip | No symlinks created; use `mec claude` or `bin/claude` directly |
 
 ### Supported native install methods
@@ -224,7 +116,7 @@ How would you like to proceed?
 | Anthropic script | `~/.claude/local/claude` or `~/.local/bin/claude` | `rm -f <path>` |
 | Unknown | Any other path | Prints manual removal instructions; falls back to side-by-side |
 
-### mec claude subcommand
+### Always available
 
 `mec claude` is always available as a direct proxy to `bin/claude`, regardless of which symlink option was chosen:
 
@@ -233,75 +125,83 @@ mec claude --version
 mec claude "Explain this error..."
 ```
 
-### Uninstalling claude
-
-Both symlinks are removed together:
+### Uninstalling
 
 ```bash
-./setup.sh uninstall claude
+mec uninstall claude
 # Removes /usr/local/bin/claude and /usr/local/bin/mec-claude
 ```
 
 ---
 
-## 🔧 Technical Details
+## AI Analysis
 
-### User Configuration
+Enable AI-powered analysis of tool executions:
+
+```bash
+mec logs enable         # logging must be enabled first
+mec ai enable           # enable AI analysis
+mec ai status           # verify configuration
+```
+
+Run any tool — analysis appears automatically in the background:
+
+```bash
+node server.js          # [mec-ai] analysis prints after execution
+```
+
+Review analyses:
+
+```bash
+mec ai last             # most recent analysis
+mec ai logs             # list all sessions with AI status
+mec ai logs --last 5    # last 5 sessions
+mec ai show <session>   # show specific session
+```
+
+Requirements (one of):
+
+- `ANTHROPIC_API_KEY` — Anthropic API key
+- `CLAUDE_CODE_OAUTH_TOKEN` — Long-lived OAuth token
+
+---
+
+## Dashboard
+
+View logs and AI analyses in a web UI:
+
+```bash
+mec dashboard start     # start at http://localhost:4242
+mec dashboard status    # check if running
+mec dashboard open      # open in browser
+mec dashboard stop      # stop the dashboard
+```
+
+Change the port:
+
+```bash
+mec config set ai.dashboard.port 8080
+mec dashboard restart
+```
+
+---
+
+## Technical Details
+
 - Tracking file: `$HOME/.my-ez-cli/installed`
-- Auto-created on first run
-- Persists across sessions
-
-### Installation
-- Creates symbolic links in `/usr/local/bin/`
-- May create aliases in `~/.zshrc` (for some tools)
-- Requires sudo for symlink creation
-
-### Verification
-The `status` command verifies:
-- Tool is tracked as installed
-- Symlink exists in `/usr/local/bin/`
-- Symlink target is valid
+- Config file: `$HOME/.my-ez-cli/config.yaml`
+- Logs: `$HOME/.my-ez-cli/logs/`
+- AI analyses: `$HOME/.my-ez-cli/ai-analyses/`
+- Symlinks created in `/usr/local/bin/`
 
 ---
 
-## 🎯 Alignment with ROADMAP.md
-
-This implementation completes several Phase 1 tasks from the roadmap:
-
-- ✅ **#1.1 Multi-Select Installation**: Terminal-based multi-select with checkboxes
-- ✅ **#1.2 Uninstall Capability**: Added uninstall mode in interactive menu
-- ✅ **#1.3 Installation Verification**: Status command with verification
-- ✅ **CLI Arguments Support**: `./setup.sh install node terraform`
-- ✅ **Installation Tracking**: `$HOME/.my-ez-cli/installed` file
-
----
-
-## 🔜 Next Steps (Remaining from Phase 1)
-
-1. Set up bats-core testing framework
-2. Write unit tests for tools
-3. Complete GitHub workflows (already in progress)
-
-For full roadmap details, see [ROADMAP.md](./ROADMAP.md).
-
----
-
-## 📝 Notes
-
-- **Terminal-based interactive mode**: Works everywhere, no dependencies
-- **Backward compatible**: All existing command-line usage still works
-- **User choice**: Multiple ways to accomplish the same task (interactive or CLI)
-- **No external dependencies**: Pure bash implementation, runs in any environment
-
----
-
-## 🧪 Manual Testing Checklist (v1.0.0-rc)
+## Manual Testing Checklist
 
 Use this checklist to verify the release candidate before tagging v1.0.0.
 
 ### Setup & Installation
 
-- [x] `./setup.sh status` — shows all tools table, no errors
 - [x] `mec setup` — opens interactive TUI
 - [x] `mec setup show` — shows status table
 - [x] `mec install node` — installs node, symlink created at `/usr/local/bin/node`
@@ -330,7 +230,7 @@ Use this checklist to verify the release candidate before tagging v1.0.0.
 - [x] `mec ai enable` + `mec ai status` — shows `AI enabled: true`
 - [x] `mec ai disable` + `mec ai status` — shows `AI enabled: false`
 - [x] `mec ai test` — Docker image check (pass or expected fail if not pulled)
-- [x] `mec ai enable` + `mec logs enable`, then `node --version` → triggers `[mec-ai]` output (no env vars needed)
+- [x] `mec ai enable` + `mec logs enable`, then `node --version` → triggers `[mec-ai]` output
 
 ### Logging
 
@@ -341,13 +241,36 @@ Use this checklist to verify the release candidate before tagging v1.0.0.
 - [x] `mec ai status` (logging disabled) — shows hint "run 'mec logs enable'"
 - [x] `mec ai status` (logging enabled) — shows `Logging: enabled`
 
+### Dashboard
+
+- [x] `mec dashboard start` — starts container, prints URL
+- [x] `mec dashboard status` — shows running/stopped state
+- [x] `mec dashboard open` — opens browser (or prints URL if no browser)
+- [x] `mec dashboard stop` — stops and removes container
+- [x] `mec dashboard restart` — stop + start
+- [x] `mec dashboard rebuild` — builds image from docker/dashboard/Dockerfile
+- [x] `mec dashboard restart --rebuild` — rebuild then restart
+
+### Purge
+
+- [x] `mec purge help` — prints usage with FLAGS section
+- [x] `mec purge data --dry-run` — lists files, no deletion
+- [x] `mec purge data -y` — deletes files without prompt
+- [x] `mec purge data --only-logs -y` — deletes only log files
+- [x] `mec purge data --tool node -y` — deletes only node files
+
 ### Tools Spot Check
 
-- [x] `node --version` — Node version from Docker
-- [x] `yarn-plus --version` — Yarn version (confirms `exec_with_ai` wiring)
+- [x] `node --version` — Node v22 from Docker
+- [x] `yarn-plus --version` — Yarn version
 - [x] `terraform --version` — Terraform version from Docker
+
+### Health Check
+
+- [x] `mec doctor` — prints structured health report
+- [x] `mec doctor && echo "healthy"` — exits 0 when all checks pass
 
 ---
 
-*Last updated: 2026-02-19*
+*Last updated: 2026-03-27*
 *Version: 1.0.0-rc*
