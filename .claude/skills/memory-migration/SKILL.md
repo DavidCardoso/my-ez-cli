@@ -103,9 +103,10 @@ Also copy any new/changed repo memory files to the home-folder path, and remove 
 
 ## Step 6 — Commit
 
-Group all `.claude/` changes into one logical commit. Per `git-workflow.md`:
-- **Amend** if this migration is a correction/adjustment to the current branch's ongoing work
-- **New commit** (`chore: sync Claude Code memory and rules`) if this is standalone cleanup
+Run `git log --oneline -5` first. Ask: do these changes correct, adjust, or extend work already in the most recent commit on this branch? If yes → amend. Only create a new commit if this is the first `.claude/` change on the branch or a fully independent concern.
+
+- **Amend** if the branch already has a `.claude/` cleanup commit this work builds on
+- **New commit** (`chore: sync Claude Code memory and rules`) if this is standalone
 
 Push with explicit branch: `git push origin <branch-name>`
 
@@ -122,4 +123,6 @@ Deleted (stale/covered): <list or "none">
 MEMORY.md:              synced (repo → home)
 
 Committed: <yes — <hash> | no>
+
+Next: if rules files were added or changed, run claudemd-streamline to check for duplication in CLAUDE.md files.
 ```
