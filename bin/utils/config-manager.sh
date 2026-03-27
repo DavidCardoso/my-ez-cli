@@ -433,9 +433,8 @@ mec_config() {
             printf '%s\n' "  mec config set ai.claude.model haiku"
             printf '%s\n' "  mec config set ai.claude.max_output_tokens 4096"
             printf '%s\n' "  mec config list"
-  mec config edit
-  mec config reset
-EOF
+            printf '%s\n' "  mec config edit"
+            printf '%s\n' "  mec config reset"
             ;;
         *)
             echo "Unknown command: $COMMAND" >&2
