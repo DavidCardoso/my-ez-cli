@@ -644,19 +644,20 @@ _mec_logs_list() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI"
-    printf "%-21s %-12s %-6s %-10s %-4s\n" "---------------------" "------------" "------" "----------" "----"
+    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
 
-        local tool exit_code start_time end_time has_ai duration_str
+        local tool exit_code start_time end_time has_ai duration_str session_id
 
         # Extract fields using grep+sed (portable; BSD awk lacks POSIX char classes in -F)
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
         start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        session_id=$(grep '"session_id"' "$log_file" 2>/dev/null | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
 
         # Check for AI sidecar
         if _ai_sidecar_exists "$log_file"; then
@@ -694,7 +695,7 @@ except:
         [ -z "$tool" ] && tool="unknown"
         [ -z "$exit_code" ] && exit_code="?"
 
-        printf "%-21s %-12s %-6s %-10s %-4s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai"
+        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
     done
 }
 
@@ -733,15 +734,15 @@ _mec_logs_failures() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI"
-    printf "%-21s %-12s %-6s %-10s %-4s\n" "---------------------" "------------" "------" "----------" "----"
+    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
 
     local shown=0
     echo "$all_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
         [ "$shown" -ge "$last_n" ] && break
 
-        local tool exit_code start_time end_time has_ai duration_str
+        local tool exit_code start_time end_time has_ai duration_str session_id
 
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
@@ -752,6 +753,7 @@ _mec_logs_failures() {
 
         start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+        session_id=$(grep '"session_id"' "$log_file" 2>/dev/null | sed 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
 
         if _ai_sidecar_exists "$log_file"; then
             has_ai="yes"
@@ -784,7 +786,7 @@ except:
 
         [ -z "$tool" ] && tool="unknown"
 
-        printf "%-21s %-12s %-6s %-10s %-4s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai"
+        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
         shown=$((shown + 1))
     done
 }
