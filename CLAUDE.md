@@ -26,7 +26,7 @@ All wrapper scripts in `bin/` follow a consistent pattern:
 
 - `bin/`: Executable wrapper scripts
 - `bin/utils/`: Shared utilities (`common.sh`, `config-manager.sh`, `log-manager.sh`)
-- `docker/`: Custom Dockerfiles (aws-sso-cred, serverless, speedtest, yarn-berry, yarn-plus, claude, dashboard, ai-service, config-service)
+- `docker/`: Custom Dockerfiles (aws-sso-cred, serverless, speedtest, yarn-berry, yarn-plus, claude, dashboard, ai-service, config-service, playwright)
 - `config/`: Default configuration (`config.default.yaml`)
 - `docs/`: Project documentation
 - `services/ai/`: AI I/O middleware (Python 3.14, filter-only)
@@ -48,11 +48,25 @@ Labels applied to every container:
 
 ## Adding New Tools
 
+### Simple tool (public Docker image)
+
 1. Create `bin/<toolname>` following the existing pattern (source `common.sh`, set `IMAGE`, use helpers)
 2. Add `install_<toolname>()` in `setup.sh` with symlink to `/usr/local/bin/` (plus version variants and mec-prefixed aliases if applicable)
 3. Add `uninstall_<toolname>()` in `setup.sh` — remove symlinks/aliases and call `track_uninstall "<toolname>"`
 4. Update `README.md` with usage examples
-5. If custom Docker image needed: add `docker/<toolname>/Dockerfile` with `com.my-ez-cli.*` labels
+5. Update `CLAUDE.md` — add tool to the `docker/` listing if a custom image is used
+
+### Custom Docker image (required checklist)
+
+All of the above, plus **every item below is required** — missing any caused the Playwright image to ship incomplete:
+
+6. `docker/<toolname>/Dockerfile` — with `com.my-ez-cli.*` labels
+7. `docker/<toolname>/build` — build script (copy from `docker/playwright/build`, change `IMAGE_TOOL`)
+8. `docker/<toolname>/README.md` — document the image purpose, build args, and usage
+9. Add `MEC_IMAGE_<TOOLNAME>` constant in `bin/utils/common.sh` (e.g. `MEC_IMAGE_PLAYWRIGHT`)
+10. Use `check_custom_image "$MEC_IMAGE_<TOOLNAME>"` in `bin/<toolname>` instead of a bare `docker run`
+11. Update `CLAUDE.md` `docker/` listing to include the new tool
+12. Publish to Docker Hub: `cd docker/<toolname> && ./build` then push `davidcardoso/my-ez-cli:<toolname>-latest`
 
 ## AI Integration
 
