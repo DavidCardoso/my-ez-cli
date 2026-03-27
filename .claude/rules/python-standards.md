@@ -1,7 +1,5 @@
 # Python Standards (Critical Rules)
 
-**Full details**: @docs/CODE_STANDARDS.md
-
 ## Type Hints (Required)
 
 All functions, methods, and variables MUST have explicit type hints.
