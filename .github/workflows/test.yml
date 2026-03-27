@@ -163,6 +163,13 @@ jobs:
           ./bin/mec dashboard help | grep -q 'rebuild'
           echo "✓ mec dashboard rebuild documented in help"
 
+      - name: Test mec tool subcommand dispatch
+        run: |
+          ./bin/mec help | grep -q 'TOOLS'
+          echo "✓ mec help lists TOOLS section"
+          ./bin/mec unknown-tool 2>&1 | grep -q 'Unknown command'
+          echo "✓ mec unknown-tool returns error"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest

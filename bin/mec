@@ -73,6 +73,27 @@ show_help() {
     printf '%s\n' "  claude              Run Claude Code interactively"
     printf '%s\n' "  claude firewall *   Manage Claude Code container firewall"
     printf '%s\n' ""
+    printf '%s\n' "${_b}TOOLS${_r}"
+    printf '%s\n' "  aws                 AWS CLI"
+    printf '%s\n' "  aws-get-session-token  AWS session token helper"
+    printf '%s\n' "  aws-sso             AWS SSO login"
+    printf '%s\n' "  aws-sso-cred        AWS SSO credential provider"
+    printf '%s\n' "  gcloud              Google Cloud CLI"
+    printf '%s\n' "  gcloud-login        Google Cloud interactive login"
+    printf '%s\n' "  node, node20/22/24  Node.js (default: node22)"
+    printf '%s\n' "  npm, npm20/22       npm"
+    printf '%s\n' "  npx, npx20/22       npx"
+    printf '%s\n' "  playwright          Playwright browser testing"
+    printf '%s\n' "  promptfoo           PromptFoo AI evaluation"
+    printf '%s\n' "  promptfoo-server    PromptFoo server"
+    printf '%s\n' "  python              Python"
+    printf '%s\n' "  serverless          Serverless Framework"
+    printf '%s\n' "  speedtest           Network speed test"
+    printf '%s\n' "  terraform           Terraform"
+    printf '%s\n' "  yarn, yarn20/22     Yarn"
+    printf '%s\n' "  yarn-berry          Yarn Berry (v2+)"
+    printf '%s\n' "  yarn-plus           Yarn with git, curl, jq"
+    printf '%s\n' ""
     printf '%s\n' "${_b}OTHER COMMANDS${_r}"
     printf '%s\n' "  version             Show version"
     printf '%s\n' "  help                Show this help"
@@ -81,6 +102,8 @@ show_help() {
     printf '%s\n' ""
     printf '%s\n' "${_b}EXAMPLES${_r}"
     printf '%s\n' "  mec install node terraform"
+    printf '%s\n' "  mec node --version"
+    printf '%s\n' "  mec terraform --version"
     printf '%s\n' "  mec ai status"
     printf '%s\n' "  mec dashboard start"
     printf '%s\n' "  mec logs list --tool node"
@@ -1597,6 +1620,21 @@ case "$COMMAND" in
         ;;
     help|--help|-h)
         show_help
+        ;;
+    # Tool wrappers — delegate directly to the corresponding bin/ script
+    aws|aws-get-session-token|aws-sso|aws-sso-cred| \
+    gcloud|gcloud-login| \
+    node|node20|node22|node24| \
+    npm|npm20|npm22| \
+    npx|npx20|npx22| \
+    playwright| \
+    promptfoo|promptfoo-server| \
+    python| \
+    serverless| \
+    speedtest| \
+    terraform| \
+    yarn|yarn-berry|yarn-plus|yarn20|yarn22)
+        exec "$SCRIPT_DIR/$COMMAND" "${@:2}"
         ;;
     *)
         echo "Unknown command: $COMMAND" >&2
