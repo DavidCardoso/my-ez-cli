@@ -336,8 +336,8 @@ Multi-version support:
 
 ```shell
 node20 -v  # maintenance LTS
-node22 -v
-node24 -v  # default
+node22 -v  # default (LTS)
+node24 -v
 ```
 
 **Custom ports** — use `MEC_BIND_PORTS`:
