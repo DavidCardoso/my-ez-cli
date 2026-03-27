@@ -438,6 +438,7 @@ mec ai status
 
 Items below are not scheduled — they may become implementation phases once v1.0.0 is stable.
 
+- Multi-category tools — `TOOL_REGISTRY` tools like `promptfoo` (ai + testing) and `serverless` (cloud + infra) belong to multiple categories; currently a single `category: str` field limits display on the Tools page to one tag per tool; change to `categories: list[str]` and update `ToolsPage.vue` to render multiple tags per row
 - Shell completion (`mec` CLI, zsh/bash)
 - Decouple from Zsh — make mec compatible with other shells (bash as default/fallback); currently requires Zsh + Oh My Zsh
 - `mec help <tool>` — tool-specific help with examples
