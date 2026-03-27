@@ -10,8 +10,8 @@
 # Constants
 # ----------------------------------------------------------------------------
 LOG_FORMAT_VERSION="1.0"
-DEFAULT_LOG_DIR="${HOME}/.my-ez-cli/logs"
-DEFAULT_CONFIG_FILE="${HOME}/.my-ez-cli/config.yaml"
+DEFAULT_LOG_DIR="${MEC_HOME:-${HOME}/.my-ez-cli}/logs"
+DEFAULT_CONFIG_FILE="${MEC_HOME:-${HOME}/.my-ez-cli}/config.yaml"
 
 # ----------------------------------------------------------------------------
 # Configuration

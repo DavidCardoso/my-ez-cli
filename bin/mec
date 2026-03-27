@@ -291,7 +291,7 @@ mec_ai() {
             printf '%s\n' "  mec ai test"
             printf '%s\n' "  mec ai last"
             printf '%s\n' "  mec ai logs --last 5"
-            printf '%s\n' "  mec ai analyze ~/.my-ez-cli/logs/node/2026-01-01_12-00-00.json"
+            printf '%s\n' "  mec ai analyze \$MEC_HOME/logs/node/2026-01-01_12-00-00.json"
             printf '%s\n' "  mec config set ai.claude.model haiku"
             ;;
         *)
@@ -378,7 +378,7 @@ print(items[-1][0] if items else '', end='')
 # Show the most recent session: reads metadata from the log file (source of
 # truth) and the analysis result from the sidecar if available.
 _mec_ai_last() {
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
 
     if [ ! -d "$log_dir" ]; then
         echo "No logs found (directory not created yet)."
@@ -405,7 +405,7 @@ _mec_ai_show() {
         return 1
     fi
 
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
     local log_file
     log_file=$(grep -rl "\"session_id\".*\"${session_id}\"" "$log_dir" 2>/dev/null | grep -v "\.bak$" | grep "\.json$" | head -1)
 
@@ -436,7 +436,7 @@ _mec_ai_logs() {
         esac
     done
 
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
 
     if [ ! -d "$log_dir" ]; then
         echo "No log directory found at $log_dir"
@@ -501,7 +501,7 @@ mec_logs() {
             local logging_enabled
             logging_enabled=$(config_get_default "logs.enabled" "false")
             echo "  Logging enabled: $logging_enabled"
-            local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+            local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
             echo "  Log directory:   $log_dir"
             if [ -d "$log_dir" ]; then
                 local count
@@ -514,7 +514,7 @@ mec_logs() {
         enable)
             config_set "logs.enabled" "true"
             echo "Logging enabled."
-            echo "Logs will be written to ${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/"
+            echo "Logs will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
             ;;
         disable)
             config_set "logs.enabled" "false"
@@ -571,7 +571,7 @@ _ai_sidecar_exists() {
 }
 
 # _mec_logs_list [--tool <name>] [--last N]
-# List recent execution log entries from ~/.my-ez-cli/logs/
+# List recent execution log entries from $MEC_HOME/logs/
 _mec_logs_list() {
     local filter_tool=""
     local last_n=20
@@ -595,7 +595,7 @@ _mec_logs_list() {
         esac
     done
 
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
 
     if [ ! -d "$log_dir" ]; then
         echo "No log directory found at $log_dir"
@@ -694,7 +694,7 @@ _mec_logs_failures() {
         esac
     done
 
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
 
     if [ ! -d "$log_dir" ]; then
         echo "No log directory found at $log_dir"
@@ -769,7 +769,7 @@ except:
 # _mec_logs_stats
 # Show aggregate execution statistics
 _mec_logs_stats() {
-    local log_dir="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}"
+    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
 
     if [ ! -d "$log_dir" ]; then
         echo "No log directory found at $log_dir"
@@ -1120,7 +1120,7 @@ mec_dashboard() {
                 --name "$MEC_DASHBOARD_CONTAINER" \
                 --restart unless-stopped \
                 -p "${dashboard_port}:4242" \
-                --volume "${HOME}/.my-ez-cli:/data:ro" \
+                --volume "${MEC_HOME}:/data:ro" \
                 "$MEC_IMAGE_DASHBOARD" >/dev/null
 
             echo "Dashboard started"
@@ -1296,7 +1296,7 @@ _mec_doctor_run() {
     # ------------------------------------------------------------------
     # 3. Data directory
     # ------------------------------------------------------------------
-    local data_dir="${MEC_DATA_DIR:-${HOME}/.my-ez-cli}"
+    local data_dir="${MEC_DATA_DIR:-${MEC_HOME}}"
     if [ ! -d "$data_dir" ]; then
         _doc_fail "Data directory: not found  (${data_dir} — run 'mec logs enable' to create)"
     elif [ ! -w "$data_dir" ]; then
@@ -1308,7 +1308,7 @@ _mec_doctor_run() {
     # ------------------------------------------------------------------
     # 4. Config file
     # ------------------------------------------------------------------
-    local config_file="${CONFIG_FILE:-${HOME}/.my-ez-cli/config.yaml}"
+    local config_file="${CONFIG_FILE:-${MEC_HOME}/config.yaml}"
     if [ -f "$config_file" ]; then
         _doc_pass "Config file: ${config_file}  (exists)"
     else
@@ -1451,7 +1451,7 @@ mec_purge() {
 
     case "$subcmd" in
         data)
-            local _data_dir="${MEC_DATA_DIR:-${HOME}/.my-ez-cli}"
+            local _data_dir="${MEC_DATA_DIR:-${MEC_HOME}}"
             local log_dir="${MEC_LOG_DIR:-${_data_dir}/logs}"
             local ai_dir="${_data_dir}/ai-analyses"
 
@@ -1518,8 +1518,8 @@ mec_purge() {
             printf '%s\n' "${_b}FLAGS${_r}"
             printf '%s\n' "  --tool <name>        Only purge files for a specific tool (e.g. node, aws)"
             printf '%s\n' "  --older-than <days>  Only purge files older than N days"
-            printf '%s\n' "  --only-logs          Only purge ~/.my-ez-cli/logs/"
-            printf '%s\n' "  --only-ai-analyses   Only purge ~/.my-ez-cli/ai-analyses/"
+            printf '%s\n' "  --only-logs          Only purge \$MEC_HOME/logs/"
+            printf '%s\n' "  --only-ai-analyses   Only purge \$MEC_HOME/ai-analyses/"
             printf '%s\n' "  --dry-run            Preview what would be deleted without deleting"
             printf '%s\n' "  -y, --yes            Skip confirmation prompts"
             printf '%s\n' ""

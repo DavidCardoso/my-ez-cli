@@ -9,7 +9,7 @@
 # ----------------------------------------------------------------------------
 # Constants
 # ----------------------------------------------------------------------------
-CONFIG_DIR="${HOME}/.my-ez-cli"
+CONFIG_DIR="${MEC_HOME:-${HOME}/.my-ez-cli}"
 CONFIG_FILE="${CONFIG_DIR}/config.yaml"
 DEFAULT_CONFIG="${MEC_BASE_DIR:-$(dirname "$0")}/config/config.default.yaml"
 
