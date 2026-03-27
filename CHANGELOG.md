@@ -93,8 +93,24 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 - `mec doctor` subcommand: full environment health check (Docker, images, config, credentials, dashboard)
 - Exit code 0 = healthy, non-zero = one or more checks failed
 
+#### Phase 3.5 — Execution Metrics, Purge & UX
+
+- AI sidecar extended with `execution_time_ms` and `tokens: {input, output}` fields — wall-clock timing captured around the Claude Code Docker pipeline; tokens extracted from `--output-format json` response (#65)
+- Dashboard Sessions page: AI Time column shows analysis duration for each session (#65)
+- `mec purge` subcommand: delete logs and/or AI analyses with `--tool`, `--older-than`, `--only-logs`, `--only-ai-analyses`, `--dry-run`, `-y` flags; interactive confirmation by default (#66)
+- `mec dashboard rebuild` subcommand: builds dashboard Docker image locally from `docker/dashboard/Dockerfile`; `--rebuild` flag added to `mec dashboard restart` (#67)
+- NavBar `LogsStatus`/`AIStatus` chips: fixed lifecycle bug (subscription leaked on mount); added 30s polling fallback so chips update without page reload (#67)
+- Session search extended to match `command` and `cwd` fields in addition to `session_id` (#67)
+- `mec` help output revamped: bold section headers (`USAGE`, `COMMANDS`, `FLAGS`, `EXAMPLES`), commands grouped by function (CORE / MANAGEMENT / AI & DASHBOARD / OTHER), `*` suffix signals subcommand groups (#71)
+- `bin/playwright` now uses a custom Docker image with Chromium pre-installed at build time — single-command test flow without manual browser installation (#73)
+- `docker/playwright/Dockerfile`: extends official Playwright image with `npx playwright install chromium` at build time (#73)
+- `mec install playwright` builds the custom image as part of installation (#73)
+
 ### Changed
 
+- `docs/SETUP.md` rewritten to document current `mec` CLI interface (AI, Dashboard, Purge, Health Check sections); removed v1.0.0-rc dev internals (#72)
+- `docs/ROADMAP.md` refactored to a high-level overview; detailed tracking moved to GitHub Issues and the [v1.0.0 milestone](https://github.com/DavidCardoso/my-ez-cli/milestone/1) (#93)
+- README node version example corrected: default is `node:22-alpine`, not `node24` (#69)
 - `escape_json()` in `bin/utils/log-manager.sh` now strips ANSI escape sequences before writing stdout/stderr to log JSON
 - `/api/sessions` response shape changed from plain array to `{"sessions": [...], "total": N}`
 - All bin scripts use `get_container_name()` and `get_container_labels()` from `common.sh`
@@ -108,6 +124,8 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 
 ### Removed
 
+- `.raw.log` file creation from `log-manager.sh` — these files were always empty since AI analyses moved to `ai-analyses/`; removed `log_raw_output()` helper and `RAW_LOG_FILE` compat shim (#70)
+- Logging-system internal env vars (`MEC_LOG_DIR`, `MEC_LOG_LEVEL`, etc.) filtered out of `get_log_environment()` — not useful context for AI analysis (#70)
 - **CDKTF** (`bin/cdktf`, `docker/cdktf/`, `.github/workflows/docker-build-cdktf.yml`) — CDKTF was officially discontinued by HashiCorp
 - Rule-based analyzers (`port_detector`, `error_analyzer`, `env_suggester`) from AI middleware — all analysis delegated to Claude Code
 - Custom AI provider code (Anthropic SDK, OpenAI, LiteLLM, Llama) — replaced by Claude Code
