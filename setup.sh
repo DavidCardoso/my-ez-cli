@@ -566,6 +566,18 @@ install_playwright() {
     local detected
     detected=$(detect_existing_tool "playwright")
 
+    # Build the self-sufficient Docker image with Chromium pre-installed
+    local build_script="${BASEDIR}/docker/playwright/build"
+    if [[ -f "$build_script" ]]; then
+        show_msg "Building davidcardoso/my-ez-cli:playwright-latest (this may take a moment)..."
+        if (cd "${BASEDIR}/docker/playwright" && bash build); then
+            echo "> Image davidcardoso/my-ez-cli:playwright-latest built successfully."
+        else
+            echo "WARNING: Docker image build failed. You can still run playwright using the upstream image." >&2
+            echo "> To retry: cd ${BASEDIR}/docker/playwright && ./build" >&2
+        fi
+    fi
+
     if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
         show_msg "Activating playwright..."
         sudo ln -sf ${BASEDIR}/bin/playwright /usr/local/bin/playwright
