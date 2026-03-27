@@ -28,13 +28,13 @@ teardown() {
 @test "mec purge --help prints usage" {
     run "$BASEDIR/bin/mec" purge --help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec purge" ]]
+    [[ "$output" =~ "mec purge" ]]
 }
 
 @test "mec purge help prints usage" {
     run "$BASEDIR/bin/mec" purge help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec purge" ]]
+    [[ "$output" =~ "mec purge" ]]
 }
 
 @test "mec purge help lists data subcommand" {

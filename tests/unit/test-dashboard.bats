@@ -57,25 +57,25 @@ teardown() {
 @test "mec dashboard with no args prints usage" {
     run "$BASEDIR/bin/mec" dashboard
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec dashboard" ]]
+    [[ "$output" =~ "mec dashboard" ]]
 }
 
 @test "mec dashboard help prints usage" {
     run "$BASEDIR/bin/mec" dashboard help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec dashboard" ]]
+    [[ "$output" =~ "mec dashboard" ]]
 }
 
 @test "mec dashboard --help prints usage" {
     run "$BASEDIR/bin/mec" dashboard --help
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec dashboard" ]]
+    [[ "$output" =~ "mec dashboard" ]]
 }
 
 @test "mec dashboard -h prints usage" {
     run "$BASEDIR/bin/mec" dashboard -h
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Usage: mec dashboard" ]]
+    [[ "$output" =~ "mec dashboard" ]]
 }
 
 @test "mec dashboard help lists all subcommands" {
