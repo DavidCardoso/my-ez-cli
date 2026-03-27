@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=mcr.microsoft.com/playwright:v1.44.0-jammy
+IMAGE=${IMAGE:-"davidcardoso/my-ez-cli:playwright-latest"}
 WORKDIR=/app
 
 # Container naming and labeling

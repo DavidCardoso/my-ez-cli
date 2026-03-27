@@ -482,10 +482,22 @@ gcloud storage ls
 
 > [Official documentation](https://playwright.dev/docs/docker)
 
+Chromium is pre-installed in the image — no manual browser installation step needed.
+Use `playwright` as a transparent wrapper around `npx playwright`:
+
 ```shell
-playwright                         # opens bash inside the container
-npx playwright install chromium
-npm run test
+playwright test                    # run all tests
+playwright test --headed           # run with browser UI
+playwright test src/foo.spec.ts    # run a specific test file
+playwright --version               # show version
+playwright codegen https://example.com  # record a test
+```
+
+First-time setup:
+
+```shell
+mec install playwright             # builds the image + creates symlink
+npm install                        # install @playwright/test in your project
 ```
 
 </details>
