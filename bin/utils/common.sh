@@ -9,6 +9,12 @@ set -e
 # ============================================================================
 
 # ----------------------------------------------------------------------------
+# Data Directory
+# ----------------------------------------------------------------------------
+MEC_HOME="${MEC_HOME:-${HOME}/.my-ez-cli}"
+export MEC_HOME
+
+# ----------------------------------------------------------------------------
 # Docker Image Constants
 # ----------------------------------------------------------------------------
 MEC_IMAGE_REPO="${MEC_IMAGE_REPO:-davidcardoso/my-ez-cli}"
@@ -134,7 +140,7 @@ setup_logging() {
         export LOG_FILE
     else
         # Fallback to simple logging
-        LOG_DIR="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/${TOOL_NAME}"
+        LOG_DIR="${MEC_LOG_DIR:-${MEC_HOME}/logs}/${TOOL_NAME}"
 
         if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_LOGS_ENABLED:-false}" = "true" ]; then
             mkdir -p "$LOG_DIR"
@@ -285,7 +291,7 @@ analyze_with_claude() {
     local dashboard_port
     dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
 
-    # Compute sidecar path: ~/.my-ez-cli/logs/tool/ts.json -> ~/.my-ez-cli/ai-analyses/tool/ts.json
+    # Compute sidecar path: $MEC_HOME/logs/tool/ts.json -> $MEC_HOME/ai-analyses/tool/ts.json
     local log_dir
     log_dir=$(dirname "$log_file")
     local ai_analyses_dir
