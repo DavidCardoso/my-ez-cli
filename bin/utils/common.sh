@@ -129,11 +129,9 @@ setup_logging() {
         # Export legacy variables for backward compatibility
         LOG_ENABLED="$LOG_SESSION_ENABLED"
         LOG_FILE="$LOG_JSON_FILE"
-        RAW_LOG_FILE="$LOG_RAW_FILE"
 
         export LOG_ENABLED
         export LOG_FILE
-        export RAW_LOG_FILE
     else
         # Fallback to simple logging
         LOG_DIR="${MEC_LOG_DIR:-${HOME}/.my-ez-cli/logs}/${TOOL_NAME}"
@@ -143,18 +141,15 @@ setup_logging() {
 
             TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
             LOG_FILE="${LOG_DIR}/${TIMESTAMP}.log"
-            RAW_LOG_FILE="${LOG_DIR}/${TIMESTAMP}.raw.log"
 
             LOG_ENABLED=true
         else
             LOG_ENABLED=false
             LOG_FILE=""
-            RAW_LOG_FILE=""
         fi
 
         export LOG_ENABLED
         export LOG_FILE
-        export RAW_LOG_FILE
     fi
 }
 

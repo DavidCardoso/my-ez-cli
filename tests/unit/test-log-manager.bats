@@ -85,13 +85,12 @@ teardown() {
     [ "$LOG_SESSION_ENABLED" = "false" ]
 }
 
-@test "log_session_init creates log files" {
+@test "log_session_init creates JSON log file" {
     export MEC_LOGS_ENABLED="true"
 
     log_session_init "node" "node:24-alpine" "node server.js"
 
     [ -f "$LOG_JSON_FILE" ]
-    [ -f "$LOG_RAW_FILE" ]
 }
 
 # ----------------------------------------------------------------------------
@@ -148,6 +147,24 @@ teardown() {
 
     [[ "$ENV_JSON" =~ \[REDACTED\] ]]
     [[ ! "$ENV_JSON" =~ secret123 ]]
+}
+
+@test "get_log_environment excludes logging internals" {
+    export MEC_LOG_DIR="/tmp/test-logs"
+    export MEC_LOG_LEVEL="debug"
+    export MEC_LOG_FORMAT="json"
+    export MEC_LOG_COMPRESSION_DAYS="7"
+    export MEC_LOG_RETENTION_DAYS="30"
+    export MEC_SAVE_LOGS="1"
+
+    ENV_JSON=$(get_log_environment)
+
+    [[ ! "$ENV_JSON" =~ MEC_LOG_DIR ]]
+    [[ ! "$ENV_JSON" =~ MEC_LOG_LEVEL ]]
+    [[ ! "$ENV_JSON" =~ MEC_LOG_FORMAT ]]
+    [[ ! "$ENV_JSON" =~ MEC_LOG_COMPRESSION_DAYS ]]
+    [[ ! "$ENV_JSON" =~ MEC_LOG_RETENTION_DAYS ]]
+    [[ ! "$ENV_JSON" =~ MEC_SAVE_LOGS ]]
 }
 
 # ----------------------------------------------------------------------------
