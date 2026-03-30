@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
-from src.sessions import SessionDetail, SessionSummary, get_session, list_sessions, trigger_analysis
+from src.sessions import SessionDetail, SessionSummary, get_session, list_sessions
 
 
 @pytest.fixture()
@@ -215,37 +214,3 @@ class TestGetSession:
         assert detail.ai_execution_time_ms == 5000
         assert detail.ai_tokens_input == 100
         assert detail.ai_tokens_output == 50
-
-
-class TestTriggerAnalysis:
-    """Tests for trigger_analysis()."""
-
-    def test_returns_false_when_log_file_path_does_not_exist(self, data_root: Path) -> None:
-        result = trigger_analysis(str(data_root / "logs" / "npm" / "nonexistent.json"))
-        assert result is False
-
-    def test_returns_true_and_launches_subprocess_when_log_file_exists(
-        self, data_root: Path
-    ) -> None:
-        log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        with patch("src.sessions.subprocess.Popen") as mock_popen:
-            mock_popen.return_value = MagicMock()
-            result = trigger_analysis(str(log_path))
-        assert result is True
-        mock_popen.assert_called_once()
-
-    def test_subprocess_receives_log_file_path(self, data_root: Path) -> None:
-        log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        with patch("src.sessions.subprocess.Popen") as mock_popen:
-            mock_popen.return_value = MagicMock()
-            trigger_analysis(str(log_path))
-        call_args = mock_popen.call_args
-        cmd = call_args[0][0]  # first positional arg is the command list (["bash", "-c", script])
-        script = cmd[2]  # the bash -c script string
-        assert str(log_path) in script
-
-    def test_returns_false_when_log_file_deleted(self, data_root: Path) -> None:
-        log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
-        log_path.unlink()
-        result = trigger_analysis(str(log_path))
-        assert result is False

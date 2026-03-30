@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC
 from pathlib import Path
@@ -471,41 +470,3 @@ def get_stats(data_root: Path) -> dict[str, object]:
 def get_tools(data_root: Path) -> list[dict[str, str]]:
     """Return the hardcoded mec tool registry."""
     return TOOL_REGISTRY
-
-
-def trigger_analysis(log_file: str) -> bool:
-    """Launch a background AI analysis for a session given its log file path.
-
-    Fires analyze_with_claude via a subprocess shell (fire-and-forget).
-    Returns True if the subprocess was launched, False if the log file does
-    not exist or the subprocess could not be started.
-
-    Args:
-        log_file: Absolute path to the session's JSON log file.
-
-    Returns:
-        True if analysis was triggered, False otherwise.
-    """
-    log_path = Path(log_file)
-    if not log_path.exists():
-        return False
-
-    # Resolve common.sh relative to this file's location in the repo.
-    # Inside the Docker container the repo is mounted at /app.
-    common_sh = Path(__file__).parent.parent.parent.parent / "bin" / "utils" / "common.sh"
-
-    script = (
-        f'source "{common_sh}" 2>/dev/null && '
-        f'MEC_AI_ENABLED=true analyze_with_claude "{log_path}"'
-    )
-    try:
-        subprocess.Popen(
-            ["bash", "-c", script],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-    except OSError:
-        logger.warning("Failed to launch analyze_with_claude subprocess for %s", log_file)
-        return False
-    return True

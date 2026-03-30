@@ -38,19 +38,21 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">AI Status</span>
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <Tag :value="analyzing ? 'triggering…' : session.ai_status" :severity="aiSeverity(session.ai_status)" />
+          <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
+        </div>
+        <div v-if="session.ai_status === 'none' && session.log_file" class="meta-item meta-item--wide">
+          <span class="meta-label">Run AI Analysis</span>
+          <div class="session-id-row">
+            <span class="meta-value mono" style="font-size: 11px;">mec ai analyze {{ session.log_file }}</span>
             <Button
-              v-if="session.ai_status === 'none'"
-              label="Run AI Analysis"
-              icon="pi pi-play"
+              icon="pi pi-copy"
+              text
+              rounded
               size="small"
-              :loading="analyzing"
-              :disabled="analyzing"
-              style="font-size: 11px; padding: 4px 10px;"
-              @click="runAnalysis"
+              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+              v-tooltip="copiedAnalyze ? 'Copied!' : 'Copy command'"
+              @click="copyAnalyze"
             />
-            <span v-if="analyzeError" style="font-size: 11px; color: var(--mec-red);">{{ analyzeError }}</span>
           </div>
         </div>
         <div class="meta-item meta-item--id">
@@ -129,8 +131,7 @@ const session = ref(null)
 const notFound = ref(false)
 const copiedId = ref(false)
 const copiedResume = ref(false)
-const analyzing = ref(false)
-const analyzeError = ref('')
+const copiedAnalyze = ref(false)
 const { onRefresh } = useWebSocket()
 
 async function fetchSession() {
@@ -146,25 +147,6 @@ async function fetchSession() {
     }
   } catch {
     // silently fail
-  }
-}
-
-async function runAnalysis() {
-  analyzing.value = true
-  analyzeError.value = ''
-  try {
-    const res = await fetch(`/api/sessions/${sessionId}/analyze`, { method: 'POST' })
-    if (res.ok) {
-      // Optimistically update status to 'pending' — WS will deliver final result
-      if (session.value) session.value.ai_status = 'pending'
-    } else {
-      const body = await res.json().catch(() => ({}))
-      analyzeError.value = body.detail || `Error ${res.status}`
-    }
-  } catch {
-    analyzeError.value = 'Request failed'
-  } finally {
-    analyzing.value = false
   }
 }
 
@@ -198,6 +180,14 @@ async function copyResume() {
     await navigator.clipboard.writeText(`claude --resume ${session.value?.claude_session_id}`)
     copiedResume.value = true
     setTimeout(() => { copiedResume.value = false }, 2000)
+  } catch { /* noop */ }
+}
+
+async function copyAnalyze() {
+  try {
+    await navigator.clipboard.writeText(`mec ai analyze ${session.value?.log_file}`)
+    copiedAnalyze.value = true
+    setTimeout(() => { copiedAnalyze.value = false }, 2000)
   } catch { /* noop */ }
 }
 </script>
