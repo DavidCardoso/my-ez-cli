@@ -38,7 +38,20 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">AI Status</span>
-          <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <Tag :value="analyzing ? 'triggering…' : session.ai_status" :severity="aiSeverity(session.ai_status)" />
+            <Button
+              v-if="session.ai_status === 'none'"
+              label="Run AI Analysis"
+              icon="pi pi-play"
+              size="small"
+              :loading="analyzing"
+              :disabled="analyzing"
+              style="font-size: 11px; padding: 4px 10px;"
+              @click="runAnalysis"
+            />
+            <span v-if="analyzeError" style="font-size: 11px; color: var(--mec-red);">{{ analyzeError }}</span>
+          </div>
         </div>
         <div class="meta-item meta-item--id">
           <span class="meta-label">Session ID</span>
@@ -116,6 +129,8 @@ const session = ref(null)
 const notFound = ref(false)
 const copiedId = ref(false)
 const copiedResume = ref(false)
+const analyzing = ref(false)
+const analyzeError = ref('')
 const { onRefresh } = useWebSocket()
 
 async function fetchSession() {
@@ -131,6 +146,25 @@ async function fetchSession() {
     }
   } catch {
     // silently fail
+  }
+}
+
+async function runAnalysis() {
+  analyzing.value = true
+  analyzeError.value = ''
+  try {
+    const res = await fetch(`/api/sessions/${sessionId}/analyze`, { method: 'POST' })
+    if (res.ok) {
+      // Optimistically update status to 'pending' — WS will deliver final result
+      if (session.value) session.value.ai_status = 'pending'
+    } else {
+      const body = await res.json().catch(() => ({}))
+      analyzeError.value = body.detail || `Error ${res.status}`
+    }
+  } catch {
+    analyzeError.value = 'Request failed'
+  } finally {
+    analyzing.value = false
   }
 }
 

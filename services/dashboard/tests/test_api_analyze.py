@@ -42,14 +42,13 @@ class TestAnalyzeEndpoint:
     def test_returns_409_when_ai_already_done(self, client: TestClient, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         _write_sidecar(data_root, "npm", "2026-03-25_12-00-00", result="Already analyzed.")
-        with patch("src.api.sessions.trigger_analysis", return_value=True):
-            res = client.post("/api/sessions/mec-npm-1/analyze")
+        res = client.post("/api/sessions/mec-npm-1/analyze")
         assert res.status_code == 409
         assert "already" in res.json()["detail"].lower()
 
     def test_returns_409_when_ai_pending(self, client: TestClient, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         _write_sidecar(data_root, "npm", "2026-03-25_12-00-00", result="")
-        with patch("src.api.sessions.trigger_analysis", return_value=True):
-            res = client.post("/api/sessions/mec-npm-1/analyze")
+        res = client.post("/api/sessions/mec-npm-1/analyze")
         assert res.status_code == 409
+        assert "already" in res.json()["detail"].lower()
