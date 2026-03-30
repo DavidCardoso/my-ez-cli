@@ -893,6 +893,7 @@ install_mec() {
         echo '' >> ~/.zshrc
         echo '# my-ez-cli' >> ~/.zshrc
         echo 'export MEC_HOME="${MEC_HOME:-${HOME}/.my-ez-cli}"' >> ~/.zshrc
+        show_msg "Added MEC_HOME to ~/.zshrc — run 'source ~/.zshrc' to apply in your current session."
     fi
 
     track_install "mec"
