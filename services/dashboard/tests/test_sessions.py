@@ -220,34 +220,32 @@ class TestGetSession:
 class TestTriggerAnalysis:
     """Tests for trigger_analysis()."""
 
-    def test_returns_false_when_session_not_found(self, data_root: Path) -> None:
-        result = trigger_analysis(data_root, "mec-npm-nonexistent")
+    def test_returns_false_when_log_file_path_does_not_exist(self, data_root: Path) -> None:
+        result = trigger_analysis(str(data_root / "logs" / "npm" / "nonexistent.json"))
         assert result is False
 
-    def test_returns_true_and_launches_subprocess_when_session_exists(
+    def test_returns_true_and_launches_subprocess_when_log_file_exists(
         self, data_root: Path
     ) -> None:
-        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         with patch("src.sessions.subprocess.Popen") as mock_popen:
             mock_popen.return_value = MagicMock()
-            result = trigger_analysis(data_root, "mec-npm-1")
+            result = trigger_analysis(str(log_path))
         assert result is True
         mock_popen.assert_called_once()
 
     def test_subprocess_receives_log_file_path(self, data_root: Path) -> None:
-        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         with patch("src.sessions.subprocess.Popen") as mock_popen:
             mock_popen.return_value = MagicMock()
-            trigger_analysis(data_root, "mec-npm-1")
+            trigger_analysis(str(log_path))
         call_args = mock_popen.call_args
-        cmd = call_args[0][
-            0
-        ]  # first positional arg is the command list/string (["bash", "-c", script])
+        cmd = call_args[0][0]  # first positional arg is the command list (["bash", "-c", script])
         script = cmd[2]  # the bash -c script string
-        assert str(data_root / "logs" / "npm" / "2026-03-25_12-00-00.json") in script
+        assert str(log_path) in script
 
-    def test_returns_false_when_log_file_missing(self, data_root: Path) -> None:
+    def test_returns_false_when_log_file_deleted(self, data_root: Path) -> None:
         log_path = _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         log_path.unlink()
-        result = trigger_analysis(data_root, "mec-npm-1")
+        result = trigger_analysis(str(log_path))
         assert result is False

@@ -32,7 +32,8 @@ RUN pip install --no-cache-dir --prefer-binary \
     fastapi==0.115.12 \
     "uvicorn[standard]==0.34.0" \
     watchfiles==1.0.5 \
-    pytest==8.3.5
+    pytest==8.3.5 \
+    httpx==0.28.1
 
 # Copy FastAPI source and tests
 COPY src/ ./src/

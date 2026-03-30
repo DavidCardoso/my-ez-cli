@@ -50,7 +50,7 @@ def session_analyze(session_id: str, request: Request) -> dict[str, str]:
             status_code=409,
             detail=f"AI analysis already {detail.ai_status} for session: {session_id}",
         )
-    triggered = trigger_analysis(data_root, session_id)
+    triggered = trigger_analysis(detail.log_file)
     if not triggered:
         raise HTTPException(status_code=404, detail=f"Log file not found for session: {session_id}")
     return {"status": "triggered", "session_id": session_id}

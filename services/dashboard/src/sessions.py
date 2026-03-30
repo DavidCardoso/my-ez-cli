@@ -473,28 +473,21 @@ def get_tools(data_root: Path) -> list[dict[str, str]]:
     return TOOL_REGISTRY
 
 
-def trigger_analysis(data_root: Path, session_id: str) -> bool:
-    """Launch a background AI analysis for the given session.
+def trigger_analysis(log_file: str) -> bool:
+    """Launch a background AI analysis for a session given its log file path.
 
-    Finds the log file for session_id, then fires analyze_with_claude via
-    a subprocess shell. Returns True if the subprocess was launched, False
-    if the session was not found or its log file is missing.
+    Fires analyze_with_claude via a subprocess shell (fire-and-forget).
+    Returns True if the subprocess was launched, False if the log file does
+    not exist or the subprocess could not be started.
 
     Args:
-        data_root: Path to the mec data directory (e.g. ~/.my-ez-cli).
-        session_id: The mec session ID to analyze.
+        log_file: Absolute path to the session's JSON log file.
 
     Returns:
-        True if analysis was triggered, False if session not found.
+        True if analysis was triggered, False otherwise.
     """
-    log_path: Path | None = None
-    for candidate in _log_files(data_root):
-        data = _read_json(candidate)
-        if str(data.get("session_id", "")) == session_id:
-            log_path = candidate
-            break
-
-    if log_path is None or not log_path.exists():
+    log_path = Path(log_file)
+    if not log_path.exists():
         return False
 
     # Resolve common.sh relative to this file's location in the repo.
@@ -513,6 +506,6 @@ def trigger_analysis(data_root: Path, session_id: str) -> bool:
             start_new_session=True,
         )
     except OSError:
-        logger.warning("Failed to launch analyze_with_claude subprocess for session %s", session_id)
+        logger.warning("Failed to launch analyze_with_claude subprocess for %s", log_file)
         return False
     return True
