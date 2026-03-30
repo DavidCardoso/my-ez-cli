@@ -105,3 +105,16 @@ def complete(self, prompt: str, context: Optional[str] = None) -> str:
 - [ ] Docstrings present
 - [ ] Tests cover all paths
 - [ ] `make check` passes
+
+## Docker Dependency Management
+
+Python service Dockerfiles MUST use Poetry, not bare `pip install` with hardcoded versions.
+
+Pattern (copy from `docker/ai-service/Dockerfile`):
+1. `pip install --no-cache-dir poetry==<pinned-version>`
+2. `COPY pyproject.toml poetry.lock ./`
+3. `poetry config virtualenvs.create false && poetry install --no-root --no-interaction --no-ansi`
+
+Always commit `poetry.lock` to git. Never hardcode package versions in Dockerfile `RUN pip install` commands.
+
+**Why:** Hardcoded pip versions diverge from `pyproject.toml` ranges, create a second source of truth, and require manual updates when upgrading deps. `poetry.lock` provides reproducible builds without manual version pinning.

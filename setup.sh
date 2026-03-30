@@ -887,6 +887,15 @@ install_mec() {
     show_msg "Activating mec (my-ez-cli command)..."
     sudo ln -sf ${BASEDIR}/bin/mec /usr/local/bin/mec
 
+    # Export MEC_HOME to the user's shell profile so it is available in
+    # interactive sessions (e.g. when copy-pasting commands from the dashboard)
+    if ! grep -q "export MEC_HOME" ~/.zshrc 2>/dev/null; then
+        echo '' >> ~/.zshrc
+        echo '# my-ez-cli' >> ~/.zshrc
+        echo 'export MEC_HOME="${MEC_HOME:-${HOME}/.my-ez-cli}"' >> ~/.zshrc
+        show_msg "Added MEC_HOME to ~/.zshrc — run 'source ~/.zshrc' to apply in your current session."
+    fi
+
     track_install "mec"
 }
 
@@ -1061,6 +1070,13 @@ uninstall_claude() {
 
 uninstall_mec() {
     sudo rm -f /usr/local/bin/mec
+
+    # Remove MEC_HOME export from ~/.zshrc
+    if [ -f ~/.zshrc ]; then
+        sed -i.bak '/# my-ez-cli/d' ~/.zshrc
+        sed -i.bak '/export MEC_HOME/d' ~/.zshrc
+        rm -f ~/.zshrc.bak
+    fi
 
     track_uninstall "mec"
     show_msg "Uninstalled mec..."

@@ -338,7 +338,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
             stderr=str(output.get("stderr", "")),
             ai_result=result,
             claude_session_id=claude_session_id,
-            log_file=str(log_path),
+            log_file="$MEC_HOME/" + str(log_path.relative_to(data_root)),
             ai_file=str(ai_path) if ai_path.exists() else "",
             ai_execution_time_ms=exec_time,
             ai_tokens_input=tok_in,

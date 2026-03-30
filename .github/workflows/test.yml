@@ -311,7 +311,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python dependencies
-        run: pip install fastapi==0.115.12 "uvicorn[standard]==0.34.0" watchfiles==1.0.5
+        run: |
+          pip install poetry==1.8.4
+          poetry config virtualenvs.create false
+          cd services/dashboard && poetry install --no-root --no-interaction
 
       - name: Install frontend dependencies and build
         run: |

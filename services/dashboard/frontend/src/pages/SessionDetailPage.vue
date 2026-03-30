@@ -40,6 +40,21 @@
           <span class="meta-label">AI Status</span>
           <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
         </div>
+        <div v-if="session.ai_status === 'none' && session.log_file" class="meta-item meta-item--wide">
+          <span class="meta-label">Run AI Analysis</span>
+          <div class="session-id-row">
+            <span class="meta-value mono" style="font-size: 11px;">mec ai analyze {{ session.log_file }}</span>
+            <Button
+              icon="pi pi-copy"
+              text
+              rounded
+              size="small"
+              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+              v-tooltip="copiedAnalyze ? 'Copied!' : 'Copy command'"
+              @click="copyAnalyze"
+            />
+          </div>
+        </div>
         <div class="meta-item meta-item--id">
           <span class="meta-label">Session ID</span>
           <div class="session-id-row">
@@ -116,6 +131,7 @@ const session = ref(null)
 const notFound = ref(false)
 const copiedId = ref(false)
 const copiedResume = ref(false)
+const copiedAnalyze = ref(false)
 const { onRefresh } = useWebSocket()
 
 async function fetchSession() {
@@ -164,6 +180,14 @@ async function copyResume() {
     await navigator.clipboard.writeText(`claude --resume ${session.value?.claude_session_id}`)
     copiedResume.value = true
     setTimeout(() => { copiedResume.value = false }, 2000)
+  } catch { /* noop */ }
+}
+
+async function copyAnalyze() {
+  try {
+    await navigator.clipboard.writeText(`mec ai analyze ${session.value?.log_file}`)
+    copiedAnalyze.value = true
+    setTimeout(() => { copiedAnalyze.value = false }, 2000)
   } catch { /* noop */ }
 }
 </script>
