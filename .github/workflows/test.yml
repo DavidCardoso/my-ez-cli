@@ -313,6 +313,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install poetry==1.8.4
+          poetry config virtualenvs.create false
           cd services/dashboard && poetry install --no-root --no-interaction
 
       - name: Install frontend dependencies and build
