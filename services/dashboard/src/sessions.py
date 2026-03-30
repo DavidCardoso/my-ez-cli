@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC
 from pathlib import Path
@@ -470,3 +471,48 @@ def get_stats(data_root: Path) -> dict[str, object]:
 def get_tools(data_root: Path) -> list[dict[str, str]]:
     """Return the hardcoded mec tool registry."""
     return TOOL_REGISTRY
+
+
+def trigger_analysis(data_root: Path, session_id: str) -> bool:
+    """Launch a background AI analysis for the given session.
+
+    Finds the log file for session_id, then fires analyze_with_claude via
+    a subprocess shell. Returns True if the subprocess was launched, False
+    if the session was not found or its log file is missing.
+
+    Args:
+        data_root: Path to the mec data directory (e.g. ~/.my-ez-cli).
+        session_id: The mec session ID to analyze.
+
+    Returns:
+        True if analysis was triggered, False if session not found.
+    """
+    log_path: Path | None = None
+    for candidate in _log_files(data_root):
+        data = _read_json(candidate)
+        if str(data.get("session_id", "")) == session_id:
+            log_path = candidate
+            break
+
+    if log_path is None or not log_path.exists():
+        return False
+
+    # Resolve common.sh relative to this file's location in the repo.
+    # Inside the Docker container the repo is mounted at /app.
+    common_sh = Path(__file__).parent.parent.parent.parent / "bin" / "utils" / "common.sh"
+
+    script = (
+        f'source "{common_sh}" 2>/dev/null && '
+        f'MEC_AI_ENABLED=true analyze_with_claude "{log_path}"'
+    )
+    try:
+        subprocess.Popen(
+            ["bash", "-c", script],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError:
+        logger.warning("Failed to launch analyze_with_claude subprocess for session %s", session_id)
+        return False
+    return True
