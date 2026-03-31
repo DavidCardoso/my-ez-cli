@@ -180,6 +180,11 @@ jobs:
           ./setup.sh status | grep -q 'Installation Status'
           echo "✓ setup.sh status shows installation status header"
 
+      - name: Test mec setup status subcommand
+        run: |
+          ./bin/mec setup status | grep -q 'Installation Status'
+          echo "✓ mec setup status works"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest
