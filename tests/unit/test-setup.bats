@@ -200,3 +200,30 @@ _sys_path="/usr/bin:/bin"
     [ "$status" -eq 0 ]
     [[ "$output" == "unknown:"* ]]
 }
+
+@test "setup.sh msg_ok outputs check icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_ok 'tool installed'"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "tool installed" ]]
+    [[ "$output" =~ "✓" ]]
+}
+
+@test "setup.sh msg_warn outputs warning icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_warn 'side-by-side' 2>&1"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "side-by-side" ]]
+    [[ "$output" =~ "⚠" ]]
+}
+
+@test "setup.sh msg_err outputs error icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_err 'failed' 2>&1"
+    [[ "$output" =~ "failed" ]]
+    [[ "$output" =~ "✗" ]]
+}
+
+@test "setup.sh msg_info outputs info icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_info 'note about something'"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "note about something" ]]
+    [[ "$output" =~ "→" ]]
+}
