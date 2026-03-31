@@ -36,6 +36,31 @@ export MEC_IMAGE_SPEEDTEST MEC_IMAGE_AWS_SSO_CRED MEC_IMAGE_YARN_BERRY MEC_IMAGE
 export MEC_IMAGE_DASHBOARD
 
 # ----------------------------------------------------------------------------
+# JSON Validation
+# ----------------------------------------------------------------------------
+
+# is_valid_json_file <path>
+# Returns 0 if the file is empty or contains valid JSON, 1 if corrupted.
+is_valid_json_file() {
+    local file="$1"
+    [ ! -f "$file" ] && return 1
+    # Empty file is valid — Claude will initialize it on first run
+    [ ! -s "$file" ] && return 0
+    python3 -c "import sys, json; json.load(sys.stdin)" < "$file" 2>/dev/null
+}
+
+# reset_claude_config
+# Backs up and truncates ~/.claude.json so Claude can recreate it cleanly.
+# Use only for ~/.claude.json — other config files have different reset rules.
+reset_claude_config() {
+    local config_file="${HOME}/.claude.json"
+    local backup="${config_file}.bak.$(date +%s)"
+    msg_warn "~/.claude.json is corrupted — backing up to $(basename "$backup") and resetting"
+    cp "$config_file" "$backup"
+    > "$config_file"
+}
+
+# ----------------------------------------------------------------------------
 # Output helpers — TTY-safe color/icon output
 # ----------------------------------------------------------------------------
 # Set ANSI codes only when stdout is a terminal
@@ -270,9 +295,112 @@ fi
 # The Python middleware (ai-service) handles I/O filtering only.
 # ----------------------------------------------------------------------------
 
-# Analyze log output with Claude Code
-# Usage: analyze_with_claude "path/to/log.json"
-analyze_with_claude() {
+# Run Claude Code analysis on a log file and write results to the ai-analyses sidecar.
+# This is the core pipeline shared by trigger_ai_analysis (background, auto) and
+# mec ai analyze (foreground, manual). No guards — callers are responsible for
+# pre-flight checks. Reads session_id from the log file; falls back to LOG_SESSION_ID.
+# Usage: run_claude_analysis "path/to/log.json"
+run_claude_analysis() {
+    local log_file="$1"
+
+    # Read log content for the prompt, stripping control characters that would
+    # corrupt the shell string when embedded inline in the -p argument
+    local log_content
+    log_content=$(cat "$log_file" 2>/dev/null | tr -d '\000-\010\013\014\016-\037' || echo "")
+    if [ -z "$log_content" ]; then
+        return 0
+    fi
+
+    # Read Claude execution settings from config
+    local claude_model claude_max_tokens claude_effort_level dashboard_port
+    claude_model=$(config_get_default "ai.claude.model" "sonnet")
+    claude_max_tokens=$(config_get_default "ai.claude.max_output_tokens" "8096")
+    claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
+    dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
+
+    # Compute sidecar path: $MEC_HOME/logs/tool/ts.json -> $MEC_HOME/ai-analyses/tool/ts.json
+    local log_dir ai_analyses_dir ai_file
+    log_dir=$(dirname "$log_file")
+    ai_analyses_dir=$(echo "$log_dir" | sed 's|/logs/|/ai-analyses/|')
+    mkdir -p "$ai_analyses_dir"
+    ai_file="${ai_analyses_dir}/$(basename "$log_file")"
+    # Pre-create the sidecar file so Docker mounts it as a file, not a directory
+    touch "$ai_file"
+
+    # Ensure ~/.claude dir and ~/.claude.json exist so the volume mounts succeed
+    [ ! -d "${HOME}/.claude" ] && mkdir -p "${HOME}/.claude"
+    [ ! -f "${HOME}/.claude.json" ] && touch "${HOME}/.claude.json"
+    is_valid_json_file "${HOME}/.claude.json" || reset_claude_config
+
+    # Read session_id from the log file; fall back to LOG_SESSION_ID env var
+    local session_id
+    session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
+        | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
+    session_id="${session_id:-${LOG_SESSION_ID:-$(basename "$log_file" .json)}}"
+
+    local _start_ms analysis_output
+    _start_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
+
+    analysis_output=$(docker run --rm \
+        --env ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
+        --env CLAUDE_CODE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}" \
+        --env MEC_AI_ENABLED="${MEC_AI_ENABLED:-}" \
+        --env CLAUDE_CODE_MAX_OUTPUT_TOKENS="$claude_max_tokens" \
+        --env CLAUDE_CODE_EFFORT_LEVEL="$claude_effort_level" \
+        --volume "${HOME}/.claude:/home/node/.claude" \
+        --volume "${HOME}/.claude.json:/home/node/.claude.json" \
+        --volume "${PWD}:${PWD}" \
+        --workdir "${PWD}" \
+        "$MEC_IMAGE_CLAUDE" \
+        --model "$claude_model" \
+        --tools "" \
+        -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
+        --output-format json \
+        --max-turns 1 2>/dev/null \
+      | docker run --rm -i \
+        --volume "$log_file:/log.json:ro" \
+        --volume "$ai_file:/ai-analyses.json" \
+        --env MEC_AI_ENABLED="${MEC_AI_ENABLED:-}" \
+        "$MEC_IMAGE_AI_SERVICE" \
+        parse-claude-response \
+          --ai-file /ai-analyses.json \
+          --log-file /log.json \
+          --log-session-id "${session_id}" \
+        2>/dev/null || echo "")
+
+    local _end_ms _elapsed
+    _end_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
+    _elapsed=$(( _end_ms - _start_ms ))
+
+    # Patch execution_time_ms into the latest sidecar entry
+    if [ -f "$ai_file" ] && command -v python3 >/dev/null 2>&1 && [ "$_elapsed" -gt 0 ]; then
+        python3 - "$ai_file" "$_elapsed" <<'PYEOF'
+import sys, json
+path, elapsed = sys.argv[1], int(sys.argv[2])
+try:
+    data = json.loads(open(path).read())
+    analyses = data.get("analyses", {})
+    if analyses:
+        last_key = sorted(analyses, key=lambda k: analyses[k].get("timestamp", ""))[-1]
+        analyses[last_key]["execution_time_ms"] = elapsed
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+except Exception:
+    pass
+PYEOF
+    fi
+
+    # Auth failure — write a marker so mec ai last can report it
+    if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
+        echo "[mec-ai] Auth failed for session $session_id. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN." >&2
+    fi
+}
+
+# Conditionally trigger AI analysis in the background after a tool run.
+# Guards: only runs when MEC_AI_ENABLED=true, credentials set, images available.
+# Usage: trigger_ai_analysis "path/to/log.json"
+trigger_ai_analysis() {
     local log_file="$1"
 
     # Check if AI is enabled
@@ -303,43 +431,14 @@ analyze_with_claude() {
         return 0
     fi
 
-    # Read log content for the prompt, stripping control characters that would
-    # corrupt the shell string when embedded inline in the -p argument
-    local log_content
-    log_content=$(cat "$log_file" 2>/dev/null | tr -d '\000-\010\013\014\016-\037' || echo "")
-    if [ -z "$log_content" ]; then
-        return 0
-    fi
-
-    # Read Claude execution settings from config
-    local claude_model
-    claude_model=$(config_get_default "ai.claude.model" "sonnet")
-
-    local claude_max_tokens
-    claude_max_tokens=$(config_get_default "ai.claude.max_output_tokens" "8096")
-
-    local claude_effort_level
-    claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
-
     local dashboard_port
     dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
 
-    # Compute sidecar path: $MEC_HOME/logs/tool/ts.json -> $MEC_HOME/ai-analyses/tool/ts.json
-    local log_dir
-    log_dir=$(dirname "$log_file")
-    local ai_analyses_dir
-    ai_analyses_dir=$(echo "$log_dir" | sed 's|/logs/|/ai-analyses/|')
-    mkdir -p "$ai_analyses_dir"
-    local ai_file="${ai_analyses_dir}/$(basename "$log_file")"
-    # Pre-create the sidecar file so Docker mounts it as a file, not a directory
-    touch "$ai_file"
+    local session_id
+    session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
+        | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
+    session_id="${session_id:-${LOG_SESSION_ID:-$(basename "$log_file" .json)}}"
 
-    # Ensure ~/.claude dir and ~/.claude.json exist so the volume mounts succeed
-    [ ! -d "${HOME}/.claude" ] && mkdir -p "${HOME}/.claude"
-    [ ! -f "${HOME}/.claude.json" ] && touch "${HOME}/.claude.json"
-
-    # Print session info immediately so the user has the link before analysis finishes
-    local session_id="${LOG_SESSION_ID:-$(basename "$log_file" .json)}"
     echo "" >&2
     echo "[mec-ai] Analysis running in background..." >&2
     echo "[mec-ai] Session:  $session_id" >&2
@@ -352,71 +451,13 @@ analyze_with_claude() {
     local _ai_enabled="${MEC_AI_ENABLED:-}"
     local _home="${HOME}"
     local _pwd="${PWD}"
-    local _image_claude="${MEC_IMAGE_CLAUDE}"
-    local _image_ai_service="${MEC_IMAGE_AI_SERVICE}"
 
-    # Run analysis in background — shell returns immediately
-    (
-        local _start_ms
-        _start_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
-
-        local analysis_output
-        analysis_output=$(docker run --rm \
-            --env ANTHROPIC_API_KEY="${_api_key}" \
-            --env CLAUDE_CODE_OAUTH_TOKEN="${_oauth_token}" \
-            --env MEC_AI_ENABLED="${_ai_enabled}" \
-            --env CLAUDE_CODE_MAX_OUTPUT_TOKENS="$claude_max_tokens" \
-            --env CLAUDE_CODE_EFFORT_LEVEL="$claude_effort_level" \
-            --volume "${_home}/.claude:/home/node/.claude" \
-            --volume "${_home}/.claude.json:/home/node/.claude.json" \
-            --volume "${_pwd}:${_pwd}" \
-            --workdir "${_pwd}" \
-            "$_image_claude" \
-            --model "$claude_model" \
-            --tools "" \
-            -p "Analyze this tool execution log and provide concise suggestions for fixing any issues. Focus on actionable fixes. Log content: $log_content" \
-            --output-format json \
-            --max-turns 1 2>/dev/null \
-          | docker run --rm -i \
-            --volume "$log_file:/log.json:ro" \
-            --volume "$ai_file:/ai-analyses.json" \
-            --env MEC_AI_ENABLED="${_ai_enabled}" \
-            "$_image_ai_service" \
-            parse-claude-response \
-              --ai-file /ai-analyses.json \
-              --log-file /log.json \
-              --log-session-id "${session_id}" \
-            2>/dev/null || echo "")
-
-        local _end_ms
-        _end_ms=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || echo "0")
-        local _elapsed
-        _elapsed=$(( _end_ms - _start_ms ))
-
-        # Patch execution_time_ms into the latest sidecar entry
-        if [ -f "$ai_file" ] && command -v python3 >/dev/null 2>&1 && [ "$_elapsed" -gt 0 ]; then
-            python3 - "$ai_file" "$_elapsed" <<'PYEOF'
-import sys, json
-path, elapsed = sys.argv[1], int(sys.argv[2])
-try:
-    data = json.loads(open(path).read())
-    analyses = data.get("analyses", {})
-    if analyses:
-        last_key = sorted(analyses, key=lambda k: analyses[k].get("timestamp", ""))[-1]
-        analyses[last_key]["execution_time_ms"] = elapsed
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-except Exception:
-    pass
-PYEOF
-        fi
-
-        # Auth failure — write a marker so mec ai last can report it
-        if echo "$analysis_output" | grep -qiE "not logged in|login|authentication|401|unauthorized"; then
-            echo "[mec-ai] Auth failed for session $session_id. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN." >&2
-        fi
-    ) &
+    ( ANTHROPIC_API_KEY="$_api_key" \
+      CLAUDE_CODE_OAUTH_TOKEN="$_oauth_token" \
+      MEC_AI_ENABLED="$_ai_enabled" \
+      HOME="$_home" \
+      PWD="$_pwd" \
+      run_claude_analysis "$log_file" ) &
     disown
 }
 
@@ -466,7 +507,7 @@ exec_with_ai() {
 
     # Run Claude Code analysis if log file was created
     if [ -n "$LOG_JSON_FILE" ] && [ -f "$LOG_JSON_FILE" ]; then
-        analyze_with_claude "$LOG_JSON_FILE"
+        trigger_ai_analysis "$LOG_JSON_FILE"
     fi
 
     # Cleanup

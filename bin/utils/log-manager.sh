@@ -204,7 +204,7 @@ get_log_environment() {
 # Escape string for JSON
 escape_json() {
     STRING="$1"
-    # Strip ANSI/terminal escape sequences (e.g. \x1b[1G\x1b[0K cursor controls, colour codes)
+    # Strip ANSI/terminal escape sequences (e.g. \x1b[1G\x1b[0K cursor controls, color codes)
     # then escape backslashes and double-quotes, collapse newlines to \n
     printf '%s' "$STRING" \
         | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1b[()]//g' \

@@ -39,7 +39,7 @@ RUN mkdir -p /usr/local/share/npm-global && \
 
 # Create workspace and config directories
 RUN mkdir -p /workspace /home/node/.claude && \
-    touch /home/node/.claude.json && \
+    echo '{}' > /home/node/.claude.json && \
     chown -R node:node /workspace /home/node/.claude /home/node/.claude.json
 
 WORKDIR /workspace

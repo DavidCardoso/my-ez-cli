@@ -270,14 +270,18 @@ mec_ai() {
             echo "Analyzing: $log_file"
             echo ""
 
-            docker run --rm \
-                --volume "$(cd "$(dirname "$log_file")" && pwd)/$(basename "$log_file"):/log.json:ro" \
-                --env ANTHROPIC_API_KEY \
-                --env CLAUDE_CODE_OAUTH_TOKEN \
-                "$MEC_IMAGE_CLAUDE" \
-                -p "Analyze this tool execution log and provide actionable suggestions for fixing any issues: $(cat "$log_file")" \
-                --output-format text \
-                --max-turns 1
+            run_claude_analysis "$log_file"
+
+            local _session_id
+            _session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
+                | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
+            _session_id="${_session_id:-$(basename "$log_file" .json)}"
+            local _dashboard_port
+            _dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+            echo ""
+            echo "Session:  $_session_id"
+            echo "Results:  http://localhost:${_dashboard_port}/sessions/${_session_id}"
+            echo "          (or: mec ai last)"
             ;;
         help|--help|-h)
             local _b="" _r=""

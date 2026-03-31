@@ -61,3 +61,55 @@ setup() {
     [ -n "$MEC_VERSION" ]
     [[ "$MEC_VERSION" =~ "1.0.0" ]]
 }
+
+# ----------------------------------------------------------------------------
+# is_valid_json_file
+# ----------------------------------------------------------------------------
+
+@test "is_valid_json_file returns 0 for empty file" {
+    local f; f=$(mktemp)
+    run is_valid_json_file "$f"
+    rm -f "$f"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_valid_json_file returns 0 for valid JSON" {
+    local f; f=$(mktemp)
+    echo '{"key":"value"}' > "$f"
+    run is_valid_json_file "$f"
+    rm -f "$f"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_valid_json_file returns 1 for corrupted JSON" {
+    local f; f=$(mktemp)
+    printf '{"key":' > "$f"
+    run is_valid_json_file "$f"
+    rm -f "$f"
+    [ "$status" -eq 1 ]
+}
+
+@test "is_valid_json_file returns 1 for non-existent file" {
+    run is_valid_json_file "/tmp/mec-nonexistent-$$.json"
+    [ "$status" -eq 1 ]
+}
+
+# ----------------------------------------------------------------------------
+# reset_claude_config
+# ----------------------------------------------------------------------------
+
+@test "reset_claude_config truncates corrupted file and creates backup" {
+    local orig; orig=$(mktemp)
+    printf '{"key":' > "$orig"
+    # Point HOME to a temp dir so reset_claude_config operates on our test file
+    local fake_home; fake_home=$(mktemp -d)
+    cp "$orig" "${fake_home}/.claude.json"
+    HOME="$fake_home" run reset_claude_config
+    [ "$status" -eq 0 ]
+    # Original file must now be empty
+    [ ! -s "${fake_home}/.claude.json" ]
+    # A backup must exist
+    local backups; backups=$(ls "${fake_home}/.claude.json.bak."* 2>/dev/null | wc -l)
+    [ "$backups" -ge 1 ]
+    rm -rf "$fake_home" "$orig"
+}
