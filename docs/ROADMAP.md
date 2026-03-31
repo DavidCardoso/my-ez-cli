@@ -50,20 +50,33 @@ See [docs/AI_INTEGRATION.md](./AI_INTEGRATION.md) for full architecture details.
 
 See [CHANGELOG.md](../CHANGELOG.md) for the full implementation history.
 
-### Open for v1.0.0
+### Completed for v1.0.0
 
 | Issue | Description |
 |-------|-------------|
 | [#74](https://github.com/DavidCardoso/my-ez-cli/issues/74) | `mec <tool>` subcommand dispatch for all tool wrappers |
 | [#75](https://github.com/DavidCardoso/my-ez-cli/issues/75) | `mec logs` — add session ID column |
 | [#76](https://github.com/DavidCardoso/my-ez-cli/issues/76) | `MEC_HOME` env var to replace hardcoded `~/.my-ez-cli/` |
-| [#77](https://github.com/DavidCardoso/my-ez-cli/issues/77) | Dashboard — retroactive AI analysis trigger |
+| [#77](https://github.com/DavidCardoso/my-ez-cli/issues/77) | Dashboard — retroactive AI analysis trigger (CLI command display) |
 | [#78](https://github.com/DavidCardoso/my-ez-cli/issues/78) | `mec setup` output styling (colors, icons) |
-| [#79](https://github.com/DavidCardoso/my-ez-cli/issues/79) | CI — evaluate integration tests on pull requests |
-| [#80](https://github.com/DavidCardoso/my-ez-cli/issues/80) | Fix serverless container update check on every run |
 | [#81](https://github.com/DavidCardoso/my-ez-cli/issues/81) | `add-mec-tool` Claude Code skill |
 | [#82](https://github.com/DavidCardoso/my-ez-cli/issues/82) | Docs — checklist for adding new tools with custom Docker images |
+
+### Open for v1.0.0
+
+| Issue | Description |
+|-------|-------------|
+| [#79](https://github.com/DavidCardoso/my-ez-cli/issues/79) | CI — evaluate integration tests on pull requests |
+| [#80](https://github.com/DavidCardoso/my-ez-cli/issues/80) | Fix serverless container update check on every run |
 | [#94](https://github.com/DavidCardoso/my-ez-cli/issues/94) | Display AI execution time + token usage in `mec` TUI and dashboard UI |
+| [#100](https://github.com/DavidCardoso/my-ez-cli/issues/100) | Separate `mec` session telemetry from command output logging |
+| [#101](https://github.com/DavidCardoso/my-ez-cli/issues/101) | Investigate Claude Code advanced features (hooks, MCP, agents, memory) |
+| [#103](https://github.com/DavidCardoso/my-ez-cli/issues/103) | Evaluate SQLite as storage/queue foundation (prerequisite for async background jobs) |
+| [#104](https://github.com/DavidCardoso/my-ez-cli/issues/104) | Retroactive AI analysis via background job (blocked on #103) |
+| [#105](https://github.com/DavidCardoso/my-ez-cli/issues/105) | `mec ai analyze` — accept session ID instead of log file path |
+| [#106](https://github.com/DavidCardoso/my-ez-cli/issues/106) | Fix corrupted `/home/node/.claude.json` in `mec ai analyze` |
+| [#107](https://github.com/DavidCardoso/my-ez-cli/issues/107) | Add OpenAPI specs and JSON Schema definitions |
+| [#108](https://github.com/DavidCardoso/my-ez-cli/issues/108) | Add architecture diagrams (tooling TBD) |
 
 ### Pre-release checklist
 
@@ -79,6 +92,10 @@ Tracked as GH issues with no milestone — picked up when v1.0.0 is stable.
 
 | Issue | Description |
 |-------|-------------|
+| [#13](https://github.com/DavidCardoso/my-ez-cli/issues/13) | Add Code Climate CLI |
+| [#17](https://github.com/DavidCardoso/my-ez-cli/issues/17) | Fix Yarn install when dependencies need Python |
+| [#45](https://github.com/DavidCardoso/my-ez-cli/issues/45) | Add terraform-docs |
+| [#46](https://github.com/DavidCardoso/my-ez-cli/issues/46) | Add databricks-cli |
 | [#83](https://github.com/DavidCardoso/my-ez-cli/issues/83) | Shell completion (zsh/bash) |
 | [#84](https://github.com/DavidCardoso/my-ez-cli/issues/84) | Decouple from Zsh — bash compatibility |
 | [#85](https://github.com/DavidCardoso/my-ez-cli/issues/85) | `mec help <tool>` with examples |
@@ -92,4 +109,4 @@ Tracked as GH issues with no milestone — picked up when v1.0.0 is stable.
 
 ---
 
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-30*
