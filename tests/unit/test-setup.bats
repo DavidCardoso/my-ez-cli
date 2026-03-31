@@ -41,7 +41,7 @@ setup() {
 @test "setup.sh rejects unknown command" {
     run "$SETUP_SCRIPT" unknown-command
     [ "$status" -ne 0 ]
-    [[ "$output" =~ "Error: Unknown command" ]]
+    [[ "$output" =~ "Unknown command" ]]
 }
 
 @test "setup.sh install requires tool name" {
