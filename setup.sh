@@ -2,47 +2,17 @@
 set -e
 
 BASEDIR=$(cd $(dirname "${0}") && pwd)
-TRACKING_FILE="$HOME/.my-ez-cli/installed"
 
-# Create .my-ez-cli directory if it doesn't exist
-mkdir -p "$HOME/.my-ez-cli"
+# Load shared utilities (color helpers, MEC_HOME, etc.)
+# shellcheck source=bin/utils/common.sh
+source "${BASEDIR}/bin/utils/common.sh"
 
-# Helpers
+TRACKING_FILE="${MEC_HOME}/installed"
 
-# ---------------------------------------------------------------------------
-# Output helpers — TTY-safe color/icon output
-# ---------------------------------------------------------------------------
-# Set ANSI codes only when stdout is a terminal
-_G="" _Y="" _R="" _B="" _RST=""
-if [ -t 1 ]; then
-    _G=$(printf '\033[0;32m')   # green
-    _Y=$(printf '\033[0;33m')   # yellow
-    _R=$(printf '\033[0;31m')   # red
-    _B=$(printf '\033[1m')      # bold
-    _RST=$(printf '\033[0m')    # reset
-fi
+# Create MEC_HOME directory if it doesn't exist
+mkdir -p "${MEC_HOME}"
 
-# msg_ok "message"   — green ✓  (success)
-msg_ok() {
-    printf '%s\n' "${_G}✓${_RST} ${1}"
-}
-
-# msg_warn "message" — yellow ⚠  (non-fatal warning or side-by-side notice)
-msg_warn() {
-    printf '%s\n' "${_Y}⚠${_RST} ${1}" >&2
-}
-
-# msg_err "message"  — red ✗  (fatal error, writes to stderr)
-msg_err() {
-    printf '%s\n' "${_R}✗${_RST} ${1}" >&2
-}
-
-# msg_info "message" — bold →  (informational note)
-msg_info() {
-    printf '%s\n' "${_B}→${_RST} ${1}"
-}
-
-# show_msg kept as alias to msg_ok for backward compatibility during migration
+# show_msg kept as alias to msg_ok for backward compatibility
 show_msg() {
     msg_ok "${1}"
 }

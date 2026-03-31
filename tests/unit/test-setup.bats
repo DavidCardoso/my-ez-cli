@@ -71,7 +71,7 @@ setup() {
 }
 
 @test "setup.sh creates tracking directory" {
-    grep -q "mkdir -p.*/.my-ez-cli" "$SETUP_SCRIPT"
+    grep -q 'mkdir -p.*MEC_HOME' "$SETUP_SCRIPT"
 }
 
 @test "setup.sh has install functions for all tools" {
