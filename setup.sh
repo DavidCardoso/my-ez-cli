@@ -1130,7 +1130,7 @@ show_status() {
                 verified_label="${_G}✓${_RST}"
             else
                 status_label="${_Y}Installed${_RST}"
-                verified_label="${_Y}✗${_RST}"
+                verified_label="${_R}✗${_RST}"
             fi
         else
             status_label="Not Installed"
