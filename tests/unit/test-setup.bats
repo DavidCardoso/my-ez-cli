@@ -41,7 +41,7 @@ setup() {
 @test "setup.sh rejects unknown command" {
     run "$SETUP_SCRIPT" unknown-command
     [ "$status" -ne 0 ]
-    [[ "$output" =~ "Error: Unknown command" ]]
+    [[ "$output" =~ "Unknown command" ]]
 }
 
 @test "setup.sh install requires tool name" {
@@ -71,7 +71,7 @@ setup() {
 }
 
 @test "setup.sh creates tracking directory" {
-    grep -q "mkdir -p.*/.my-ez-cli" "$SETUP_SCRIPT"
+    grep -q 'mkdir -p.*MEC_HOME' "$SETUP_SCRIPT"
 }
 
 @test "setup.sh has install functions for all tools" {
@@ -199,4 +199,31 @@ _sys_path="/usr/bin:/bin"
     run bash -c "source '$SETUP_SCRIPT'; export BASEDIR='$project_dir'; detect_claude_install_method '/some/random/bin/claude'"
     [ "$status" -eq 0 ]
     [[ "$output" == "unknown:"* ]]
+}
+
+@test "setup.sh msg_ok outputs check icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_ok 'tool installed'"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "tool installed" ]]
+    [[ "$output" =~ "✓" ]]
+}
+
+@test "setup.sh msg_warn outputs warning icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_warn 'side-by-side' 2>&1"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "side-by-side" ]]
+    [[ "$output" =~ "⚠" ]]
+}
+
+@test "setup.sh msg_err outputs error icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_err 'failed' 2>&1"
+    [[ "$output" =~ "failed" ]]
+    [[ "$output" =~ "✗" ]]
+}
+
+@test "setup.sh msg_info outputs info icon and message" {
+    run bash -c "source ${MEC_PROJECT_DIR}/setup.sh 2>/dev/null; msg_info 'note about something'"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "note about something" ]]
+    [[ "$output" =~ "→" ]]
 }

@@ -170,6 +170,21 @@ jobs:
           ./bin/mec unknown-tool 2>&1 | grep -q 'Unknown command'
           echo "✓ mec unknown-tool returns error"
 
+      - name: Test mec install error output
+        run: |
+          ./bin/mec install 2>&1 | grep -q 'install'
+          echo "✓ mec install error contains usage text"
+
+      - name: Test setup.sh status output
+        run: |
+          ./setup.sh status | grep -q 'Installation Status'
+          echo "✓ setup.sh status shows installation status header"
+
+      - name: Test mec setup status subcommand
+        run: |
+          ./bin/mec setup status | grep -q 'Installation Status'
+          echo "✓ mec setup status works"
+
   # Unit tests - run in parallel for faster execution
   unit-tests:
     runs-on: ubuntu-latest

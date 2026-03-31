@@ -110,6 +110,7 @@ show_help() {
     printf '%s\n' "  mec claude firewall status"
 }
 
+
 # ----------------------------------------------------------------------------
 # AI Commands
 # ----------------------------------------------------------------------------
@@ -1068,7 +1069,7 @@ mec_setup() {
         "")
             exec "${BASE_DIR}/setup.sh"
             ;;
-        show)
+        status|show)
             exec "${BASE_DIR}/setup.sh" status
             ;;
         help|--help|-h)
@@ -1076,13 +1077,13 @@ mec_setup() {
 Usage: mec setup [subcommand]
 
 Subcommands:
-  (none)   Open interactive setup TUI
-  show     Show installation status
-  help     Show this help message
+  (none)    Open interactive setup TUI
+  status    Show installation status
+  help      Show this help message
 
 Examples:
   mec setup
-  mec setup show
+  mec setup status
 EOF
             ;;
         *)
@@ -1095,7 +1096,7 @@ EOF
 
 mec_install() {
     if [ $# -eq 0 ]; then
-        echo "Usage: mec install <tool> [tool2 ...]" >&2
+        msg_err "Usage: mec install <tool> [tool2 ...]"
         return 1
     fi
     exec "${BASE_DIR}/setup.sh" install "$@"
@@ -1103,7 +1104,7 @@ mec_install() {
 
 mec_uninstall() {
     if [ $# -eq 0 ]; then
-        echo "Usage: mec uninstall <tool> [tool2 ...]" >&2
+        msg_err "Usage: mec uninstall <tool> [tool2 ...]"
         return 1
     fi
     exec "${BASE_DIR}/setup.sh" uninstall "$@"
