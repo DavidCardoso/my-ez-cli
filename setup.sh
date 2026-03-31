@@ -83,22 +83,18 @@ EOF
 }
 
 show_begin() {
-    cat <<EOF
---------------------------------------------------------------------------------
-                  My Ez CLI • Setup
---------------------------------------------------------------------------------
-  Hope you enjoy it! :D
---------------------------------------------------------------------------------
-  Note: Aliases may be created in '~/.zshrc' file...
---------------------------------------------------------------------------------
-  Note: Symbolic links may be created in '/usr/local/bin/' folder...
---------------------------------------------------------------------------------
-  Warning: Root access may be needed.
---------------------------------------------------------------------------------
-  GitHub: https://github.com/DavidCardoso/my-ez-cli
---------------------------------------------------------------------------------
-
-EOF
+    printf '%s\n' "${_B}--------------------------------------------------------------------------------${_RST}"
+    printf '%s\n' "${_B}                  My Ez CLI • Setup${_RST}"
+    printf '%s\n' "${_B}--------------------------------------------------------------------------------${_RST}"
+    printf '%s\n' "  Hope you enjoy it! :D"
+    printf '%s\n' ""
+    printf '%s\n' "  ${_Y}⚠${_RST}  Aliases may be created in '~/.zshrc'"
+    printf '%s\n' "  ${_Y}⚠${_RST}  Symbolic links may be created in '/usr/local/bin/'"
+    printf '%s\n' "  ${_Y}⚠${_RST}  Root access may be needed"
+    printf '%s\n' ""
+    printf '%s\n' "  GitHub: https://github.com/DavidCardoso/my-ez-cli"
+    printf '%s\n' "${_B}--------------------------------------------------------------------------------${_RST}"
+    printf '%s\n' ""
 }
 
 # Tracking functions
@@ -1126,19 +1122,24 @@ show_status() {
     echo "--------------------------------------------------------------------------------"
 
     for tool in "${tools[@]}"; do
-        local status="Not Installed"
-        local verified=""
+        local status_label="" verified_label=""
 
         if is_tracked "$tool"; then
-            status="Installed"
             if verify_installation "$tool" 2>/dev/null; then
-                verified="✓"
+                status_label="${_G}Installed${_RST}"
+                verified_label="${_G}✓${_RST}"
             else
-                verified="✗"
+                status_label="${_Y}Installed${_RST}"
+                verified_label="${_Y}✗${_RST}"
             fi
+        else
+            status_label="Not Installed"
         fi
 
-        printf "%-20s  %-13s %-10s\n" "$tool" "$status" "$verified"
+        # Add ANSI byte lengths to column widths so printf pads correctly
+        local ansi_len=$(( ${#_G} + ${#_RST} ))
+        printf "%-20s  %-$((13 + ansi_len))s %-$((10 + ansi_len))s\n" \
+            "$tool" "$status_label" "$verified_label"
     done
 
     echo "================================================================================
@@ -1148,15 +1149,15 @@ show_status() {
 # Interactive multi-select menu - Terminal-based
 
 interactive_menu() {
-    echo "================================================================================
-                  My Ez CLI • Interactive Setup
-================================================================================
-
-Select tools to install/uninstall (enter tool numbers separated by spaces)
-or type 'all' to install all tools, 'done' when finished.
-
-Available tools:"
-    echo "--------------------------------------------------------------------------------"
+    printf '%s\n' "${_B}================================================================================${_RST}"
+    printf '%s\n' "${_B}                  My Ez CLI • Interactive Setup${_RST}"
+    printf '%s\n' "${_B}================================================================================${_RST}"
+    printf '%s\n' ""
+    printf '%s\n' "Select tools to install/uninstall (enter tool numbers separated by spaces)"
+    printf '%s\n' "or type 'all' to install all tools, 'done' when finished."
+    printf '%s\n' ""
+    printf '%s\n' "Available tools:"
+    printf '%s\n' "--------------------------------------------------------------------------------"
 
     local tools=("mec" "aws" "node" "npm" "npx" "yarn" "yarn-plus" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "python" "promptfoo" "promptfoo-server" "claude")
     local descriptions=("My Ez CLI command" "AWS CLI and SSO tools" "Node.js (v22, v24 LTS)" "NPM package manager" "NPX package runner" "Yarn package manager" "Yarn + git/curl/jq tools" "Yarn Berry (v2+)" "Serverless Framework" "Terraform CLI" "Ookla Speedtest CLI" "Google Cloud CLI" "Playwright testing" "Python interpreter" "Promptfoo evaluation" "Promptfoo server" "Claude Code CLI")
@@ -1165,7 +1166,7 @@ Available tools:"
     for tool in "${tools[@]}"; do
         local status="  "
         if is_tracked "$tool"; then
-            status="✓ "
+            status="${_G}✓${_RST}"
         fi
         printf "%2d. [%s] %-20s - %s\n" "$i" "$status" "$tool" "${descriptions[$((i-1))]}"
         ((i++))
