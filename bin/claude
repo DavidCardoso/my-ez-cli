@@ -68,8 +68,8 @@ DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     $CONTAINER_LABELS \
     $EXTRA_DOCKER_FLAGS \
     --volume $PWD:$WORKDIR \
-    --volume ${CLAUDE_AUTH_DIR}:/home/node/.claude \
-    --volume ${CLAUDE_CONFIG_FILE}:/home/node/.claude.json \
+    --volume ${CLAUDE_AUTH_DIR}:/root/.claude \
+    --volume ${CLAUDE_CONFIG_FILE}:/root/.claude.json \
     --workdir $WORKDIR \
     $ENV_FLAGS \
     $IMAGE $(printf '%q ' "$@")"

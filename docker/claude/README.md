@@ -9,7 +9,7 @@ Docker image providing [Claude Code](https://claude.ai/code) — Anthropic's off
 
 **Repository:** `davidcardoso/my-ez-cli`
 **Tag:** `claude-latest`
-**Base Image:** `node:20-slim`
+**Base Image:** `node:24-slim`
 **Extra tools:** `git`, `gh`, `jq`, `fzf`, `zsh`, `neovim`
 **Platforms:** linux/amd64, linux/arm64
 
@@ -56,10 +56,10 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ## Build Arguments
 
-| Argument              | Description                     | Default            |
-| --------------------- | ------------------------------- | ------------------ |
-| `CLAUDE_CODE_VERSION` | Claude Code npm package version | `latest`           |
-| `TZ`                  | Container timezone              | `Europe/Amsterdam` |
+| Argument              | Description                                                                                   | Default            |
+| --------------------- | --------------------------------------------------------------------------------------------- | ------------------ |
+| `CLAUDE_CODE_VERSION` | Claude Code binary version (`latest`, `stable`, or a specific version e.g. `1.2.3`)          | `latest`           |
+| `TZ`                  | Container timezone                                                                            | `Europe/Amsterdam` |
 
 ## Authentication
 

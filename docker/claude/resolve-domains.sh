@@ -33,15 +33,15 @@ if [ -f "$GITHUB_META_FILE" ] && [ -s "$GITHUB_META_FILE" ]; then
         [[ "$endpoint" =~ ^# ]] && continue
 
         echo "Fetching GitHub meta from https://api.github.com/meta ..."
-        gh_ranges=$(curl -sf --connect-timeout 30 https://api.github.com/meta)
+        gh_ranges=$(curl -sf --connect-timeout 30 https://api.github.com/meta || true)
         if [ -z "$gh_ranges" ]; then
-            echo "ERROR: Failed to fetch GitHub IP ranges from api.github.com/meta" >&2
-            exit 1
+            echo "WARNING: Failed to fetch GitHub IP ranges (no network during build?) — skipping GitHub CIDRs" >&2
+            break
         fi
 
         if ! echo "$gh_ranges" | jq -e '.web and .api and .git' >/dev/null; then
-            echo "ERROR: GitHub API response missing required fields (web, api, git)" >&2
-            exit 1
+            echo "WARNING: GitHub API response missing required fields — skipping GitHub CIDRs" >&2
+            break
         fi
 
         echo "Processing GitHub CIDRs..."
@@ -73,14 +73,14 @@ if [ -f "$DNS_DOMAINS_FILE" ] && [ -s "$DNS_DOMAINS_FILE" ]; then
         echo "Resolving $domain..."
         ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')
         if [ -z "$ips" ]; then
-            echo "ERROR: Failed to resolve $domain" >&2
-            exit 1
+            echo "WARNING: Failed to resolve $domain (no network during build?) — skipping" >&2
+            continue
         fi
 
         while read -r ip; do
             if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-                echo "ERROR: Invalid IP from DNS for $domain: $ip" >&2
-                exit 1
+                echo "WARNING: Invalid IP from DNS for $domain: $ip — skipping" >&2
+                continue
             fi
             echo "$ip  # $domain" >> "$RESOLVED_FILE"
         done < <(echo "$ips")
