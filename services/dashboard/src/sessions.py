@@ -194,6 +194,9 @@ class SessionSummary:
     timestamp: str
     exit_code: int | None
     ai_status: str  # "none" | "pending" | "done"
+    ai_execution_time_ms: int | None = None
+    ai_tokens_input: int | None = None
+    ai_tokens_output: int | None = None
 
 
 @dataclass
@@ -301,7 +304,7 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         ai_path = _sidecar_path(log_path, data_root)
-        status, _, _claude_id, *_ = _ai_status(ai_path)
+        status, _, _claude_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         results.append(
             SessionSummary(
                 session_id=str(data.get("session_id", "")),
@@ -309,6 +312,9 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
                 timestamp=str(execution.get("start_time", data.get("timestamp", ""))),
                 exit_code=exit_code,
                 ai_status=status,
+                ai_execution_time_ms=exec_time,
+                ai_tokens_input=tok_in,
+                ai_tokens_output=tok_out,
             )
         )
     return {"sessions": results, "total": total}

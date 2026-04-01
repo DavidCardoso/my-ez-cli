@@ -131,7 +131,7 @@ teardown() {
 
 @test "mec dashboard open falls back to echo URL when no browser is found" {
     # Verify the fallback else branch exists in the script
-    grep -q 'echo.*http://localhost' "$BASEDIR/bin/mec"
+    grep -q 'echo.*dashboard_url' "$BASEDIR/bin/mec"
 }
 
 @test "mec dashboard open supports open command for macOS" {
