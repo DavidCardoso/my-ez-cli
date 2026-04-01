@@ -188,7 +188,7 @@ onMounted(() => {
 
 function fmtTs(ts) {
   if (!ts) return '—'
-  return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace('Z', '')
+  return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace(/Z$/, '') + ' UTC'
 }
 
 function aiSeverity(status) {

@@ -26,7 +26,7 @@
       <div class="table-loading">Loading sessions…</div>
     </template>
 
-    <Column field="timestamp" header="Timestamp" sortable>
+    <Column field="timestamp" header="Timestamp (UTC)" sortable>
       <template #body="{ data }">
         <span class="mono" style="font-size: 12px; color: var(--mec-text-dim);">{{ fmtTs(data.timestamp) }}</span>
       </template>
@@ -93,7 +93,7 @@ const emit = defineEmits(['row-click'])
 
 function fmtTs(ts) {
   if (!ts) return '—'
-  return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace('Z', '')
+  return ts.replace('T', ' ').replace(/\.\d+Z?$/, '').replace(/Z$/, '') + ' UTC'
 }
 
 function aiSeverity(status) {
