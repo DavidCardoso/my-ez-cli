@@ -9,6 +9,12 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
+# Guard: gcloud-config container must exist (created by mec gcloud-login)
+if ! docker inspect gcloud-config >/dev/null 2>&1; then
+    echo "Error: GCP credentials container not found. Run 'mec gcloud-login' first." >&2
+    exit 1
+fi
+
 IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
 WORKDIR=/app
 

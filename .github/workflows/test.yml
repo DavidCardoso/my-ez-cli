@@ -197,6 +197,7 @@ jobs:
           - common-utils
           - dashboard
           - doctor
+          - gcloud
           - node
           - npm
           - purge
