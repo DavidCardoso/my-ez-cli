@@ -14,6 +14,17 @@ Every new feature, behavior, edge case, and key fix must ship with automated tes
 - Key business rules (e.g. `--dry-run` must not delete, `--tool` must reject path traversal) → dedicated test cases
 - Wire new test files into `.github/workflows/test.yml`: add to `unit-tests` matrix and add a smoke test step for the new subcommand's `help` output
 
+## Use en-US spelling throughout
+
+All code, comments, docs, and CLI output must use en-US spelling.
+
+**Why:** The codebase was mixing en-US and en-GB (e.g. `analyze` vs `analyse`, `color` vs `colour`, `initialize` vs `initialise`). en-US is the project standard.
+
+**How to apply:**
+- Function names, variable names, subcommand names: `analyze`, not `analyse`
+- Comments and docs: `analyze`, `color`, `behavior`, `initialize`, etc.
+- When renaming existing en-GB identifiers, update all call sites
+
 ## Always run tests locally before committing
 
 Run the relevant test suite (or manual validation) before any `git commit`.

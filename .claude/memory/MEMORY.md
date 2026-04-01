@@ -13,3 +13,6 @@
 - [feedback_gh_tracking.md](./feedback_gh_tracking.md) — Use GH issues/milestones/projects for tracking; avoid updating local ROADMAP.md inline
 - [feedback_release_grouping.md](./feedback_release_grouping.md) — Group work by releases/milestones, not phases; include issue IDs in commits/PRs
 - [feedback_custom_image_standards.md](./feedback_custom_image_standards.md) — Custom Docker images must include build script + localized README
+- [feedback_language_standard.md](./feedback_language_standard.md) — en-US spelling throughout: `analyze` not `analyse`, `color` not `colour`, etc.
+- [feedback_python3_dependency.md](./feedback_python3_dependency.md) — Use `mec-python` wrapper instead of bare `python3` in host-side shell scripts
+- [feedback_validate_against_standards.md](./feedback_validate_against_standards.md) — Verify new patterns against industry standards (e.g. Conventional Commits) before recommending; don't reverse only when challenged

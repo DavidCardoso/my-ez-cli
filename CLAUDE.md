@@ -88,18 +88,6 @@ All of the above, plus **every item below is required** — missing any caused t
 
 ## Contributing
 
-- Branch naming: `<type>/<issue-id>/<short-description>` — types follow [Conventional Commits](https://www.conventionalcommits.org/) standard:
-  - `feat` — new feature or user-visible enhancement
-  - `fix` — bug fix
-  - `chore` — maintenance (deps, tooling, config, tracking)
-  - `docs` — documentation only
-  - `ci` — CI/CD pipeline changes
-  - `test` — tests only
-  - `refactor` — code restructure with no behavior change
-  - `perf` — performance improvement
-  - `style` — formatting/whitespace only (no logic change)
-  - `build` — build system changes (Dockerfile, Makefile, poetry)
-  - `revert` — reverts a previous commit
-- PRs target `rc-v1-alpha` — `main` is reserved for v1.0.0 stable release
-- CI must pass before merge
-- Follow existing script patterns and conventions
+> Branch naming, commit types, and PR targets: see [`.claude/rules/git-workflow.md`](.claude/rules/git-workflow.md)
+>
+> Test requirements, code standards, and script patterns: see [`.claude/rules/code-standards.md`](.claude/rules/code-standards.md) and [`.claude/rules/shell-standards.md`](.claude/rules/shell-standards.md)

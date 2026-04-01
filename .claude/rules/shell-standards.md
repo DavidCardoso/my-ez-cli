@@ -12,6 +12,17 @@ After implementing or modifying any `mec` subcommand or shell behavior, always r
 3. Test edge cases: unknown subcommand, empty input, scriptability (`&& echo "ok" || echo "fail"`)
 4. Only then commit.
 
+## Never call python3 directly in host-side scripts
+
+Never call `python3` directly in host-side shell scripts (`common.sh`, `setup.sh`, `bin/*`). Use the `mec-python` wrapper instead.
+
+**Why:** `python3` creates an external host dependency. My Ez CLI aims to be as self-contained as possible. Existing `python3` calls in the codebase are a pre-existing gap, not a justification to add more.
+
+**How to apply:**
+- New inline Python logic on the host → use `mec-python -c "..."` or `mec python -c "..."`
+- When reviewing or touching existing `python3` calls in shell scripts → flag them for replacement
+- Python inside Docker containers (e.g. `ai-service`) is fine — that's the container's own runtime
+
 ## Script pattern
 
 All `bin/` wrapper scripts must follow the established pattern:
