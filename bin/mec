@@ -399,7 +399,7 @@ print(items[-1][0] if items else '', end='')
 
     echo "Session:   ${session_id:-unknown}"
     echo "Tool:      ${tool:-unknown}"
-    echo "Timestamp: ${start_time:-unknown}"
+    echo "Timestamp: ${start_time:-unknown} UTC"
     echo "Exit code: ${exit_code:-unknown}"
     echo "AI status: $ai_status"
     if [ -n "$exec_time_ms" ]; then
@@ -507,8 +507,8 @@ _mec_ai_logs() {
         return 0
     fi
 
-    printf "%-21s %-12s %-6s %-10s %-8s %s\n" "TIMESTAMP" "TOOL" "EXIT" "AI" "AI TIME" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-8s %s\n" "---------------------" "------------" "------" "----------" "--------" "----------"
+    printf "%-25s %-12s %-6s %-10s %-8s %s\n" "TIMESTAMP (UTC)" "TOOL" "EXIT" "AI" "AI TIME" "SESSION ID"
+    printf "%-25s %-12s %-6s %-10s %-8s %s\n" "-------------------------" "------------" "------" "----------" "--------" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
@@ -522,6 +522,7 @@ _mec_ai_logs() {
         local ts_display
         ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
         [ -z "$ts_display" ] && ts_display="unknown"
+        ts_display="${ts_display} UTC"
 
         # Derive sidecar path
         local ai_file
@@ -549,7 +550,7 @@ _mec_ai_logs() {
             fi
         fi
 
-        printf "%-21s %-12s %-6s %-10s %-8s %s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status" "$ai_time" "${session_id:-?}"
+        printf "%-25s %-12s %-6s %-10s %-8s %s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status" "$ai_time" "${session_id:-?}"
     done
 }
 
