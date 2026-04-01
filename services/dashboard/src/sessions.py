@@ -197,6 +197,8 @@ class SessionSummary:
     ai_execution_time_ms: int | None = None
     ai_tokens_input: int | None = None
     ai_tokens_output: int | None = None
+    command: str = ""
+    cwd: str = ""
 
 
 @dataclass
@@ -315,6 +317,8 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
                 ai_execution_time_ms=exec_time,
                 ai_tokens_input=tok_in,
                 ai_tokens_output=tok_out,
+                command=str(data.get("command", "")),
+                cwd=str(data.get("cwd", "")),
             )
         )
     return {"sessions": results, "total": total}

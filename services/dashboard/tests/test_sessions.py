@@ -160,6 +160,32 @@ class TestListSessions:
         sessions = list_sessions(data_root)["sessions"]
         assert all(s.session_id == "mec-npm-1" for s in sessions)
 
+    def test_command_included_in_list(self, data_root: Path) -> None:
+        """command field should be included in the list view for search filtering."""
+        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        session = list_sessions(data_root)["sessions"][0]
+        assert session.command == "npm --version"
+
+    def test_cwd_included_in_list(self, data_root: Path) -> None:
+        """cwd field should be included in the list view for search filtering."""
+        log_dir = data_root / "logs" / "node"
+        log_dir.mkdir(parents=True)
+        (log_dir / "2026-01-01_00-00-01.json").write_text(
+            json.dumps(
+                {
+                    "session_id": "mec-node-cwd",
+                    "tool": "node",
+                    "cwd": "/home/user/myproject",
+                    "command": "node test.js",
+                    "execution": {"exit_code": 0, "start_time": "2026-01-01T00:00:01Z"},
+                    "output": {"stdout": "", "stderr": ""},
+                }
+            )
+        )
+        session = list_sessions(data_root)["sessions"][0]
+        assert session.cwd == "/home/user/myproject"
+        assert session.command == "node test.js"
+
 
 class TestGetSession:
     """Tests for get_session()."""
