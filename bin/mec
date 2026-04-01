@@ -243,14 +243,21 @@ mec_ai() {
             _mec_ai_logs "$@"
             ;;
         analyze)
-            local log_file="$1"
-            if [ -z "$log_file" ]; then
-                echo "Usage: mec ai analyze <log-file>" >&2
+            local _input="$1"
+            if [ -z "$_input" ]; then
+                echo "Usage: mec ai analyze <log-file|session-id>" >&2
                 return 1
             fi
-            if [ ! -f "$log_file" ]; then
-                echo "Error: File not found: $log_file" >&2
-                return 1
+
+            local log_file
+            if [ -f "$_input" ]; then
+                log_file="$_input"
+            else
+                log_file=$(log_find_by_session_id "$_input")
+                if [ -z "$log_file" ]; then
+                    echo "Error: Not a file and no session found for: $_input" >&2
+                    return 1
+                fi
             fi
 
             # Check Claude Code availability
@@ -297,7 +304,7 @@ mec_ai() {
             printf '%s\n' "  last                Show the most recent AI analysis"
             printf '%s\n' "  show <session_id>   Show a specific session by ID"
             printf '%s\n' "  logs [--last N]     List recent sessions with AI status (default: last 20)"
-            printf '%s\n' "  analyze <log-file>  Analyze a log file with Claude Code"
+            printf '%s\n' "  analyze <log-file|session-id>  Analyze a log file with Claude Code"
             printf '%s\n' "  help                Show this help"
             printf '%s\n' ""
             printf '%s\n' "${_b}REQUIREMENTS${_r} (one of)"
@@ -320,6 +327,7 @@ mec_ai() {
             printf '%s\n' "  mec ai last"
             printf '%s\n' "  mec ai logs --last 5"
             printf '%s\n' "  mec ai analyze \$MEC_HOME/logs/node/2026-01-01_12-00-00.json"
+            printf '%s\n' "  mec ai analyze mec-node-1774880478"
             printf '%s\n' "  mec config set ai.claude.model haiku"
             ;;
         *)
@@ -433,9 +441,8 @@ _mec_ai_show() {
         return 1
     fi
 
-    local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
     local log_file
-    log_file=$(grep -rl "\"session_id\".*\"${session_id}\"" "$log_dir" 2>/dev/null | grep -v "\.bak$" | grep "\.json$" | head -1)
+    log_file=$(log_find_by_session_id "$session_id")
 
     if [ -z "$log_file" ]; then
         echo "Session not found: $session_id" >&2
