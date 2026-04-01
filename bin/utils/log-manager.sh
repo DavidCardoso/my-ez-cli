@@ -291,6 +291,22 @@ log_latest() {
     log_list "$TOOL_NAME" 1
 }
 
+# Find a log file by session ID
+# Usage: log_find_by_session_id "mec-node-1774880478"
+# Returns: absolute path to .json log file, or empty string if not found
+log_find_by_session_id() {
+    local session_id="$1"
+    local log_dir="${LOG_DIR:-$DEFAULT_LOG_DIR}"
+
+    [ -z "$session_id" ] && return 0
+    [ ! -d "$log_dir" ] && return 0
+
+    grep -rl "\"session_id\"[[:space:]]*:[[:space:]]*\"${session_id}\"" "$log_dir" 2>/dev/null \
+        | grep -v "\.bak$" \
+        | grep "\.json$" \
+        | head -1
+}
+
 # ----------------------------------------------------------------------------
 # Initialization
 # ----------------------------------------------------------------------------

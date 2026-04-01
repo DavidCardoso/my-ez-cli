@@ -40,10 +40,10 @@
           <span class="meta-label">AI Status</span>
           <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
         </div>
-        <div v-if="session.ai_status === 'none' && session.log_file" class="meta-item meta-item--wide">
+        <div v-if="session.ai_status === 'none'" class="meta-item meta-item--wide">
           <span class="meta-label">Run AI Analysis</span>
           <div class="session-id-row">
-            <span class="meta-value mono" style="font-size: 11px;">mec ai analyze {{ session.log_file }}</span>
+            <span class="meta-value mono" style="font-size: 11px;">mec ai analyze {{ session.session_id }}</span>
             <Button
               icon="pi pi-copy"
               text
@@ -185,7 +185,7 @@ async function copyResume() {
 
 async function copyAnalyze() {
   try {
-    await navigator.clipboard.writeText(`mec ai analyze ${session.value?.log_file}`)
+    await navigator.clipboard.writeText(`mec ai analyze ${session.value?.session_id}`)
     copiedAnalyze.value = true
     setTimeout(() => { copiedAnalyze.value = false }, 2000)
   } catch { /* noop */ }
