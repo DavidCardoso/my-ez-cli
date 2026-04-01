@@ -276,19 +276,22 @@ mec_ai() {
 
             echo "Analyzing: $log_file"
             echo ""
+            _mec_ai_notify "$log_file"
 
-            run_claude_analysis "$log_file"
+            # Snapshot env vars before backgrounding (same pattern as trigger_ai_analysis)
+            local _api_key="${ANTHROPIC_API_KEY:-}"
+            local _oauth_token="${CLAUDE_CODE_OAUTH_TOKEN:-}"
+            local _ai_enabled="${MEC_AI_ENABLED:-}"
+            local _home="${HOME}"
+            local _pwd="${PWD}"
 
-            local _session_id
-            _session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
-                | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
-            _session_id="${_session_id:-$(basename "$log_file" .json)}"
-            local _dashboard_port
-            _dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
-            echo ""
-            echo "Session:  $_session_id"
-            echo "Results:  http://localhost:${_dashboard_port}/sessions/${_session_id}"
-            echo "          (or: mec ai last)"
+            ( ANTHROPIC_API_KEY="$_api_key" \
+              CLAUDE_CODE_OAUTH_TOKEN="$_oauth_token" \
+              MEC_AI_ENABLED="$_ai_enabled" \
+              HOME="$_home" \
+              PWD="$_pwd" \
+              run_claude_analysis "$log_file" ) &
+            disown
             ;;
         help|--help|-h)
             local _b="" _r=""
@@ -352,7 +355,7 @@ _mec_ai_print_session() {
     local ai_file ai_status result
     ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
 
-    local claude_session_id=""
+    local claude_session_id="" exec_time_ms="" tokens_in="" tokens_out=""
     if [ -f "$ai_file" ]; then
         if command -v python3 >/dev/null 2>&1; then
             result=$(python3 -c "
@@ -372,6 +375,16 @@ print(items[-1][0] if items else '', end='')
         else
             result=$(grep '"result"' "$ai_file" 2>/dev/null | sed 's/.*"result"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/' | head -1 | sed 's/\\n/\n/g; s/\\t/\t/g')
         fi
+        # Extract AI metrics from sidecar (pretty-printed JSON — one field per line)
+        exec_time_ms=$(grep '"execution_time_ms"' "$ai_file" 2>/dev/null \
+            | sed 's/.*"execution_time_ms"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/' \
+            | tail -1)
+        tokens_in=$(grep '"input"' "$ai_file" 2>/dev/null \
+            | sed 's/.*"input"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/' \
+            | tail -1)
+        tokens_out=$(grep '"output"' "$ai_file" 2>/dev/null \
+            | sed 's/.*"output"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/' \
+            | tail -1)
         if [ -n "$result" ]; then
             ai_status="done"
         else
@@ -381,15 +394,23 @@ print(items[-1][0] if items else '', end='')
         ai_status="none"
     fi
 
-    local dashboard_port
-    dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+    local dashboard_url
+    dashboard_url=$(_mec_dashboard_url)
 
     echo "Session:   ${session_id:-unknown}"
     echo "Tool:      ${tool:-unknown}"
     echo "Timestamp: ${start_time:-unknown}"
     echo "Exit code: ${exit_code:-unknown}"
     echo "AI status: $ai_status"
-    echo "Dashboard: http://localhost:${dashboard_port}/sessions/${session_id}"
+    if [ -n "$exec_time_ms" ]; then
+        local exec_time_s
+        exec_time_s=$(echo "$exec_time_ms" | awk '{printf "%.1fs", $1/1000}')
+        echo "AI time:   ${exec_time_s}"
+    fi
+    if [ -n "$tokens_in" ] || [ -n "$tokens_out" ]; then
+        echo "Tokens:    in=${tokens_in:-—} • out=${tokens_out:-—}"
+    fi
+    echo "Dashboard: ${dashboard_url}/sessions/${session_id}"
     if [ -n "$claude_session_id" ]; then
         echo "Resume:    claude --resume ${claude_session_id}"
     fi
@@ -486,8 +507,8 @@ _mec_ai_logs() {
         return 0
     fi
 
-    printf "%-21s %-12s %-6s %-10s %s\n" "TIMESTAMP" "TOOL" "EXIT" "AI" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %s\n" "---------------------" "------------" "------" "----------" "----------"
+    printf "%-21s %-12s %-6s %-10s %-8s %s\n" "TIMESTAMP" "TOOL" "EXIT" "AI" "AI TIME" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-8s %s\n" "---------------------" "------------" "------" "----------" "--------" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
@@ -517,7 +538,18 @@ _mec_ai_logs() {
             ai_status="none"
         fi
 
-        printf "%-21s %-12s %-6s %-10s %s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status" "${session_id:-?}"
+        local ai_time="--"
+        if [ "$ai_status" = "done" ] && [ -f "$ai_file" ]; then
+            local _exec_ms
+            _exec_ms=$(grep '"execution_time_ms"' "$ai_file" 2>/dev/null \
+                | sed 's/.*"execution_time_ms"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/' \
+                | tail -1)
+            if [ -n "$_exec_ms" ]; then
+                ai_time=$(echo "$_exec_ms" | awk '{printf "%.1fs", $1/1000}')
+            fi
+        fi
+
+        printf "%-21s %-12s %-6s %-10s %-8s %s\n" "$ts_display" "${tool:-?}" "${exit_code:-?}" "$ai_status" "$ai_time" "${session_id:-?}"
     done
 }
 
@@ -1131,6 +1163,8 @@ mec_dashboard() {
     local subcmd="${1:-help}"
     shift 2>/dev/null || true
 
+    local dashboard_url
+    dashboard_url=$(_mec_dashboard_url)
     local dashboard_port
     dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
 
@@ -1140,7 +1174,7 @@ mec_dashboard() {
                 local state
                 state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
                 if [ "$state" = "running" ]; then
-                    echo "Dashboard is already running at http://localhost:${dashboard_port}"
+                    echo "Dashboard is already running at ${dashboard_url}"
                     return 0
                 fi
                 # Container exists but stopped — remove it first
@@ -1161,8 +1195,8 @@ mec_dashboard() {
                 "$MEC_IMAGE_DASHBOARD" >/dev/null
 
             echo "Dashboard started"
-            echo "  UI  →  http://localhost:${dashboard_port}"
-            echo "  API →  http://localhost:${dashboard_port}/api"
+            echo "  UI  →  ${dashboard_url}"
+            echo "  API →  ${dashboard_url}/api"
             ;;
         stop)
             if ! docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
@@ -1182,17 +1216,17 @@ mec_dashboard() {
             state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
             echo "Dashboard: $state"
             if [ "$state" = "running" ]; then
-                echo "  UI  →  http://localhost:${dashboard_port}"
-                echo "  API →  http://localhost:${dashboard_port}/api"
+                echo "  UI  →  ${dashboard_url}"
+                echo "  API →  ${dashboard_url}/api"
             fi
             ;;
         open)
             if command -v open >/dev/null 2>&1; then
-                open "http://localhost:${dashboard_port}"
+                open "${dashboard_url}"
             elif command -v xdg-open >/dev/null 2>&1; then
-                xdg-open "http://localhost:${dashboard_port}"
+                xdg-open "${dashboard_url}"
             else
-                echo "http://localhost:${dashboard_port}"
+                echo "${dashboard_url}"
             fi
             ;;
         help|--help|-h)
@@ -1417,13 +1451,13 @@ _mec_doctor_run() {
     # ------------------------------------------------------------------
     # 11. Dashboard running
     # ------------------------------------------------------------------
-    local dashboard_port
-    dashboard_port=$(config_get_default "ai.dashboard.port" "4242" 2>/dev/null || echo "4242")
+    local dashboard_url
+    dashboard_url=$(_mec_dashboard_url)
     if docker inspect "$MEC_DASHBOARD_CONTAINER" >/dev/null 2>&1; then
         local dash_state
         dash_state=$(docker inspect --format '{{.State.Status}}' "$MEC_DASHBOARD_CONTAINER" 2>/dev/null)
         if [ "$dash_state" = "running" ]; then
-            _doc_pass "Dashboard: running  (http://localhost:${dashboard_port})"
+            _doc_pass "Dashboard: running  (${dashboard_url})"
         else
             _doc_warn "Dashboard: ${dash_state}  (run 'mec dashboard start')"
         fi

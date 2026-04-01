@@ -40,6 +40,14 @@
           <span class="meta-label">AI Status</span>
           <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
         </div>
+        <div v-if="session.ai_execution_time_ms != null" class="meta-item">
+          <span class="meta-label">AI Time</span>
+          <span class="meta-value mono">{{ (session.ai_execution_time_ms / 1000).toFixed(1) }}s</span>
+        </div>
+        <div v-if="session.ai_tokens_input != null || session.ai_tokens_output != null" class="meta-item">
+          <span class="meta-label">Tokens</span>
+          <span class="meta-value mono">in={{ session.ai_tokens_input ?? '—' }} • out={{ session.ai_tokens_output ?? '—' }}</span>
+        </div>
         <div v-if="session.ai_status === 'none'" class="meta-item meta-item--wide">
           <span class="meta-label">Run AI Analysis</span>
           <div class="session-id-row">

@@ -39,13 +39,25 @@ def _write_log(data_root: Path, tool: str, ts: str, session_id: str, exit_code: 
     return log_path
 
 
-def _write_sidecar(data_root: Path, tool: str, ts: str, result: str = "") -> Path:
+def _write_sidecar(
+    data_root: Path,
+    tool: str,
+    ts: str,
+    result: str = "",
+    execution_time_ms: int | None = None,
+    tokens: dict[str, int] | None = None,
+) -> Path:
     ai_dir = data_root / "ai-analyses" / tool
     ai_dir.mkdir(parents=True, exist_ok=True)
     ai_path = ai_dir / f"{ts}.json"
     analyses = {}
     if result:
-        analyses["abc-123"] = {"timestamp": "2026-03-25T12:00:00Z", "result": result}
+        entry: dict[str, object] = {"timestamp": "2026-03-25T12:00:00Z", "result": result}
+        if execution_time_ms is not None:
+            entry["execution_time_ms"] = execution_time_ms
+        if tokens is not None:
+            entry["tokens"] = tokens
+        analyses["abc-123"] = entry
     ai_path.write_text(json.dumps({"log_session_id": "x", "analyses": analyses}))
     return ai_path
 
@@ -91,6 +103,21 @@ class TestListSessions:
         _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
         _write_sidecar(data_root, "npm", "2026-03-25_12-00-00", result="All good.")
         assert list_sessions(data_root)["sessions"][0].ai_status == "done"
+
+    def test_ai_time_and_tokens_included_in_list(self, data_root: Path) -> None:
+        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        _write_sidecar(
+            data_root,
+            "npm",
+            "2026-03-25_12-00-00",
+            result="All good.",
+            execution_time_ms=5000,
+            tokens={"input": 100, "output": 50},
+        )
+        session = list_sessions(data_root)["sessions"][0]
+        assert session.ai_execution_time_ms == 5000
+        assert session.ai_tokens_input == 100
+        assert session.ai_tokens_output == 50
 
     def test_sorted_newest_first(self, data_root: Path) -> None:
         _write_log(data_root, "npm", "2026-03-25_10-00-00", "mec-npm-old")

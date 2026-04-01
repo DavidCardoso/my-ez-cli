@@ -312,11 +312,10 @@ run_claude_analysis() {
     fi
 
     # Read Claude execution settings from config
-    local claude_model claude_max_tokens claude_effort_level dashboard_port
+    local claude_model claude_max_tokens claude_effort_level
     claude_model=$(config_get_default "ai.claude.model" "sonnet")
     claude_max_tokens=$(config_get_default "ai.claude.max_output_tokens" "8096")
     claude_effort_level=$(config_get_default "ai.claude.effort_level" "medium")
-    dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
 
     # Compute sidecar path: $MEC_HOME/logs/tool/ts.json -> $MEC_HOME/ai-analyses/tool/ts.json
     local log_dir ai_analyses_dir ai_file
@@ -397,6 +396,32 @@ PYEOF
     fi
 }
 
+# Return the dashboard base URL (e.g. http://localhost:4242).
+# Single source of truth for the port config key and default value.
+# Usage: _mec_dashboard_url
+_mec_dashboard_url() {
+    local port
+    port=$(config_get_default "ai.dashboard.port" "4242")
+    printf 'http://localhost:%s' "$port"
+}
+
+# Print session ID and results URL for an AI analysis.
+# Usage: _mec_ai_notify <log_file> [prefix] [fd]
+# prefix: cosmetic string prepended to each line (e.g. "[mec-ai] "); default: none.
+# fd:     file descriptor to write to (1=stdout, 2=stderr); default: 1.
+_mec_ai_notify() {
+    local log_file="$1" prefix="${2:-}" fd="${3:-1}"
+    local session_id base_url
+    session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
+        | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
+    session_id="${session_id:-${LOG_SESSION_ID:-$(basename "$log_file" .json)}}"
+    base_url=$(_mec_dashboard_url)
+
+    printf '%sSession:  %s\n' "$prefix" "$session_id" >&"$fd"
+    printf '%sResults:  %s/sessions/%s\n' "$prefix" "$base_url" "$session_id" >&"$fd"
+    printf '%s          (or: mec ai last)\n' "$prefix" >&"$fd"
+}
+
 # Conditionally trigger AI analysis in the background after a tool run.
 # Guards: only runs when MEC_AI_ENABLED=true, credentials set, images available.
 # Usage: trigger_ai_analysis "path/to/log.json"
@@ -431,19 +456,9 @@ trigger_ai_analysis() {
         return 0
     fi
 
-    local dashboard_port
-    dashboard_port=$(config_get_default "ai.dashboard.port" "4242")
-
-    local session_id
-    session_id=$(grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$log_file" \
-        | sed 's/.*"session_id"[^"]*"\([^"]*\)".*/\1/')
-    session_id="${session_id:-${LOG_SESSION_ID:-$(basename "$log_file" .json)}}"
-
     echo "" >&2
     echo "[mec-ai] Analysis running in background..." >&2
-    echo "[mec-ai] Session:  $session_id" >&2
-    echo "[mec-ai] Results:  http://localhost:${dashboard_port}/sessions/${session_id}" >&2
-    echo "[mec-ai]           (or: mec ai last)" >&2
+    _mec_ai_notify "$log_file" "[mec-ai] "
 
     # Snapshot env vars needed inside the subshell before backgrounding
     local _api_key="${ANTHROPIC_API_KEY:-}"
