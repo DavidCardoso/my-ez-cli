@@ -81,6 +81,49 @@ repos:
       - id: python-use-type-annotations
 
 # Configure pre-commit to run faster
+  # Local test suite hooks — run conditionally based on changed files
+  - repo: local
+    hooks:
+      # Bats unit tests — triggered when shell scripts or bats tests change
+      - id: bats-unit-tests
+        name: bats (unit tests)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bats tests/unit/'
+        pass_filenames: false
+        files: ^(bin/|tests/unit/|tests/integration/)
+
+      # AI service Python tests — triggered when ai-service source/tests change
+      - id: ai-service-pytest
+        name: pytest (ai-service)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/ai" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/ai/
+
+      # Config service Python tests — triggered when config-service source/tests change
+      - id: config-service-pytest
+        name: pytest (config-service)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/config" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/config/
+
+      # Dashboard Python tests — triggered when dashboard Python source/tests change
+      - id: dashboard-pytest
+        name: pytest (dashboard)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/dashboard" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/dashboard/(?!frontend/)
+
+      # Dashboard frontend tests — triggered when Vue/JS source files change
+      - id: frontend-vitest
+        name: vitest (dashboard frontend)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/dashboard/frontend" && npm test'
+        pass_filenames: false
+        files: ^services/dashboard/frontend/
+
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
@@ -90,5 +133,5 @@ ci:
   autoupdate_branch: ''
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
   autoupdate_schedule: weekly
-  skip: []
+  skip: [bats-unit-tests, ai-service-pytest, config-service-pytest, dashboard-pytest, frontend-vitest]
   submodules: false

@@ -29,7 +29,7 @@ setup() {
 }
 
 @test "claude script mounts auth directory" {
-    grep -q 'CLAUDE_AUTH_DIR.*:/home/node/.claude' "$BASEDIR/bin/claude"
+    grep -q 'CLAUDE_AUTH_DIR.*:/root/.claude' "$BASEDIR/bin/claude"
 }
 
 @test "claude script passes ANTHROPIC env vars" {
@@ -66,8 +66,8 @@ setup() {
     grep -q 'FROM node:' "$BASEDIR/docker/claude/Dockerfile"
 }
 
-@test "claude Dockerfile installs claude-code npm package" {
-    grep -q '@anthropic-ai/claude-code' "$BASEDIR/docker/claude/Dockerfile"
+@test "claude Dockerfile installs claude-code via official install script" {
+    grep -q 'claude.ai/install.sh' "$BASEDIR/docker/claude/Dockerfile"
 }
 
 @test "claude Dockerfile sets entrypoint (entrypoint.sh which execs claude)" {
