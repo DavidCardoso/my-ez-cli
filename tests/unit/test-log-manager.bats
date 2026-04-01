@@ -323,3 +323,42 @@ EOF
     [ "$tool" = "yarn" ]
     [ "$exit_code" = "0" ]
 }
+
+# ----------------------------------------------------------------------------
+# log_find_by_session_id
+# ----------------------------------------------------------------------------
+
+@test "log_find_by_session_id returns log file path for known session" {
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    local log_file="$tmpdir/node/2026-01-01_10-00-00.json"
+    mkdir -p "$tmpdir/node"
+    echo '{"session_id": "mec-node-9999999999", "tool": "node"}' > "$log_file"
+    LOG_DIR="$tmpdir"
+
+    run log_find_by_session_id "mec-node-9999999999"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "$log_file" ]
+    rm -rf "$tmpdir"
+}
+
+@test "log_find_by_session_id returns empty for unknown session" {
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    mkdir -p "$tmpdir/node"
+    LOG_DIR="$tmpdir"
+
+    run log_find_by_session_id "mec-node-0000000000"
+
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+    rm -rf "$tmpdir"
+}
+
+@test "log_find_by_session_id returns empty for empty input" {
+    run log_find_by_session_id ""
+
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
