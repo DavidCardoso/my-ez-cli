@@ -80,7 +80,18 @@
         </div>
         <div v-if="session.cwd" class="meta-item meta-item--wide">
           <span class="meta-label">Working Dir</span>
-          <span class="meta-value mono" style="font-size: 11px; color: var(--mec-text-dim);">{{ session.cwd }}</span>
+          <div class="session-id-row">
+            <span class="meta-value mono" style="font-size: 11px; color: var(--mec-text-dim);">{{ session.cwd }}</span>
+            <Button
+              icon="pi pi-copy"
+              text
+              rounded
+              size="small"
+              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+              v-tooltip="copiedCwd ? 'Copied!' : 'Copy path'"
+              @click="copyCwd"
+            />
+          </div>
         </div>
         <div v-if="session.claude_session_id" class="meta-item meta-item--wide">
           <span class="meta-label">Resume AI</span>
@@ -103,6 +114,15 @@
       <div v-if="session.command" class="command-bar">
         <span class="command-prompt">$</span>
         <span class="command-text">{{ session.command }}</span>
+        <Button
+          icon="pi pi-copy"
+          text
+          rounded
+          size="small"
+          style="color: var(--mec-text-faint); width: 24px; height: 24px; margin-left: auto; flex-shrink: 0;"
+          v-tooltip="copiedCommand ? 'Copied!' : 'Copy command'"
+          @click="copyCommand"
+        />
       </div>
 
       <!-- Two-panel layout -->
@@ -140,6 +160,8 @@ const notFound = ref(false)
 const copiedId = ref(false)
 const copiedResume = ref(false)
 const copiedAnalyze = ref(false)
+const copiedCwd = ref(false)
+const copiedCommand = ref(false)
 const { onRefresh } = useWebSocket()
 
 async function fetchSession() {
@@ -196,6 +218,22 @@ async function copyAnalyze() {
     await navigator.clipboard.writeText(`mec ai analyze ${session.value?.session_id}`)
     copiedAnalyze.value = true
     setTimeout(() => { copiedAnalyze.value = false }, 2000)
+  } catch { /* noop */ }
+}
+
+async function copyCommand() {
+  try {
+    await navigator.clipboard.writeText(session.value?.command)
+    copiedCommand.value = true
+    setTimeout(() => { copiedCommand.value = false }, 2000)
+  } catch { /* noop */ }
+}
+
+async function copyCwd() {
+  try {
+    await navigator.clipboard.writeText(session.value?.cwd)
+    copiedCwd.value = true
+    setTimeout(() => { copiedCwd.value = false }, 2000)
   } catch { /* noop */ }
 }
 </script>

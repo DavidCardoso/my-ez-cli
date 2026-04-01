@@ -107,3 +107,14 @@ describe('SessionDetailPage — AI Time and Tokens meta-bar', () => {
     expect(wrapper.text()).toContain('in=200')
   })
 })
+
+describe('SessionDetailPage — Working Dir copy button', () => {
+  it('shows copy button next to cwd when cwd is present', async () => {
+    const wrapper = await mountWithSession(makeSession({ cwd: '/home/user/myproject' }))
+    expect(wrapper.text()).toContain('Working Dir')
+    expect(wrapper.text()).toContain('/home/user/myproject')
+    // Should have a copy button in the cwd row
+    const buttons = wrapper.findAll('.btn-stub')
+    expect(buttons.length).toBeGreaterThan(0)
+  })
+})
