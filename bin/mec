@@ -1619,7 +1619,7 @@ mec_purge() {
 # ----------------------------------------------------------------------------
 
 mec_list() {
-    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE node20:MEC_IMAGE_NODE20 node22:MEC_IMAGE_NODE22 node24:MEC_IMAGE_NODE24 promptfoo:MEC_IMAGE_PROMPTFOO"
+    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE promptfoo:MEC_IMAGE_PROMPTFOO"
     local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
 
     local _b="" _r="" _dim=""
