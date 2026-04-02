@@ -806,13 +806,13 @@ _mec_logs_list() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "LOGS" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "---------------------" "------------" "------" "----------" "----" "-----" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
 
-        local tool exit_code start_time end_time has_ai duration_str session_id
+        local tool exit_code start_time end_time has_ai has_logs duration_str session_id
 
         # Extract fields using grep+sed (portable; BSD awk lacks POSIX char classes in -F)
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
@@ -826,6 +826,13 @@ _mec_logs_list() {
             has_ai="yes"
         else
             has_ai="no"
+        fi
+
+        # Check if output was captured (stdout: null means capture was off)
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+            has_logs="no"
+        else
+            has_logs="yes"
         fi
 
         # Format timestamp (strip T and fractional seconds)
@@ -861,7 +868,7 @@ except:
         [ -z "$tool" ] && tool="unknown"
         [ -z "$exit_code" ] && exit_code="?"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "$has_logs" "${session_id:-?}"
     done
 }
 
@@ -900,15 +907,15 @@ _mec_logs_failures() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "LOGS" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "---------------------" "------------" "------" "----------" "----" "-----" "----------"
 
     local shown=0
     echo "$all_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
         [ "$shown" -ge "$last_n" ] && break
 
-        local tool exit_code start_time end_time has_ai duration_str session_id
+        local tool exit_code start_time end_time has_ai has_logs duration_str session_id
 
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
@@ -925,6 +932,12 @@ _mec_logs_failures() {
             has_ai="yes"
         else
             has_ai="no"
+        fi
+
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+            has_logs="no"
+        else
+            has_logs="yes"
         fi
 
         local ts_display
@@ -952,7 +965,7 @@ except:
 
         [ -z "$tool" ] && tool="unknown"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "$has_logs" "${session_id:-?}"
         shown=$((shown + 1))
     done
 }
