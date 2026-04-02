@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=${IMAGE:-"node:22-alpine"}
+IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
 WORKDIR=/app
 NPMRC_FILE=$HOME/.npmrc
 NPM_CACHE_FOLDER=${NPM_CACHE_FOLDER:-"$HOME/.npm"}

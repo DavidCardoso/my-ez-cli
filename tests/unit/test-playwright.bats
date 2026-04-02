@@ -10,8 +10,8 @@ setup() {
     [ -x "$BASEDIR/bin/playwright" ]
 }
 
-@test "bin/playwright uses davidcardoso/my-ez-cli:playwright-latest image by default" {
-    grep -q 'davidcardoso/my-ez-cli:playwright-latest' "$BASEDIR/bin/playwright"
+@test "bin/playwright uses MEC_IMAGE_PLAYWRIGHT constant" {
+    grep -q 'MEC_IMAGE_PLAYWRIGHT' "$BASEDIR/bin/playwright"
 }
 
 @test "bin/playwright allows IMAGE override via environment" {

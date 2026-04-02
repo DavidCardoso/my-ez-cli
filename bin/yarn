@@ -11,7 +11,7 @@ check_docker
 
 # Configs
 TOOL_NAME="yarn"
-IMAGE=${IMAGE:-"node:22-alpine"}
+IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
 WORKDIR=/app
 NPM_TOKEN=${NPM_TOKEN:-""}
 

@@ -9,13 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-# Python version
-if [ -z "${PYENV_VERSION}" ]; then
-    # if not specified, use latest patch of the current LTS minor
-    PYENV_VERSION=3.12
-fi
-
-IMAGE=python:$PYENV_VERSION
+IMAGE=${IMAGE:-"$MEC_IMAGE_PYTHON"}
 WORKDIR=/app
 
 # Container naming and labeling

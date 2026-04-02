@@ -60,6 +60,9 @@ show_help() {
     printf '%s\n' "  install <tool...>   Install one or more tools"
     printf '%s\n' "  uninstall <tool...> Uninstall one or more tools"
     printf '%s\n' "  setup               Interactive setup TUI"
+    printf '%s\n' "  list                List all tools and their active image"
+    printf '%s\n' "  update [tool] [image:tag] Pull latest images (or pin to image:tag)"
+    printf '%s\n' "  reset <tool>        Remove image pin for a public tool"
     printf '%s\n' ""
     printf '%s\n' "${_b}MANAGEMENT COMMANDS${_r}"
     printf '%s\n' "  config              Manage configuration"
@@ -1612,6 +1615,221 @@ mec_purge() {
 }
 
 # ----------------------------------------------------------------------------
+# List Command
+# ----------------------------------------------------------------------------
+
+mec_list() {
+    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE promptfoo:MEC_IMAGE_PROMPTFOO"
+    local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
+
+    local _b="" _r="" _dim=""
+    if [ -t 1 ]; then
+        _b=$(printf '\033[1m')
+        _r=$(printf '\033[0m')
+        _dim=$(printf '\033[2m')
+    fi
+
+    printf '%s\n' "${_b}Tools${_r}"
+    printf '\n'
+    printf '%s\n' "${_b}Remote images${_r}${_dim} — mec update <tool> [image:tag] | mec reset <tool>${_r}"
+    printf '  %-20s  %s\n' "TOOL" "IMAGE"
+    printf '  %-20s  %s\n' "----" "-----"
+    for _entry in $_public_tools; do
+        local _tool="${_entry%%:*}"
+        local _var="${_entry##*:}"
+        local _image
+        _image=$(eval echo "\${$_var}")
+        printf '  %-20s  %s\n' "$_tool" "$_image"
+    done
+
+    printf '\n'
+    printf '%s\n' "${_b}MEC custom builds${_r}${_dim} — mec update <tool> (pull only)${_r}"
+    printf '  %-20s  %s\n' "TOOL" "IMAGE"
+    printf '  %-20s  %s\n' "----" "-----"
+    for _entry in $_custom_tools; do
+        local _tool="${_entry%%:*}"
+        local _var="${_entry##*:}"
+        local _image
+        _image=$(eval echo "\${$_var}")
+        printf '  %-20s  %s\n' "$_tool" "$_image"
+    done
+}
+
+# _mec_validate_public_image <tool> <image>
+# Returns 0 if the image contains the expected tool binary with recognizable output.
+# Prints a warning and returns 1 on failure — pin is aborted for safety.
+_mec_validate_public_image() {
+    local _tool="$1"
+    local _image="$2"
+
+    # "tool:binary:expected-substring-in-version-output"
+    local _validators="aws:aws:aws-cli terraform:terraform:Terraform node:node:v node20:node:v node22:node:v node24:node:v gcloud:gcloud:Google Cloud SDK python:python:Python promptfoo:promptfoo:promptfoo"
+
+    local _binary="" _expected=""
+    for _v in $_validators; do
+        if [ "${_v%%:*}" = "$_tool" ]; then
+            _binary=$(echo "$_v" | cut -d: -f2)
+            _expected=$(echo "$_v" | cut -d: -f3-)
+            break
+        fi
+    done
+
+    if [ -z "$_binary" ]; then
+        # No validator defined for this tool — skip check
+        return 0
+    fi
+
+    printf '[mec] Validating image %s contains %s ... ' "$_image" "$_tool" >&2
+    local _out
+    if ! _out=$(docker run --rm --entrypoint "" "$_image" "$_binary" --version 2>&1); then
+        echo "FAILED" >&2
+        echo "[mec] WARNING: '$_binary --version' exited non-zero for image: $_image" >&2
+        echo "[mec] This image may not contain '$_tool'. Pin aborted for safety." >&2
+        return 1
+    fi
+
+    if ! echo "$_out" | grep -qi "$_expected"; then
+        echo "FAILED" >&2
+        echo "[mec] WARNING: Expected '$_expected' in output of '$_binary --version' but got:" >&2
+        echo "  $_out" >&2
+        echo "[mec] This image may not be a valid '$_tool' image. Pin aborted for safety." >&2
+        return 1
+    fi
+
+    echo "ok" >&2
+    return 0
+}
+
+# ----------------------------------------------------------------------------
+# Update Command
+# ----------------------------------------------------------------------------
+
+mec_update() {
+    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE node20:MEC_IMAGE_NODE20 node22:MEC_IMAGE_NODE22 node24:MEC_IMAGE_NODE24 promptfoo:MEC_IMAGE_PROMPTFOO"
+    local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
+    local _all_tools="$_public_tools $_custom_tools"
+
+    local _target_tool="${1:-}"
+    local _target_tag="${2:-}"
+
+    # Validate tool name when a specific tool is given (before any other checks)
+    if [ -n "$_target_tool" ]; then
+        local _found=0
+        for _entry in $_all_tools; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _found=1
+                break
+            fi
+        done
+        if [ "$_found" -eq 0 ]; then
+            echo "Unknown tool: $_target_tool" >&2
+            echo "Run 'mec list' to see available tools." >&2
+            exit 1
+        fi
+    fi
+
+    # If a tag is given, only allow for Group A tools
+    if [ -n "$_target_tool" ] && [ -n "$_target_tag" ]; then
+        local _is_public=0
+        for _entry in $_public_tools; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _is_public=1
+                break
+            fi
+        done
+        if [ "$_is_public" -eq 0 ]; then
+            echo "Cannot pin '$_target_tool': this is a custom my-ez-cli build." >&2
+            echo "Custom image version management is tracked in a separate issue." >&2
+            echo "To pull the latest published build: mec update $_target_tool" >&2
+            exit 1
+        fi
+        # Validate the image actually contains the expected tool (supply-chain check)
+        if ! _mec_validate_public_image "$_target_tool" "$_target_tag"; then
+            exit 1
+        fi
+        # Resolve variable and write pin
+        local _var=""
+        for _entry in $_public_tools; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _var="${_entry##*:}"
+                break
+            fi
+        done
+        local _user_images="${MEC_HOME}/images.conf"
+        mkdir -p "$MEC_HOME"
+        if [ -f "$_user_images" ]; then
+            (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
+        fi
+        echo "${_var}=${_target_tag}" >> "$_user_images"
+        # Re-source user overrides so the pull loop sees the new pin
+        # shellcheck disable=SC1090
+        . "$_user_images"
+        echo "Pinned $_target_tool to $_target_tag"
+    fi
+
+    echo "Pulling images..."
+    for _entry in $_all_tools; do
+        local _tool="${_entry%%:*}"
+        local _var="${_entry##*:}"
+        if [ -n "$_target_tool" ] && [ "$_tool" != "$_target_tool" ]; then
+            continue
+        fi
+        local _image
+        _image=$(eval echo "\${$_var}")
+        printf '  Pulling %s ... ' "$_image"
+        if docker pull "$_image" >/dev/null 2>&1; then
+            echo "done"
+        else
+            echo "FAILED"
+        fi
+    done
+}
+
+# ----------------------------------------------------------------------------
+# Reset Command
+# ----------------------------------------------------------------------------
+
+mec_reset() {
+    local _tool="${1:-}"
+    if [ -z "$_tool" ]; then
+        echo "Usage: mec reset <tool>" >&2
+        echo "Run 'mec list' to see available tools." >&2
+        exit 1
+    fi
+
+    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE node20:MEC_IMAGE_NODE20 node22:MEC_IMAGE_NODE22 node24:MEC_IMAGE_NODE24 promptfoo:MEC_IMAGE_PROMPTFOO"
+    local _custom_tool_names="claude dashboard playwright aws-sso-cred serverless speedtest yarn-berry yarn-plus ai-service config-service"
+
+    # Reject reset for custom-build tools
+    for _custom in $_custom_tool_names; do
+        if [ "$_custom" = "$_tool" ]; then
+            echo "Cannot reset '$_tool': this is a custom my-ez-cli build with no pinnable version." >&2
+            echo "Custom image version management is tracked in a separate issue." >&2
+            exit 1
+        fi
+    done
+
+    # Resolve variable for public tools
+    local _var=""
+    for _entry in $_public_tools; do
+        if [ "${_entry%%:*}" = "$_tool" ]; then
+            _var="${_entry##*:}"
+            break
+        fi
+    done
+    if [ -z "$_var" ]; then
+        echo "Unknown tool: $_tool" >&2
+        exit 1
+    fi
+
+    local _user_images="${MEC_HOME}/images.conf"
+    if [ -f "$_user_images" ]; then
+        (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
+    fi
+    echo "Reset $_tool to default image"
+}
+
+# ----------------------------------------------------------------------------
 # Main Dispatch
 # ----------------------------------------------------------------------------
 
@@ -1663,6 +1881,17 @@ case "$COMMAND" in
     purge)
         shift
         mec_purge "$@"
+        ;;
+    list)
+        mec_list
+        ;;
+    update)
+        shift
+        mec_update "$@"
+        ;;
+    reset)
+        shift
+        mec_reset "$@"
         ;;
     version|--version|-v)
         show_version

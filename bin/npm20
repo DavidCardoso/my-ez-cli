@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && 
 MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # override default image
-export IMAGE=node:20-alpine
+export IMAGE="node:20-alpine"
 
 # import & run the local default npm script
 . "${MEC_BASE_DIR}/bin/npm"
