@@ -10,8 +10,12 @@
 # Logs Configuration
 # ----------------------------------------------------------------------------
 logs:
-  # Enable/disable logging system
-  enabled: false
+  # Session telemetry (session_id, tool, exit_code, timing). Lightweight and safe.
+  enabled: true
+
+  output:
+    # stdout/stderr capture. Opt-in — may be large or privacy-sensitive.
+    enabled: false
 
   # Log level: debug, info, warn, error
   level: info

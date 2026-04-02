@@ -21,6 +21,7 @@ DEFAULT_CONFIG_FILE="${MEC_HOME:-${HOME}/.my-ez-cli}/config.yaml"
 load_log_config() {
     # Default values
     LOG_ENABLED="${MEC_LOGS_ENABLED:-false}"
+    LOG_OUTPUT_ENABLED="${MEC_LOGS_OUTPUT_ENABLED:-false}"
     LOG_LEVEL="${MEC_LOG_LEVEL:-info}"
     LOG_FORMAT="${MEC_LOG_FORMAT:-json}"
     LOG_DIR="${MEC_LOG_DIR:-$DEFAULT_LOG_DIR}"
@@ -33,10 +34,7 @@ load_log_config() {
     fi
 
     # Export for other scripts
-    export LOG_ENABLED
-    export LOG_LEVEL
-    export LOG_FORMAT
-    export LOG_DIR
+    export LOG_ENABLED LOG_OUTPUT_ENABLED LOG_LEVEL LOG_FORMAT LOG_DIR
 }
 
 # ----------------------------------------------------------------------------
@@ -67,6 +65,7 @@ log_session_init() {
     SESSION_ID=$(get_session_id "$TOOL_NAME")
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%300Z" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
     LOG_TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+    LOG_SESSION_START_EPOCH=$(date +%s)
 
     # Create log file paths
     JSON_LOG_FILE="${TOOL_LOG_DIR}/${LOG_TIMESTAMP}.json"
@@ -80,6 +79,8 @@ log_session_init() {
     export LOG_SESSION_START_TIME="$TIMESTAMP"
     export LOG_SESSION_CWD="$(pwd)"
     export LOG_JSON_FILE="$JSON_LOG_FILE"
+    export LOG_SESSION_START_EPOCH
+    export LOG_OUTPUT_ENABLED
 
     # Touch log file
     touch "$JSON_LOG_FILE"
@@ -110,6 +111,8 @@ log_session_finalize() {
 
     # Calculate end time and duration
     END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.%300Z" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+    END_EPOCH=$(date +%s)
+    DURATION_MS=$(( (END_EPOCH - ${LOG_SESSION_START_EPOCH:-END_EPOCH}) * 1000 ))
 
     # Get system information
     USERNAME=$(whoami)
@@ -120,10 +123,17 @@ log_session_finalize() {
     ENV_VARS=$(get_log_environment)
 
     # Escape JSON strings
-    STDOUT_ESCAPED=$(escape_json "$STDOUT")
-    STDERR_ESCAPED=$(escape_json "$STDERR")
     COMMAND_ESCAPED=$(escape_json "$LOG_SESSION_COMMAND")
     CWD_ESCAPED=$(escape_json "$LOG_SESSION_CWD")
+
+    # Build output block — null when capture is disabled, real strings when enabled
+    if [ "$LOG_OUTPUT_ENABLED" = "true" ]; then
+        STDOUT_ESCAPED=$(escape_json "$STDOUT")
+        STDERR_ESCAPED=$(escape_json "$STDERR")
+        OUTPUT_BLOCK="\"output\": {\"stdout\": \"$STDOUT_ESCAPED\", \"stderr\": \"$STDERR_ESCAPED\"}"
+    else
+        OUTPUT_BLOCK="\"output\": {\"stdout\": null, \"stderr\": null}"
+    fi
 
     # Write JSON log entry
     cat > "$LOG_JSON_FILE" <<EOF
@@ -139,12 +149,10 @@ log_session_finalize() {
   "execution": {
     "start_time": "$LOG_SESSION_START_TIME",
     "end_time": "$END_TIME",
-    "exit_code": $EXIT_CODE
+    "exit_code": $EXIT_CODE,
+    "duration_ms": $DURATION_MS
   },
-  "output": {
-    "stdout": "$STDOUT_ESCAPED",
-    "stderr": "$STDERR_ESCAPED"
-  },
+  $OUTPUT_BLOCK,
   "metadata": {
     "user": "$USERNAME",
     "hostname": "$HOSTNAME",
