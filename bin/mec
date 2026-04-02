@@ -61,7 +61,7 @@ show_help() {
     printf '%s\n' "  uninstall <tool...> Uninstall one or more tools"
     printf '%s\n' "  setup               Interactive setup TUI"
     printf '%s\n' "  list                List all tools and their active image"
-    printf '%s\n' "  update [tool] [tag] Pull latest images (or pin public tool to tag)"
+    printf '%s\n' "  update [tool] [image:tag] Pull latest images (or pin to image:tag)"
     printf '%s\n' "  reset <tool>        Remove image pin for a public tool"
     printf '%s\n' ""
     printf '%s\n' "${_b}MANAGEMENT COMMANDS${_r}"
@@ -1631,7 +1631,7 @@ mec_list() {
 
     printf '%s\n' "${_b}Tools${_r}"
     printf '\n'
-    printf '%s\n' "${_b}Remote images${_r}${_dim} — mec update <tool> [tag] | mec reset <tool>${_r}"
+    printf '%s\n' "${_b}Remote images${_r}${_dim} — mec update <tool> [image:tag] | mec reset <tool>${_r}"
     printf '  %-20s  %s\n' "TOOL" "IMAGE"
     printf '  %-20s  %s\n' "----" "-----"
     for _entry in $_public_tools; do
