@@ -54,14 +54,14 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
-@test "mec list shows Public tools section" {
+@test "mec list shows Remote images section" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep -q 'Public tools'
+    echo "$output" | grep -q 'Remote images'
 }
 
-@test "mec list shows Custom builds section" {
+@test "mec list shows MEC custom builds section" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep -q 'Custom builds'
+    echo "$output" | grep -q 'MEC custom builds'
 }
 
 @test "mec list shows terraform" {

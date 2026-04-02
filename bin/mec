@@ -1629,9 +1629,9 @@ mec_list() {
         _dim=$(printf '\033[2m')
     fi
 
-    printf '%s\n' "${_b}Tool Images${_r}"
+    printf '%s\n' "${_b}Tools${_r}"
     printf '\n'
-    printf '%s\n' "${_b}Public tools${_r}${_dim} — mec update <tool> [tag] | mec reset <tool>${_r}"
+    printf '%s\n' "${_b}Remote images${_r}${_dim} — mec update <tool> [tag] | mec reset <tool>${_r}"
     printf '  %-20s  %s\n' "TOOL" "IMAGE"
     printf '  %-20s  %s\n' "----" "-----"
     for _entry in $_public_tools; do
@@ -1643,7 +1643,7 @@ mec_list() {
     done
 
     printf '\n'
-    printf '%s\n' "${_b}Custom builds${_r}${_dim} — mec update <tool> (pull only)${_r}"
+    printf '%s\n' "${_b}MEC custom builds${_r}${_dim} — mec update <tool> (pull only)${_r}"
     printf '  %-20s  %s\n' "TOOL" "IMAGE"
     printf '  %-20s  %s\n' "----" "-----"
     for _entry in $_custom_tools; do
