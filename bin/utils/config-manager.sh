@@ -22,14 +22,14 @@ init_config() {
     # Create config directory if it doesn't exist
     if [ ! -d "$CONFIG_DIR" ]; then
         mkdir -p "$CONFIG_DIR"
-        echo "Created config directory: $CONFIG_DIR"
+        echo "Created config directory: $CONFIG_DIR" >&2
     fi
 
     # Create config file from default if it doesn't exist
     if [ ! -f "$CONFIG_FILE" ]; then
         if [ -f "$DEFAULT_CONFIG" ]; then
             cp "$DEFAULT_CONFIG" "$CONFIG_FILE"
-            echo "Created config file: $CONFIG_FILE"
+            echo "Created config file: $CONFIG_FILE" >&2
         else
             # Create minimal config if default doesn't exist
             cat > "$CONFIG_FILE" <<'EOF'
@@ -46,7 +46,7 @@ ai:
   deep: false
   model_tier: faster
 EOF
-            echo "Created minimal config file: $CONFIG_FILE"
+            echo "Created minimal config file: $CONFIG_FILE" >&2
         fi
     fi
 }
