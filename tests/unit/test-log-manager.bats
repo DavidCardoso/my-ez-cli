@@ -29,10 +29,12 @@ teardown() {
 @test "load_log_config sets default values" {
     unset MEC_LOGS_ENABLED
     unset MEC_LOG_LEVEL
+    unset MEC_LOGS_OUTPUT_ENABLED
 
     load_log_config
 
     [ "$LOG_ENABLED" = "false" ]
+    [ "$LOG_OUTPUT_ENABLED" = "false" ]
     [ "$LOG_LEVEL" = "info" ]
     [ "$LOG_FORMAT" = "json" ]
 }
@@ -122,6 +124,9 @@ teardown() {
     [ "$status" -eq 0 ]
 
     run grep '"tool": "node"' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    run grep '"duration_ms"' "$LOG_JSON_FILE"
     [ "$status" -eq 0 ]
 }
 
@@ -248,7 +253,8 @@ _make_test_log() {
   "execution": {
     "start_time": "2026-01-15T10:00:00.300Z",
     "end_time": "2026-01-15T10:00:01.300Z",
-    "exit_code": ${exit_code}
+    "exit_code": ${exit_code},
+    "duration_ms": 1000
   },
   "output": {"stdout": "", "stderr": ""},
   "metadata": {}
@@ -361,4 +367,55 @@ EOF
 
     [ "$status" -eq 0 ]
     [ -z "$output" ]
+}
+
+# ----------------------------------------------------------------------------
+# LOG_OUTPUT_ENABLED and duration_ms Tests
+# ----------------------------------------------------------------------------
+
+@test "load_log_config respects MEC_LOGS_OUTPUT_ENABLED" {
+    export MEC_LOGS_OUTPUT_ENABLED="true"
+    load_log_config
+    [ "$LOG_OUTPUT_ENABLED" = "true" ]
+    unset MEC_LOGS_OUTPUT_ENABLED
+}
+
+@test "log_session_finalize writes null output when LOG_OUTPUT_ENABLED=false" {
+    export MEC_LOGS_ENABLED="true"
+    export MEC_LOGS_OUTPUT_ENABLED="false"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "v24.0.0" "" 0
+
+    run grep '"stdout": null' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    run grep '"stderr": null' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    unset MEC_LOGS_OUTPUT_ENABLED
+}
+
+@test "log_session_finalize writes stdout/stderr when LOG_OUTPUT_ENABLED=true" {
+    export MEC_LOGS_ENABLED="true"
+    export MEC_LOGS_OUTPUT_ENABLED="true"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "v24.0.0" "" 0
+
+    run grep '"stdout":' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ v24.0.0 ]]
+
+    unset MEC_LOGS_OUTPUT_ENABLED
+}
+
+@test "log_session_finalize includes duration_ms in execution block" {
+    export MEC_LOGS_ENABLED="true"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "" "" 0
+
+    run grep '"duration_ms"' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
 }
