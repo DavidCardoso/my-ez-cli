@@ -5,6 +5,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
 MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-export IMAGE=node:22-alpine
+export IMAGE="${MEC_IMAGE_NODE22}"
 
 . "${MEC_BASE_DIR}/bin/yarn"

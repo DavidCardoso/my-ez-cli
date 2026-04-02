@@ -17,23 +17,32 @@ export MEC_HOME
 # ----------------------------------------------------------------------------
 # Docker Image Constants
 # ----------------------------------------------------------------------------
-MEC_IMAGE_REPO="${MEC_IMAGE_REPO:-davidcardoso/my-ez-cli}"
-MEC_IMAGE_TAG="${MEC_IMAGE_TAG:-latest}"
 
-MEC_IMAGE_AI_SERVICE="${MEC_IMAGE_AI_SERVICE:-${MEC_IMAGE_REPO}:ai-service-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_CONFIG_SERVICE="${MEC_IMAGE_CONFIG_SERVICE:-${MEC_IMAGE_REPO}:config-service-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_CLAUDE="${MEC_IMAGE_CLAUDE:-${MEC_IMAGE_REPO}:claude-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_SERVERLESS="${MEC_IMAGE_SERVERLESS:-${MEC_IMAGE_REPO}:serverless-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_SPEEDTEST="${MEC_IMAGE_SPEEDTEST:-${MEC_IMAGE_REPO}:speedtest-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_AWS_SSO_CRED="${MEC_IMAGE_AWS_SSO_CRED:-${MEC_IMAGE_REPO}:aws-sso-cred-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_YARN_BERRY="${MEC_IMAGE_YARN_BERRY:-${MEC_IMAGE_REPO}:yarn-berry-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_YARN_PLUS="${MEC_IMAGE_YARN_PLUS:-${MEC_IMAGE_REPO}:yarn-plus-${MEC_IMAGE_TAG}}"
-MEC_IMAGE_DASHBOARD="${MEC_IMAGE_DASHBOARD:-${MEC_IMAGE_REPO}:dashboard-${MEC_IMAGE_TAG}}"
+# Resolve repo root relative to this script (works with symlinks)
+_MEC_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+_MEC_BASE_DIR="$(cd "${_MEC_COMMON_DIR}/../.." && pwd)"
+
+# Source user overrides FIRST so plain assignments win over ${VAR:-default} guards
+_MEC_USER_IMAGES="${MEC_HOME:-${HOME}/.my-ez-cli}/images.conf"
+if [ -f "$_MEC_USER_IMAGES" ]; then
+    # shellcheck disable=SC1090
+    . "$_MEC_USER_IMAGES"
+fi
+
+# Source default image tags (guards skip already-set vars)
+if [ -f "${_MEC_BASE_DIR}/config/images.conf" ]; then
+    # shellcheck source=../../config/images.conf
+    . "${_MEC_BASE_DIR}/config/images.conf"
+fi
 
 export MEC_IMAGE_REPO MEC_IMAGE_TAG
+# Group A: Public images
+export MEC_IMAGE_AWS MEC_IMAGE_TERRAFORM MEC_IMAGE_GCLOUD MEC_IMAGE_PYTHON MEC_IMAGE_PROMPTFOO
+export MEC_IMAGE_NODE MEC_IMAGE_NODE20 MEC_IMAGE_NODE22 MEC_IMAGE_NODE24
+# Group B: Custom my-ez-cli builds
 export MEC_IMAGE_AI_SERVICE MEC_IMAGE_CONFIG_SERVICE MEC_IMAGE_CLAUDE MEC_IMAGE_SERVERLESS
 export MEC_IMAGE_SPEEDTEST MEC_IMAGE_AWS_SSO_CRED MEC_IMAGE_YARN_BERRY MEC_IMAGE_YARN_PLUS
-export MEC_IMAGE_DASHBOARD
+export MEC_IMAGE_DASHBOARD MEC_IMAGE_PLAYWRIGHT
 
 # ----------------------------------------------------------------------------
 # JSON Validation

@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=${IMAGE:-"ghcr.io/promptfoo/promptfoo:latest"} # pin a specific version if needed
+IMAGE=${IMAGE:-"$MEC_IMAGE_PROMPTFOO"}
 WORKDIR=/app
 
 # Container naming and labeling (promptfoo-server runs persistently, so we use a predictable name)

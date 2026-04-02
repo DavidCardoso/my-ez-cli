@@ -10,7 +10,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 check_docker
 
 # Defaults to NodeJS v22 if no version is specified
-IMAGE=${IMAGE:-"node:22-alpine"}
+IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
 WORKDIR=/app
 
 # Container naming and labeling

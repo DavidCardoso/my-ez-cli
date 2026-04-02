@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=hashicorp/terraform:1.14.5
+IMAGE=${IMAGE:-"$MEC_IMAGE_TERRAFORM"}
 WORKDIR=${PWD}
 
 # This folder will be mounted on the container

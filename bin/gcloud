@@ -15,7 +15,7 @@ if ! docker inspect gcloud-config >/dev/null 2>&1; then
     exit 1
 fi
 
-IMAGE=eu.gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
+IMAGE=${IMAGE:-"$MEC_IMAGE_GCLOUD"}
 WORKDIR=/app
 
 # Container naming and labeling

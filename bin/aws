@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-IMAGE=amazon/aws-cli:latest
+IMAGE=${IMAGE:-"$MEC_IMAGE_AWS"}
 WORKDIR=/app
 
 # Container naming and labeling

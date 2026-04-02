@@ -10,7 +10,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 check_docker
 
 # Configs
-IMAGE=${IMAGE:-"node:22-alpine"}
+IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
 WORKDIR=/app
 NPM_TOKEN=${NPM_TOKEN:-""}
 
