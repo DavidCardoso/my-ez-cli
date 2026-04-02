@@ -13,7 +13,7 @@ My Ez CLI uses a git-style configuration system that stores settings in `~/.my-e
 mec config list
 
 # Get a specific value
-mec config get logs.enabled
+mec config get telemetry.enabled
 
 # Set a value
 mec config set logs.enabled true
@@ -37,7 +37,8 @@ Default template: `<install-dir>/config/config.default.yaml`
 
 The configuration file uses YAML format with the following main sections:
 
-- `logs`: Log persistence and rotation settings
+- `telemetry`: Session telemetry settings (on by default — opt-out)
+- `logs`: stdout/stderr capture and rotation settings (off by default — opt-in)
 - `ai`: AI integration settings
 - `tools`: Tool-specific configurations
 - `performance`: Performance and caching settings
@@ -54,6 +55,7 @@ Retrieve a specific configuration value:
 mec config get <key>
 
 # Examples
+mec config get telemetry.enabled
 mec config get logs.enabled
 mec config get ai.provider
 mec config get tools.node.default_version
@@ -67,6 +69,7 @@ Update a configuration value:
 mec config set <key> <value>
 
 # Examples
+mec config set telemetry.enabled false
 mec config set logs.enabled true
 mec config set logs.level debug
 mec config set ai.provider anthropic
@@ -120,13 +123,25 @@ eval $(mec config export)
 
 ## Configuration Sections
 
+### Telemetry
+
+Control session metadata recording (opt-out — enabled by default):
+
+```yaml
+telemetry:
+  enabled: true                     # Enable/disable session telemetry (session_id, tool, exit_code, timing)
+```
+
+**Environment Variable Overrides:**
+- `MEC_TELEMETRY_ENABLED=false` - Disable telemetry
+
 ### Logs
 
-Control log persistence and rotation:
+Control stdout/stderr capture and rotation (opt-in — disabled by default):
 
 ```yaml
 logs:
-  enabled: false                    # Enable/disable logging
+  enabled: false                    # Enable/disable stdout/stderr capture
   level: info                       # Log level: debug, info, warn, error
   format: json                      # Log format: json, text
 
@@ -140,7 +155,7 @@ logs:
 > **Note:** Tool output filtering is configured under `ai.filters`, not `logs`. See [AI Integration](#ai-integration) below.
 
 **Environment Variable Overrides:**
-- `MEC_LOGS_ENABLED=true` - Enable logging
+- `MEC_LOGS_ENABLED=true` - Enable stdout/stderr capture
 - `MEC_LOG_LEVEL=debug` - Set log level
 - `MEC_LOG_DIR=/path/to/logs` - Custom log directory
 
@@ -238,12 +253,15 @@ privacy:
 
 Configuration values can be overridden with environment variables:
 
+### Telemetry
+- `MEC_TELEMETRY_ENABLED` - Enable/disable session telemetry (true/false, default: true)
+
 ### Logs
-- `MEC_LOGS_ENABLED` - Enable logging (true/false)
+- `MEC_LOGS_ENABLED` - Enable stdout/stderr capture (true/false, default: false)
 - `MEC_LOG_LEVEL` - Log level (debug/info/warn/error)
 - `MEC_LOG_FORMAT` - Log format (json/text)
 - `MEC_LOG_DIR` - Custom log directory
-- `MEC_SAVE_LOGS` - Legacy: Enable logging (1/0)
+- `MEC_SAVE_LOGS` - Legacy: Enable telemetry (1/0)
 
 ### AI
 - `MEC_AI_ENABLED` - Enable AI features (true/false)
@@ -256,13 +274,14 @@ Configuration values can be overridden with environment variables:
 
 ## Examples
 
-### Enable Logging
+### Enable Output Capture
 
 ```shell
-# Enable logging with default settings
-mec config set logs.enabled true
+# Enable stdout/stderr capture (telemetry is on by default)
+mec logs enable
+# or: mec config set logs.enabled true
 
-# Or use environment variable
+# Or use environment variable for a single run
 MEC_LOGS_ENABLED=true node server.js
 
 # View logs
@@ -318,7 +337,7 @@ mec config edit
 
 The following legacy variables are still supported:
 
-- `MEC_SAVE_LOGS=1` equivalent to `MEC_LOGS_ENABLED=true`
+- `MEC_SAVE_LOGS=1` equivalent to `MEC_TELEMETRY_ENABLED=true`
 
 ### Upgrading Configuration
 

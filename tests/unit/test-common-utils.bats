@@ -53,7 +53,7 @@ setup() {
 }
 
 @test "setup_logging respects disabled logging" {
-    MEC_SAVE_LOGS=0 setup_logging "test-tool"
+    MEC_TELEMETRY_ENABLED=false MEC_SAVE_LOGS=0 setup_logging "test-tool"
     [ "$LOG_ENABLED" = "false" ]
 }
 

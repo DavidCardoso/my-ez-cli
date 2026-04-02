@@ -18,7 +18,7 @@
         <i class="pi pi-inbox" style="font-size: 28px; color: var(--mec-text-faint); margin-bottom: 10px;"></i>
         <div style="color: var(--mec-text-dim); font-size: 13px;">No sessions found.</div>
         <div style="color: var(--mec-text-faint); font-size: 12px; margin-top: 4px;">
-          Run a tool with <code class="inline-code">MEC_LOGS_ENABLED=true</code>
+          Run a tool with <code class="inline-code">MEC_TELEMETRY_ENABLED=true</code>
         </div>
       </div>
     </template>
@@ -56,6 +56,16 @@
           :value="data.ai_status"
           :severity="aiSeverity(data.ai_status)"
           class="ai-tag"
+        />
+      </template>
+    </Column>
+
+    <Column field="log_status" header="Logs" sortable>
+      <template #body="{ data }">
+        <Tag
+          :value="data.log_status"
+          :severity="logSeverity(data.log_status)"
+          class="log-tag"
         />
       </template>
     </Column>
@@ -101,6 +111,10 @@ function aiSeverity(status) {
   if (status === 'pending') return 'warn'
   return 'secondary'
 }
+
+function logSeverity(status) {
+  return status === 'captured' ? 'success' : 'secondary'
+}
 </script>
 
 <style scoped>
@@ -135,6 +149,11 @@ function aiSeverity(status) {
 
 .ai-tag {
   min-width: 56px;
+  justify-content: center;
+}
+
+.log-tag {
+  min-width: 64px;
   justify-content: center;
 }
 

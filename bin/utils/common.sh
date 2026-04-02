@@ -177,13 +177,13 @@ _load_mec_config() {
     fi
     # [ -z "${VAR+x}" ] is true only if VAR is unset (not if it's set to empty or false)
     # This lets explicit env var overrides (e.g. MEC_AI_ENABLED=false) take precedence
+    if [ -z "${MEC_TELEMETRY_ENABLED+x}" ]; then
+        MEC_TELEMETRY_ENABLED=$(config_get_default "telemetry.enabled" "true")
+        export MEC_TELEMETRY_ENABLED
+    fi
     if [ -z "${MEC_LOGS_ENABLED+x}" ]; then
         MEC_LOGS_ENABLED=$(config_get_default "logs.enabled" "false")
         export MEC_LOGS_ENABLED
-    fi
-    if [ -z "${MEC_LOGS_OUTPUT_ENABLED+x}" ]; then
-        MEC_LOGS_OUTPUT_ENABLED=$(config_get_default "logs.output.enabled" "false")
-        export MEC_LOGS_OUTPUT_ENABLED
     fi
     if [ -z "${MEC_AI_ENABLED+x}" ]; then
         MEC_AI_ENABLED=$(config_get_default "ai.enabled" "false")
@@ -213,7 +213,7 @@ setup_logging() {
         # Fallback to simple logging
         LOG_DIR="${MEC_LOG_DIR:-${MEC_HOME}/logs}/${TOOL_NAME}"
 
-        if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_LOGS_ENABLED:-false}" = "true" ]; then
+        if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_TELEMETRY_ENABLED:-true}" = "true" ]; then
             mkdir -p "$LOG_DIR"
 
             TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
@@ -503,7 +503,7 @@ exec_with_ai() {
 
     local exit_code stdout_content="" stderr_content=""
 
-    if [ "$LOG_OUTPUT_ENABLED" = "true" ]; then
+    if [ "$LOG_ENABLED" = "true" ]; then
         # Output capture enabled — tee stdout/stderr to temp files
         local tmpdir_path
         tmpdir_path=$(mktemp -d)

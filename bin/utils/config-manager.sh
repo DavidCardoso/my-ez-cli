@@ -337,11 +337,13 @@ config_export() {
     ensure_config
 
     # Export common settings as environment variables
+    TELEMETRY_ENABLED=$(config_get "telemetry.enabled" 2>/dev/null || echo "true")
     LOG_ENABLED=$(config_get "logs.enabled" 2>/dev/null || echo "false")
     LOG_LEVEL=$(config_get "logs.level" 2>/dev/null || echo "info")
     AI_ENABLED=$(config_get "ai.enabled" 2>/dev/null || echo "false")
     AI_DEEP=$(config_get "ai.deep" 2>/dev/null || echo "false")
 
+    echo "export MEC_TELEMETRY_ENABLED=$TELEMETRY_ENABLED"
     echo "export MEC_LOGS_ENABLED=$LOG_ENABLED"
     echo "export MEC_LOG_LEVEL=$LOG_LEVEL"
     echo "export MEC_AI_ENABLED=$AI_ENABLED"
@@ -413,8 +415,11 @@ mec_config() {
             printf '%s\n' "  help                Show this help"
             printf '%s\n' ""
             printf '%s\n' "${_b}CONFIGURABLE KEYS${_r}"
+            printf '%s\n' "  Telemetry:"
+            printf '%s\n' "    telemetry.enabled        Enable/disable session telemetry (true/false, default: true)"
+            printf '%s\n' ""
             printf '%s\n' "  Logs:"
-            printf '%s\n' "    logs.enabled             Enable/disable logging (true/false, default: false)"
+            printf '%s\n' "    logs.enabled             Enable/disable stdout/stderr capture (true/false, default: false)"
             printf '%s\n' "    logs.level               Log level (debug/info/warn/error, default: info)"
             printf '%s\n' ""
             printf '%s\n' "  AI:"
@@ -428,6 +433,8 @@ mec_config() {
             printf '%s\n' "                                 Accepted: low, medium, high"
             printf '%s\n' ""
             printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec config get telemetry.enabled"
+            printf '%s\n' "  mec config set telemetry.enabled false"
             printf '%s\n' "  mec config get logs.enabled"
             printf '%s\n' "  mec config set logs.enabled true"
             printf '%s\n' "  mec config set ai.claude.model haiku"

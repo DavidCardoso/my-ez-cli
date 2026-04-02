@@ -20,8 +20,8 @@ DEFAULT_CONFIG_FILE="${MEC_HOME:-${HOME}/.my-ez-cli}/config.yaml"
 # Load configuration from config file or environment variables
 load_log_config() {
     # Default values
+    TELEMETRY_ENABLED="${MEC_TELEMETRY_ENABLED:-true}"
     LOG_ENABLED="${MEC_LOGS_ENABLED:-false}"
-    LOG_OUTPUT_ENABLED="${MEC_LOGS_OUTPUT_ENABLED:-false}"
     LOG_LEVEL="${MEC_LOG_LEVEL:-info}"
     LOG_FORMAT="${MEC_LOG_FORMAT:-json}"
     LOG_DIR="${MEC_LOG_DIR:-$DEFAULT_LOG_DIR}"
@@ -30,11 +30,11 @@ load_log_config() {
 
     # Legacy support
     if [ "$MEC_SAVE_LOGS" = "1" ]; then
-        LOG_ENABLED="true"
+        TELEMETRY_ENABLED="true"
     fi
 
     # Export for other scripts
-    export LOG_ENABLED LOG_OUTPUT_ENABLED LOG_LEVEL LOG_FORMAT LOG_DIR
+    export TELEMETRY_ENABLED LOG_ENABLED LOG_LEVEL LOG_FORMAT LOG_DIR
 }
 
 # ----------------------------------------------------------------------------
@@ -51,8 +51,8 @@ log_session_init() {
     # Load configuration
     load_log_config
 
-    # Check if logging is enabled
-    if [ "$LOG_ENABLED" != "true" ]; then
+    # Check if telemetry is enabled
+    if [ "$TELEMETRY_ENABLED" != "true" ]; then
         export LOG_SESSION_ENABLED="false"
         return 0
     fi
@@ -80,7 +80,7 @@ log_session_init() {
     export LOG_SESSION_CWD="$(pwd)"
     export LOG_JSON_FILE="$JSON_LOG_FILE"
     export LOG_SESSION_START_EPOCH
-    export LOG_OUTPUT_ENABLED
+    export LOG_ENABLED
 
     # Touch log file
     touch "$JSON_LOG_FILE"
@@ -127,7 +127,7 @@ log_session_finalize() {
     CWD_ESCAPED=$(escape_json "$LOG_SESSION_CWD")
 
     # Build output block — null when capture is disabled, real strings when enabled
-    if [ "$LOG_OUTPUT_ENABLED" = "true" ]; then
+    if [ "$LOG_ENABLED" = "true" ]; then
         STDOUT_ESCAPED=$(escape_json "$STDOUT")
         STDERR_ESCAPED=$(escape_json "$STDERR")
         OUTPUT_BLOCK="\"output\": {\"stdout\": \"$STDOUT_ESCAPED\", \"stderr\": \"$STDERR_ESCAPED\"}"
@@ -244,7 +244,7 @@ redact_sensitive() {
 log_rotate() {
     load_log_config
 
-    if [ "$LOG_ENABLED" != "true" ]; then
+    if [ "$TELEMETRY_ENABLED" != "true" ]; then
         return 0
     fi
 

@@ -30,7 +30,7 @@
       </template>
       <div v-else-if="captureDisabled" class="state-msg">
         <i class="pi pi-ban" style="font-size: 15px; opacity: 0.5;"></i>
-        <span>Output capture disabled — run <code>mec logs output enable</code> to record stdout/stderr.</span>
+        <span>Output capture disabled — run <code>mec logs enable</code> to record stdout/stderr.</span>
       </div>
       <div v-else class="state-msg">
         <i class="pi pi-minus-circle" style="font-size: 15px; opacity: 0.4;"></i>
