@@ -72,15 +72,18 @@ ensure_config() {
 # ----------------------------------------------------------------------------
 
 # Get a configuration value
-# Usage: config_get "logs.enabled"
+# Falls back to the default config file when the key is absent from user config.
+# Usage: config_get "telemetry.enabled"
 config_get() {
     KEY="$1"
 
     ensure_config
 
-    # Simple YAML parser using sed/awk
-    # This is a basic implementation; for complex YAML, consider using yq
-    VALUE=$(parse_yaml_key "$CONFIG_FILE" "$KEY")
+    VALUE=$(parse_yaml_key "$CONFIG_FILE" "$KEY" 2>/dev/null) || true
+
+    if [ -z "$VALUE" ] && [ -f "$DEFAULT_CONFIG" ]; then
+        VALUE=$(parse_yaml_key "$DEFAULT_CONFIG" "$KEY" 2>/dev/null) || true
+    fi
 
     if [ -z "$VALUE" ]; then
         echo "Key not found: $KEY" >&2

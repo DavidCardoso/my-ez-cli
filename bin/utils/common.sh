@@ -21,6 +21,9 @@ export MEC_HOME
 # Resolve repo root relative to this script (works with symlinks)
 _MEC_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 _MEC_BASE_DIR="$(cd "${_MEC_COMMON_DIR}/../.." && pwd)"
+# Export for config-manager.sh and other utilities that need the repo root
+MEC_BASE_DIR="${MEC_BASE_DIR:-${_MEC_BASE_DIR}}"
+export MEC_BASE_DIR
 
 # Source user overrides FIRST so plain assignments win over ${VAR:-default} guards
 _MEC_USER_IMAGES="${MEC_HOME:-${HOME}/.my-ez-cli}/images.conf"
