@@ -167,9 +167,9 @@ mec_ai() {
             local logging_enabled
             logging_enabled=$(config_get_default "logs.enabled" "false")
             if [ "$logging_enabled" = "true" ]; then
-                echo "  Logging:       enabled"
+                echo "  Telemetry:     enabled"
             else
-                echo "  Logging:       disabled  (AI analysis requires logging — run 'mec logs enable')"
+                echo "  Telemetry:     disabled  (AI analysis requires telemetry — run 'mec logs enable')"
             fi
 
             # Show Claude execution settings
@@ -569,9 +569,11 @@ mec_logs() {
         status)
             echo "Logging Status"
             echo "--------------"
-            local logging_enabled
-            logging_enabled=$(config_get_default "logs.enabled" "false")
-            echo "  Logging enabled: $logging_enabled"
+            local telemetry_enabled output_enabled
+            telemetry_enabled=$(config_get_default "logs.enabled" "false")
+            output_enabled=$(config_get_default "logs.output.enabled" "false")
+            echo "  Telemetry:       $telemetry_enabled  (session_id, tool, exit_code, timing)"
+            echo "  Output capture:  $output_enabled  (stdout/stderr)"
             local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
             echo "  Log directory:   $log_dir"
             if [ -d "$log_dir" ]; then
@@ -584,12 +586,22 @@ mec_logs() {
             ;;
         enable)
             config_set "logs.enabled" "true"
-            echo "Logging enabled."
-            echo "Logs will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
+            echo "Telemetry logging enabled."
+            echo "Session metadata will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
+            echo "To also capture stdout/stderr: mec logs output-enable"
             ;;
         disable)
             config_set "logs.enabled" "false"
-            echo "Logging disabled."
+            echo "Telemetry logging disabled."
+            ;;
+        output-enable)
+            config_set "logs.output.enabled" "true"
+            echo "Output capture enabled. stdout/stderr will be saved to log files."
+            echo "Note: logs may grow large. Use 'mec logs output-disable' to turn off."
+            ;;
+        output-disable)
+            config_set "logs.output.enabled" "false"
+            echo "Output capture disabled. Session telemetry is still recorded."
             ;;
         list)
             _mec_logs_list "$@"
@@ -608,8 +620,10 @@ mec_logs() {
             printf '%s\n' ""
             printf '%s\n' "${_b}COMMANDS${_r}"
             printf '%s\n' "  status                           Show logging status and log file count"
-            printf '%s\n' "  enable                           Enable logging"
-            printf '%s\n' "  disable                          Disable logging"
+            printf '%s\n' "  enable                           Enable telemetry logging"
+            printf '%s\n' "  disable                          Disable telemetry logging"
+            printf '%s\n' "  output-enable                    Enable stdout/stderr capture in logs"
+            printf '%s\n' "  output-disable                   Disable stdout/stderr capture (telemetry still recorded)"
             printf '%s\n' "  list [--tool <name>] [--last N]  List recent executions (default: last 20)"
             printf '%s\n' "  failures [--last N]              List recent failed executions (default: last 20)"
             printf '%s\n' "  stats                            Show execution statistics"
@@ -618,6 +632,7 @@ mec_logs() {
             printf '%s\n' "${_b}EXAMPLES${_r}"
             printf '%s\n' "  mec logs status"
             printf '%s\n' "  mec logs enable"
+            printf '%s\n' "  mec logs output-enable"
             printf '%s\n' "  mec logs list"
             printf '%s\n' "  mec logs list --tool node"
             printf '%s\n' "  mec logs list --last 5"
@@ -719,10 +734,14 @@ _mec_logs_list() {
         ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
         [ -z "$ts_display" ] && ts_display="unknown"
 
-        # Compute duration in seconds
+        # Compute duration — prefer duration_ms field, fall back to timestamp diff
         duration_str="-"
-        if [ -n "$start_time" ] && [ -n "$end_time" ]; then
-            # Use python for date arithmetic if available, otherwise skip
+        local duration_ms_val
+        duration_ms_val=$(grep '"duration_ms"' "$log_file" 2>/dev/null | sed 's/.*"duration_ms"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
+        if [ -n "$duration_ms_val" ] && [ "$duration_ms_val" -ge 0 ] 2>/dev/null; then
+            duration_str="$(( duration_ms_val / 1000 ))s"
+        elif [ -n "$start_time" ] && [ -n "$end_time" ]; then
+            # Fall back to python timestamp diff for pre-existing log files
             if command -v python3 >/dev/null 2>&1; then
                 duration_str=$(python3 -c "
 import sys
@@ -1393,12 +1412,17 @@ _mec_doctor_run() {
     # ------------------------------------------------------------------
     # 5. Logging
     # ------------------------------------------------------------------
-    local logs_enabled
+    local logs_enabled output_enabled
     logs_enabled=$(config_get_default "logs.enabled" "false")
+    output_enabled=$(config_get_default "logs.output.enabled" "false")
     if [ "$logs_enabled" = "true" ]; then
-        _doc_pass "Logs: enabled"
+        if [ "$output_enabled" = "true" ]; then
+            _doc_pass "Logs: telemetry + output capture enabled"
+        else
+            _doc_pass "Logs: telemetry enabled  (output capture off — run 'mec logs output-enable' to capture stdout/stderr)"
+        fi
     else
-        _doc_warn "Logs: disabled  (run 'mec logs enable' to persist sessions)"
+        _doc_warn "Logs: disabled  (run 'mec logs enable' to enable telemetry)"
     fi
 
     # ------------------------------------------------------------------
