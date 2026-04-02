@@ -128,9 +128,10 @@ mec_ai() {
             echo "---------------------"
 
             # Check config
-            local ai_enabled
+            local ai_enabled ai_label
             ai_enabled=$(config_get_default "ai.enabled" "false")
-            echo "  AI enabled:    $ai_enabled"
+            [ "$ai_enabled" = "true" ] && ai_label="enabled" || ai_label="disabled"
+            echo "  AI:            $ai_label"
 
             # Check middleware (I/O filtering)
             if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
@@ -569,11 +570,13 @@ mec_logs() {
         status)
             echo "Logging Status"
             echo "--------------"
-            local telemetry_enabled output_enabled
+            local telemetry_enabled output_enabled telemetry_label output_label
             telemetry_enabled=$(config_get_default "logs.enabled" "false")
             output_enabled=$(config_get_default "logs.output.enabled" "false")
-            echo "  Telemetry:       $telemetry_enabled  (session_id, tool, exit_code, timing)"
-            echo "  Output capture:  $output_enabled  (stdout/stderr)"
+            [ "$telemetry_enabled" = "true" ] && telemetry_label="enabled" || telemetry_label="disabled"
+            [ "$output_enabled" = "true" ] && output_label="enabled" || output_label="disabled"
+            echo "  Telemetry:       $telemetry_label  (session_id, tool, exit_code, timing)"
+            echo "  Output capture:  $output_label  (stdout/stderr)"
             local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
             echo "  Log directory:   $log_dir"
             if [ -d "$log_dir" ]; then
