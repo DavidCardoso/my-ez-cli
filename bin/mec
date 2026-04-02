@@ -1761,6 +1761,9 @@ mec_update() {
             (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
         fi
         echo "${_var}=${_target_tag}" >> "$_user_images"
+        # Re-source user overrides so the pull loop sees the new pin
+        # shellcheck disable=SC1090
+        . "$_user_images"
         echo "Pinned $_target_tool to $_target_tag"
     fi
 
