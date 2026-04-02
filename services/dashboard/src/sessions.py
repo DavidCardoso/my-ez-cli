@@ -344,8 +344,8 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
             ai_status=status,
             command=str(data.get("command", "")),
             cwd=str(data.get("cwd", "")),
-            stdout=str(output.get("stdout", "")),
-            stderr=str(output.get("stderr", "")),
+            stdout=str(output.get("stdout") or ""),
+            stderr=str(output.get("stderr") or ""),
             ai_result=result,
             claude_session_id=claude_session_id,
             log_file="$MEC_HOME/" + str(log_path.relative_to(data_root)),
@@ -473,6 +473,7 @@ def get_stats(data_root: Path) -> dict[str, object]:
         "ai_analysis_rate": ai_rate,
         "last_7_days": last_7_days,
         "logs_enabled": bool(logs_cfg.get("enabled", False)),
+        "logs_output_enabled": bool(logs_cfg.get("output", {}).get("enabled", False)),  # type: ignore[union-attr]
         "ai_enabled": bool(ai_cfg.get("enabled", False)),
     }
 
