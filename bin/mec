@@ -1540,7 +1540,7 @@ _mec_doctor_run() {
     if [ "$logs_enabled" = "true" ]; then
         _doc_pass "Logs: output capture enabled  (stdout/stderr written to log files)"
     else
-        _doc_pass "Logs: output capture off  (run 'mec logs enable' to capture stdout/stderr)"
+        _doc_warn "Logs: output capture off  (run 'mec logs enable' to capture stdout/stderr)"
     fi
 
     # ------------------------------------------------------------------
