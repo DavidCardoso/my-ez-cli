@@ -157,7 +157,7 @@ mec_ai() {
                 fi
             fi
             if [ -z "$claude_link" ] && [ -L "/usr/local/bin/mec-claude" ]; then
-                claude_link="mec-claude  (/usr/local/bin/mec-claude → bin/claude)"
+                claude_link="mec claude or mec-claude  (/usr/local/bin/mec-claude → bin/claude)"
             fi
             if [ -z "$claude_link" ]; then
                 claude_link="not installed (use 'bin/claude' or 'mec claude' directly)"
