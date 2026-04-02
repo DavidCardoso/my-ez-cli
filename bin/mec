@@ -604,7 +604,7 @@ mec_logs() {
                 enable)
                     config_set "logs.output.enabled" "true"
                     echo "Output capture enabled. stdout/stderr will be saved to log files."
-                    echo "Note: logs may grow large. Use 'mec logs output disable' to turn off."
+                    echo "Note: logs may grow large. Use 'mec logs output disable' to turn off when needed."
                     ;;
                 disable)
                     config_set "logs.output.enabled" "false"
