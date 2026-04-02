@@ -1712,6 +1712,22 @@ mec_update() {
     local _target_tool="${1:-}"
     local _target_tag="${2:-}"
 
+    # Validate tool name when a specific tool is given (before any other checks)
+    if [ -n "$_target_tool" ]; then
+        local _found=0
+        for _entry in $_all_tools; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _found=1
+                break
+            fi
+        done
+        if [ "$_found" -eq 0 ]; then
+            echo "Unknown tool: $_target_tool" >&2
+            echo "Run 'mec list' to see available tools." >&2
+            exit 1
+        fi
+    fi
+
     # If a tag is given, only allow for Group A tools
     if [ -n "$_target_tool" ] && [ -n "$_target_tag" ]; then
         local _is_public=0
@@ -1742,26 +1758,10 @@ mec_update() {
         local _user_images="${MEC_HOME}/images.conf"
         mkdir -p "$MEC_HOME"
         if [ -f "$_user_images" ]; then
-            grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" && mv "${_user_images}.tmp" "$_user_images"
+            (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
         fi
         echo "${_var}=${_target_tag}" >> "$_user_images"
         echo "Pinned $_target_tool to $_target_tag"
-    fi
-
-    # Validate tool name when a specific tool is given
-    if [ -n "$_target_tool" ]; then
-        local _found=0
-        for _entry in $_all_tools; do
-            if [ "${_entry%%:*}" = "$_target_tool" ]; then
-                _found=1
-                break
-            fi
-        done
-        if [ "$_found" -eq 0 ]; then
-            echo "Unknown tool: $_target_tool" >&2
-            echo "Run 'mec list' to see available tools." >&2
-            exit 1
-        fi
     fi
 
     echo "Pulling images..."
@@ -1821,7 +1821,7 @@ mec_reset() {
 
     local _user_images="${MEC_HOME}/images.conf"
     if [ -f "$_user_images" ]; then
-        grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" && mv "${_user_images}.tmp" "$_user_images"
+        (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
     fi
     echo "Reset $_tool to default image"
 }
