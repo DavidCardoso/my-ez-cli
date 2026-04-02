@@ -209,6 +209,7 @@ class SessionDetail(SessionSummary):
     cwd: str = ""
     stdout: str = ""
     stderr: str = ""
+    output_capture_disabled: bool = False
     ai_result: str = ""
     claude_session_id: str = ""
     log_file: str = ""
@@ -334,6 +335,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
+        output_capture_disabled = output.get("stdout") is None and output.get("stderr") is None
         ai_path = _sidecar_path(log_path, data_root)
         status, result, claude_session_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         return SessionDetail(
@@ -346,6 +348,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
             cwd=str(data.get("cwd", "")),
             stdout=str(output.get("stdout") or ""),
             stderr=str(output.get("stderr") or ""),
+            output_capture_disabled=output_capture_disabled,
             ai_result=result,
             claude_session_id=claude_session_id,
             log_file="$MEC_HOME/" + str(log_path.relative_to(data_root)),

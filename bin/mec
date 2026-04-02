@@ -616,6 +616,9 @@ mec_logs() {
                     ;;
             esac
             ;;
+        show)
+            _mec_logs_show "$@"
+            ;;
         list)
             _mec_logs_list "$@"
             ;;
@@ -637,6 +640,7 @@ mec_logs() {
             printf '%s\n' "  disable                          Disable telemetry logging"
             printf '%s\n' "  output enable                    Enable stdout/stderr capture in logs"
             printf '%s\n' "  output disable                   Disable stdout/stderr capture (telemetry still recorded)"
+            printf '%s\n' "  show <session_id>                Show log details for a session"
             printf '%s\n' "  list [--tool <name>] [--last N]  List recent executions (default: last 20)"
             printf '%s\n' "  failures [--last N]              List recent failed executions (default: last 20)"
             printf '%s\n' "  stats                            Show execution statistics"
@@ -646,6 +650,7 @@ mec_logs() {
             printf '%s\n' "  mec logs status"
             printf '%s\n' "  mec logs enable"
             printf '%s\n' "  mec logs output enable"
+            printf '%s\n' "  mec logs show mec-node-1234567890"
             printf '%s\n' "  mec logs list"
             printf '%s\n' "  mec logs list --tool node"
             printf '%s\n' "  mec logs list --last 5"
@@ -667,6 +672,58 @@ _ai_sidecar_exists() {
     local ai_file
     ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
     [ -f "$ai_file" ]
+}
+
+# _mec_logs_show <session_id>
+# Print log details for a specific session
+_mec_logs_show() {
+    local session_id="$1"
+    if [ -z "$session_id" ]; then
+        echo "Usage: mec logs show <session_id>" >&2
+        return 1
+    fi
+
+    local log_file
+    log_file=$(log_find_by_session_id "$session_id")
+
+    if [ -z "$log_file" ]; then
+        echo "Session not found: $session_id" >&2
+        return 1
+    fi
+
+    local tool exit_code start_time end_time duration_str image command cwd duration_ms_val
+    tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    image=$(grep '"image"' "$log_file" 2>/dev/null | sed 's/.*"image"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    command=$(grep '"command"' "$log_file" 2>/dev/null | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    cwd=$(grep '"cwd"' "$log_file" 2>/dev/null | sed 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+    start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+
+    duration_str="-"
+    duration_ms_val=$(grep '"duration_ms"' "$log_file" 2>/dev/null | sed 's/.*"duration_ms"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
+    if [ -n "$duration_ms_val" ] && [ "$duration_ms_val" -ge 0 ] 2>/dev/null; then
+        duration_str="${duration_ms_val}ms"
+    fi
+
+    local output_captured="yes"
+    if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+        output_captured="no  (run 'mec logs output enable' to capture)"
+    fi
+
+    local ts_display
+    ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
+
+    echo "Session:   ${session_id}"
+    echo "Timestamp: ${ts_display:-unknown} UTC"
+    echo "Tool:      ${tool:-unknown}"
+    echo "Image:     ${image:-unknown}"
+    echo "Command:   ${command:-unknown}"
+    echo "Directory: ${cwd:-unknown}"
+    echo "Exit code: ${exit_code:-?}"
+    echo "Duration:  ${duration_str}"
+    echo "Output:    ${output_captured}"
+    echo "Log file:  ${log_file}"
 }
 
 # _mec_logs_list [--tool <name>] [--last N]
