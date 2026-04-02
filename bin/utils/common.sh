@@ -203,11 +203,10 @@ setup_logging() {
     if command -v log_session_init >/dev/null 2>&1; then
         log_session_init "$TOOL_NAME" "$IMAGE_NAME" "$COMMAND"
 
-        # Export legacy variables for backward compatibility
-        LOG_ENABLED="$LOG_SESSION_ENABLED"
+        # Export legacy variable for backward compatibility
+        # Note: LOG_ENABLED (output capture) is already exported by log_session_init
         LOG_FILE="$LOG_JSON_FILE"
 
-        export LOG_ENABLED
         export LOG_FILE
     else
         # Fallback to simple logging
