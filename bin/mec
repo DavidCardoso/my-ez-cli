@@ -588,20 +588,30 @@ mec_logs() {
             config_set "logs.enabled" "true"
             echo "Telemetry logging enabled."
             echo "Session metadata will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
-            echo "To also capture stdout/stderr: mec logs output-enable"
+            echo "To also capture stdout/stderr: mec logs output enable"
             ;;
         disable)
             config_set "logs.enabled" "false"
             echo "Telemetry logging disabled."
             ;;
-        output-enable)
-            config_set "logs.output.enabled" "true"
-            echo "Output capture enabled. stdout/stderr will be saved to log files."
-            echo "Note: logs may grow large. Use 'mec logs output-disable' to turn off."
-            ;;
-        output-disable)
-            config_set "logs.output.enabled" "false"
-            echo "Output capture disabled. Session telemetry is still recorded."
+        output)
+            local output_subcmd="${1:-help}"
+            shift 2>/dev/null || true
+            case "$output_subcmd" in
+                enable)
+                    config_set "logs.output.enabled" "true"
+                    echo "Output capture enabled. stdout/stderr will be saved to log files."
+                    echo "Note: logs may grow large. Use 'mec logs output disable' to turn off."
+                    ;;
+                disable)
+                    config_set "logs.output.enabled" "false"
+                    echo "Output capture disabled. Session telemetry is still recorded."
+                    ;;
+                *)
+                    echo "Usage: mec logs output <enable|disable>" >&2
+                    return 1
+                    ;;
+            esac
             ;;
         list)
             _mec_logs_list "$@"
@@ -622,8 +632,8 @@ mec_logs() {
             printf '%s\n' "  status                           Show logging status and log file count"
             printf '%s\n' "  enable                           Enable telemetry logging"
             printf '%s\n' "  disable                          Disable telemetry logging"
-            printf '%s\n' "  output-enable                    Enable stdout/stderr capture in logs"
-            printf '%s\n' "  output-disable                   Disable stdout/stderr capture (telemetry still recorded)"
+            printf '%s\n' "  output enable                    Enable stdout/stderr capture in logs"
+            printf '%s\n' "  output disable                   Disable stdout/stderr capture (telemetry still recorded)"
             printf '%s\n' "  list [--tool <name>] [--last N]  List recent executions (default: last 20)"
             printf '%s\n' "  failures [--last N]              List recent failed executions (default: last 20)"
             printf '%s\n' "  stats                            Show execution statistics"
@@ -632,7 +642,7 @@ mec_logs() {
             printf '%s\n' "${_b}EXAMPLES${_r}"
             printf '%s\n' "  mec logs status"
             printf '%s\n' "  mec logs enable"
-            printf '%s\n' "  mec logs output-enable"
+            printf '%s\n' "  mec logs output enable"
             printf '%s\n' "  mec logs list"
             printf '%s\n' "  mec logs list --tool node"
             printf '%s\n' "  mec logs list --last 5"
@@ -1419,7 +1429,7 @@ _mec_doctor_run() {
         if [ "$output_enabled" = "true" ]; then
             _doc_pass "Logs: telemetry + output capture enabled"
         else
-            _doc_pass "Logs: telemetry enabled  (output capture off — run 'mec logs output-enable' to capture stdout/stderr)"
+            _doc_pass "Logs: telemetry enabled  (output capture off — run 'mec logs output enable' to capture stdout/stderr)"
         fi
     else
         _doc_warn "Logs: disabled  (run 'mec logs enable' to enable telemetry)"
