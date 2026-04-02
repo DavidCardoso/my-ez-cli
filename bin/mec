@@ -732,11 +732,11 @@ _mec_logs_show() {
     duration_str="-"
     duration_ms_val=$(grep '"duration_ms"' "$log_file" 2>/dev/null | sed 's/.*"duration_ms"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
     if [ -n "$duration_ms_val" ] && [ "$duration_ms_val" -ge 0 ] 2>/dev/null; then
-        duration_str="${duration_ms_val}ms"
+        duration_str="$(( duration_ms_val / 1000 ))s"
     fi
 
     local output_captured="yes"
-    if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+    if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
         output_captured="no  (run 'mec logs enable' to capture)"
     fi
 
@@ -806,8 +806,8 @@ _mec_logs_list() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "LOGS" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "---------------------" "------------" "------" "----------" "----" "-----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "LOGS" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "---------------------" "------------" "------" "----------" "-----" "----" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
@@ -828,8 +828,8 @@ _mec_logs_list() {
             has_ai="no"
         fi
 
-        # Check if output was captured (stdout: null means capture was off)
-        if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+        # Check if output was captured (stdout: null or "" means capture was off)
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
             has_logs="no"
         else
             has_logs="yes"
@@ -868,7 +868,7 @@ except:
         [ -z "$tool" ] && tool="unknown"
         [ -z "$exit_code" ] && exit_code="?"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "$has_logs" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_logs" "$has_ai" "${session_id:-?}"
     done
 }
 
@@ -907,8 +907,8 @@ _mec_logs_failures() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "LOGS" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "---------------------" "------------" "------" "----------" "----" "-----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "LOGS" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "---------------------" "------------" "------" "----------" "-----" "----" "----------"
 
     local shown=0
     echo "$all_files" | while IFS= read -r log_file; do
@@ -934,7 +934,7 @@ _mec_logs_failures() {
             has_ai="no"
         fi
 
-        if grep -q '"stdout": null' "$log_file" 2>/dev/null; then
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
             has_logs="no"
         else
             has_logs="yes"
@@ -965,7 +965,7 @@ except:
 
         [ -z "$tool" ] && tool="unknown"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %-5s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "$has_logs" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_logs" "$has_ai" "${session_id:-?}"
         shown=$((shown + 1))
     done
 }

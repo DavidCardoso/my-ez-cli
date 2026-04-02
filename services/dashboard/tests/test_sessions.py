@@ -220,6 +220,23 @@ class TestListSessions:
         session = list_sessions(data_root)["sessions"][0]
         assert session.log_status == "captured"
 
+    def test_log_status_none_when_stdout_is_empty_string(self, data_root: Path) -> None:
+        """log_status should be 'none' when stdout is empty string (capture was off)."""
+        log_dir = data_root / "logs" / "node"
+        log_dir.mkdir(parents=True)
+        (log_dir / "2026-01-01_00-00-01.json").write_text(
+            json.dumps(
+                {
+                    "session_id": "mec-node-emptycapture",
+                    "tool": "node",
+                    "execution": {"exit_code": 0, "start_time": "2026-01-01T00:00:01Z"},
+                    "output": {"stdout": "", "stderr": ""},
+                }
+            )
+        )
+        session = list_sessions(data_root)["sessions"][0]
+        assert session.log_status == "none"
+
 
 class TestGetSession:
     """Tests for get_session()."""

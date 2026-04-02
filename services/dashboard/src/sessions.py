@@ -308,7 +308,7 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
-        log_status = "captured" if output.get("stdout") is not None else "none"
+        log_status = "captured" if output.get("stdout") else "none"
         ai_path = _sidecar_path(log_path, data_root)
         status, _, _claude_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         results.append(

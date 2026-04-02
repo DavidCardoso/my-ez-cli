@@ -179,8 +179,8 @@ EOF
     init_config
 
     cat > "$CONFIG_FILE" <<'EOF'
-logs:
-  enabled: false
+telemetry:
+  enabled: true
 
 ai:
   enabled: false

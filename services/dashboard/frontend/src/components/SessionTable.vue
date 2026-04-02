@@ -50,22 +50,22 @@
       </template>
     </Column>
 
-    <Column field="ai_status" header="AI" sortable>
-      <template #body="{ data }">
-        <Tag
-          :value="data.ai_status"
-          :severity="aiSeverity(data.ai_status)"
-          class="ai-tag"
-        />
-      </template>
-    </Column>
-
     <Column field="log_status" header="Logs" sortable>
       <template #body="{ data }">
         <Tag
           :value="data.log_status"
           :severity="logSeverity(data.log_status)"
           class="log-tag"
+        />
+      </template>
+    </Column>
+
+    <Column field="ai_status" header="AI" sortable>
+      <template #body="{ data }">
+        <Tag
+          :value="data.ai_status"
+          :severity="aiSeverity(data.ai_status)"
+          class="ai-tag"
         />
       </template>
     </Column>

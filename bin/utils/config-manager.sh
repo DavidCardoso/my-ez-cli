@@ -266,8 +266,8 @@ config_validate() {
     ERRORS=0
 
     # Check for valid YAML structure (basic)
-    if ! grep -q "^logs:" "$CONFIG_FILE"; then
-        echo "ERROR: Missing 'logs' section" >&2
+    if ! grep -q "^telemetry:" "$CONFIG_FILE"; then
+        echo "ERROR: Missing 'telemetry' section" >&2
         ERRORS=$((ERRORS + 1))
     fi
 
