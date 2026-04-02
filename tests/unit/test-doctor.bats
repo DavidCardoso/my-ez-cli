@@ -97,6 +97,22 @@ teardown() {
     [[ "$output" =~ "Data directory" ]]
 }
 
+@test "mec doctor output contains Telemetry check" {
+    if ! docker info >/dev/null 2>&1; then
+        skip "Docker not available"
+    fi
+    run "$BASEDIR/bin/mec" doctor
+    [[ "$output" =~ "Telemetry" ]]
+}
+
+@test "mec doctor output contains Logs check" {
+    if ! docker info >/dev/null 2>&1; then
+        skip "Docker not available"
+    fi
+    run "$BASEDIR/bin/mec" doctor
+    [[ "$output" =~ "Logs" ]]
+}
+
 @test "mec doctor output contains AI check" {
     if ! docker info >/dev/null 2>&1; then
         skip "Docker not available"

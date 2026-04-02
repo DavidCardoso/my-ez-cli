@@ -1522,23 +1522,29 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 5. Logging
+    # 5. Telemetry
     # ------------------------------------------------------------------
-    local logs_enabled output_enabled
-    logs_enabled=$(config_get_default "telemetry.enabled" "true")
-    output_enabled=$(config_get_default "logs.enabled" "false")
-    if [ "$logs_enabled" = "true" ]; then
-        if [ "$output_enabled" = "true" ]; then
-            _doc_pass "Telemetry: enabled + output capture enabled"
-        else
-            _doc_pass "Telemetry: enabled  (output capture off — run 'mec logs enable' to capture stdout/stderr)"
-        fi
+    local telemetry_enabled
+    telemetry_enabled=$(config_get_default "telemetry.enabled" "true")
+    if [ "$telemetry_enabled" = "true" ]; then
+        _doc_pass "Telemetry: enabled  (session_id, tool, exit_code, timing)"
     else
-        _doc_warn "Telemetry: disabled  (run 'mec telemetry enable' to enable telemetry)"
+        _doc_warn "Telemetry: disabled  (run 'mec telemetry enable' to enable)"
     fi
 
     # ------------------------------------------------------------------
-    # 6. AI — enabled state (informational, no failure)
+    # 6. Logs (output capture)
+    # ------------------------------------------------------------------
+    local logs_enabled
+    logs_enabled=$(config_get_default "logs.enabled" "false")
+    if [ "$logs_enabled" = "true" ]; then
+        _doc_pass "Logs: output capture enabled  (stdout/stderr written to log files)"
+    else
+        _doc_pass "Logs: output capture off  (run 'mec logs enable' to capture stdout/stderr)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 7. AI — enabled state (informational, no failure)
     # ------------------------------------------------------------------
     local ai_enabled
     ai_enabled=$(config_get_default "ai.enabled" "false")
@@ -1549,7 +1555,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 7. AI — middleware image
+    # 8. AI — middleware image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
         _doc_pass "AI middleware image: available  (${MEC_IMAGE_AI_SERVICE})"
@@ -1558,7 +1564,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 8. AI — Claude Code image
+    # 9. AI — Claude Code image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
         _doc_pass "Claude Code image: available  (${MEC_IMAGE_CLAUDE})"
@@ -1567,7 +1573,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 9. AI — auth
+    # 10. AI — auth
     # ------------------------------------------------------------------
     if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
         _doc_pass "AI auth: ANTHROPIC_API_KEY set"
@@ -1580,7 +1586,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 10. Dashboard image
+    # 11. Dashboard image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_DASHBOARD" >/dev/null 2>&1; then
         _doc_pass "Dashboard image: available  (${MEC_IMAGE_DASHBOARD})"
@@ -1589,7 +1595,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 11. Dashboard running
+    # 12. Dashboard running
     # ------------------------------------------------------------------
     local dashboard_url
     dashboard_url=$(_mec_dashboard_url)
