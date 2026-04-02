@@ -181,6 +181,10 @@ _load_mec_config() {
         MEC_LOGS_ENABLED=$(config_get_default "logs.enabled" "false")
         export MEC_LOGS_ENABLED
     fi
+    if [ -z "${MEC_LOGS_OUTPUT_ENABLED+x}" ]; then
+        MEC_LOGS_OUTPUT_ENABLED=$(config_get_default "logs.output.enabled" "false")
+        export MEC_LOGS_OUTPUT_ENABLED
+    fi
     if [ -z "${MEC_AI_ENABLED+x}" ]; then
         MEC_AI_ENABLED=$(config_get_default "ai.enabled" "false")
         export MEC_AI_ENABLED
@@ -497,26 +501,33 @@ exec_with_ai() {
         return $?
     fi
 
-    # Create temp files for capturing output
-    local tmpdir_path
-    tmpdir_path=$(mktemp -d)
-    local stdout_tmp="${tmpdir_path}/stdout"
-    local stderr_tmp="${tmpdir_path}/stderr"
+    local exit_code stdout_content="" stderr_content=""
 
-    # Run docker command with output capture
-    set +e
-    eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
-    local exit_code=$?
-    set -e
+    if [ "$LOG_OUTPUT_ENABLED" = "true" ]; then
+        # Output capture enabled — tee stdout/stderr to temp files
+        local tmpdir_path
+        tmpdir_path=$(mktemp -d)
+        local stdout_tmp="${tmpdir_path}/stdout"
+        local stderr_tmp="${tmpdir_path}/stderr"
 
-    # Wait for background processes (tee) to finish
-    wait
+        set +e
+        eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
+        exit_code=$?
+        set -e
 
-    # Read captured output
-    local stdout_content
-    stdout_content=$(cat "$stdout_tmp" 2>/dev/null || echo "")
-    local stderr_content
-    stderr_content=$(cat "$stderr_tmp" 2>/dev/null || echo "")
+        # Wait for background tee processes to finish
+        wait
+
+        stdout_content=$(cat "$stdout_tmp" 2>/dev/null || echo "")
+        stderr_content=$(cat "$stderr_tmp" 2>/dev/null || echo "")
+        rm -rf "$tmpdir_path"
+    else
+        # Output capture disabled — run directly, no tee overhead
+        set +e
+        eval "$docker_cmd"
+        exit_code=$?
+        set -e
+    fi
 
     # Print exit-code banner for failed commands
     if [ "$exit_code" -ne 0 ]; then
@@ -533,9 +544,6 @@ exec_with_ai() {
     if [ -n "$LOG_JSON_FILE" ] && [ -f "$LOG_JSON_FILE" ]; then
         trigger_ai_analysis "$LOG_JSON_FILE"
     fi
-
-    # Cleanup
-    rm -rf "$tmpdir_path"
 
     return $exit_code
 }
