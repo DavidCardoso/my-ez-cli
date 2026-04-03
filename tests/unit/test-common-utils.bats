@@ -47,13 +47,12 @@ setup() {
 }
 
 @test "setup_logging creates variables" {
-    MEC_SAVE_LOGS=1 setup_logging "test-tool"
-    [ "$LOG_ENABLED" = "true" ]
+    MEC_TELEMETRY_ENABLED=true setup_logging "test-tool"
     [ -n "$LOG_FILE" ]
 }
 
 @test "setup_logging respects disabled logging" {
-    MEC_SAVE_LOGS=0 setup_logging "test-tool"
+    MEC_TELEMETRY_ENABLED=false MEC_SAVE_LOGS=0 setup_logging "test-tool"
     [ "$LOG_ENABLED" = "false" ]
 }
 

@@ -21,6 +21,9 @@ export MEC_HOME
 # Resolve repo root relative to this script (works with symlinks)
 _MEC_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 _MEC_BASE_DIR="$(cd "${_MEC_COMMON_DIR}/../.." && pwd)"
+# Export for config-manager.sh and other utilities that need the repo root
+MEC_BASE_DIR="${MEC_BASE_DIR:-${_MEC_BASE_DIR}}"
+export MEC_BASE_DIR
 
 # Source user overrides FIRST so plain assignments win over ${VAR:-default} guards
 _MEC_USER_IMAGES="${MEC_HOME:-${HOME}/.my-ez-cli}/images.conf"
@@ -177,6 +180,10 @@ _load_mec_config() {
     fi
     # [ -z "${VAR+x}" ] is true only if VAR is unset (not if it's set to empty or false)
     # This lets explicit env var overrides (e.g. MEC_AI_ENABLED=false) take precedence
+    if [ -z "${MEC_TELEMETRY_ENABLED+x}" ]; then
+        MEC_TELEMETRY_ENABLED=$(config_get_default "telemetry.enabled" "true")
+        export MEC_TELEMETRY_ENABLED
+    fi
     if [ -z "${MEC_LOGS_ENABLED+x}" ]; then
         MEC_LOGS_ENABLED=$(config_get_default "logs.enabled" "false")
         export MEC_LOGS_ENABLED
@@ -199,17 +206,16 @@ setup_logging() {
     if command -v log_session_init >/dev/null 2>&1; then
         log_session_init "$TOOL_NAME" "$IMAGE_NAME" "$COMMAND"
 
-        # Export legacy variables for backward compatibility
-        LOG_ENABLED="$LOG_SESSION_ENABLED"
+        # Export legacy variable for backward compatibility
+        # Note: LOG_ENABLED (output capture) is already exported by log_session_init
         LOG_FILE="$LOG_JSON_FILE"
 
-        export LOG_ENABLED
         export LOG_FILE
     else
         # Fallback to simple logging
         LOG_DIR="${MEC_LOG_DIR:-${MEC_HOME}/logs}/${TOOL_NAME}"
 
-        if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_LOGS_ENABLED:-false}" = "true" ]; then
+        if [ "$MEC_SAVE_LOGS" = "1" ] || [ "${MEC_TELEMETRY_ENABLED:-true}" = "true" ]; then
             mkdir -p "$LOG_DIR"
 
             TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
@@ -497,26 +503,33 @@ exec_with_ai() {
         return $?
     fi
 
-    # Create temp files for capturing output
-    local tmpdir_path
-    tmpdir_path=$(mktemp -d)
-    local stdout_tmp="${tmpdir_path}/stdout"
-    local stderr_tmp="${tmpdir_path}/stderr"
+    local exit_code stdout_content="" stderr_content=""
 
-    # Run docker command with output capture
-    set +e
-    eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
-    local exit_code=$?
-    set -e
+    if [ "$LOG_ENABLED" = "true" ]; then
+        # Output capture enabled — tee stdout/stderr to temp files
+        local tmpdir_path
+        tmpdir_path=$(mktemp -d)
+        local stdout_tmp="${tmpdir_path}/stdout"
+        local stderr_tmp="${tmpdir_path}/stderr"
 
-    # Wait for background processes (tee) to finish
-    wait
+        set +e
+        eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
+        exit_code=$?
+        set -e
 
-    # Read captured output
-    local stdout_content
-    stdout_content=$(cat "$stdout_tmp" 2>/dev/null || echo "")
-    local stderr_content
-    stderr_content=$(cat "$stderr_tmp" 2>/dev/null || echo "")
+        # Wait for background tee processes to finish
+        wait
+
+        stdout_content=$(cat "$stdout_tmp" 2>/dev/null || echo "")
+        stderr_content=$(cat "$stderr_tmp" 2>/dev/null || echo "")
+        rm -rf "$tmpdir_path"
+    else
+        # Output capture disabled — run directly, no tee overhead
+        set +e
+        eval "$docker_cmd"
+        exit_code=$?
+        set -e
+    fi
 
     # Print exit-code banner for failed commands
     if [ "$exit_code" -ne 0 ]; then
@@ -533,9 +546,6 @@ exec_with_ai() {
     if [ -n "$LOG_JSON_FILE" ] && [ -f "$LOG_JSON_FILE" ]; then
         trigger_ai_analysis "$LOG_JSON_FILE"
     fi
-
-    # Cleanup
-    rm -rf "$tmpdir_path"
 
     return $exit_code
 }

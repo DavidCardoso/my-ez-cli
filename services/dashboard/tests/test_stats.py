@@ -125,6 +125,10 @@ class TestGetStats:
         assert dates[0] == str(today - timedelta(days=6))
         assert dates[-1] == str(today)
 
+    def test_telemetry_enabled_defaults_false_when_no_config(self, tmp_path: Path) -> None:
+        stats = get_stats(tmp_path)
+        assert stats["telemetry_enabled"] is False
+
     def test_logs_enabled_defaults_false_when_no_config(self, tmp_path: Path) -> None:
         stats = get_stats(tmp_path)
         assert stats["logs_enabled"] is False
@@ -134,8 +138,11 @@ class TestGetStats:
         assert stats["ai_enabled"] is False
 
     def test_reads_enabled_flags_from_config(self, tmp_path: Path) -> None:
-        (tmp_path / "config.yaml").write_text("logs:\n  enabled: true\nai:\n  enabled: true\n")
+        (tmp_path / "config.yaml").write_text(
+            "telemetry:\n  enabled: true\nlogs:\n  enabled: true\nai:\n  enabled: true\n"
+        )
         stats = get_stats(tmp_path)
+        assert stats["telemetry_enabled"] is True
         assert stats["logs_enabled"] is True
         assert stats["ai_enabled"] is True
 

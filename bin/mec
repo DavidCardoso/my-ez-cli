@@ -66,7 +66,8 @@ show_help() {
     printf '%s\n' ""
     printf '%s\n' "${_b}MANAGEMENT COMMANDS${_r}"
     printf '%s\n' "  config              Manage configuration"
-    printf '%s\n' "  logs                Log management"
+    printf '%s\n' "  telemetry           Session telemetry (enable/disable/status)"
+    printf '%s\n' "  logs                Log file management (output capture)"
     printf '%s\n' "  purge               Purge log and AI analysis files"
     printf '%s\n' "  doctor              Health check"
     printf '%s\n' ""
@@ -128,9 +129,10 @@ mec_ai() {
             echo "---------------------"
 
             # Check config
-            local ai_enabled
+            local ai_enabled ai_label
             ai_enabled=$(config_get_default "ai.enabled" "false")
-            echo "  AI enabled:    $ai_enabled"
+            [ "$ai_enabled" = "true" ] && ai_label="enabled" || ai_label="disabled"
+            echo "  AI:            $ai_label"
 
             # Check middleware (I/O filtering)
             if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
@@ -156,20 +158,20 @@ mec_ai() {
                 fi
             fi
             if [ -z "$claude_link" ] && [ -L "/usr/local/bin/mec-claude" ]; then
-                claude_link="mec-claude  (/usr/local/bin/mec-claude → bin/claude)"
+                claude_link="mec claude or mec-claude  (/usr/local/bin/mec-claude → bin/claude)"
             fi
             if [ -z "$claude_link" ]; then
                 claude_link="not installed (use 'bin/claude' or 'mec claude' directly)"
             fi
             echo "  Claude wrapper: $claude_link"
 
-            # Check logging state
+            # Check telemetry state
             local logging_enabled
-            logging_enabled=$(config_get_default "logs.enabled" "false")
+            logging_enabled=$(config_get_default "telemetry.enabled" "true")
             if [ "$logging_enabled" = "true" ]; then
-                echo "  Logging:       enabled"
+                echo "  Telemetry:     enabled"
             else
-                echo "  Logging:       disabled  (AI analysis requires logging — run 'mec logs enable')"
+                echo "  Telemetry:     disabled  (AI analysis requires telemetry — run 'mec telemetry enable')"
             fi
 
             # Show Claude execution settings
@@ -558,6 +560,60 @@ _mec_ai_logs() {
 }
 
 # ----------------------------------------------------------------------------
+# Telemetry Commands
+# ----------------------------------------------------------------------------
+
+mec_telemetry() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        enable)
+            config_set "telemetry.enabled" "true"
+            echo "Telemetry enabled."
+            echo "Session metadata will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
+            echo "To also capture stdout/stderr: mec logs enable"
+            ;;
+        disable)
+            config_set "telemetry.enabled" "false"
+            echo "Telemetry disabled."
+            ;;
+        status)
+            echo "Telemetry Status"
+            echo "----------------"
+            local tel_enabled log_enabled tel_label log_label
+            tel_enabled=$(config_get_default "telemetry.enabled" "true")
+            log_enabled=$(config_get_default "logs.enabled" "false")
+            [ "$tel_enabled" = "true" ] && tel_label="enabled" || tel_label="disabled"
+            [ "$log_enabled" = "true" ] && log_label="enabled" || log_label="disabled"
+            echo "  Telemetry:       $tel_label  (session_id, tool, exit_code, timing)"
+            echo "  Output capture:  $log_label  (stdout/stderr)"
+            ;;
+        help|--help|-h)
+            local _b="" _r=""
+            if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
+            printf '%s\n' "${_b}USAGE${_r}"
+            printf '%s\n' "  mec telemetry <command>"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}COMMANDS${_r}"
+            printf '%s\n' "  enable   Enable session telemetry (session_id, tool, exit_code, timing)"
+            printf '%s\n' "  disable  Disable session telemetry"
+            printf '%s\n' "  status   Show telemetry and output capture state"
+            printf '%s\n' "  help     Show this help"
+            printf '%s\n' ""
+            printf '%s\n' "${_b}EXAMPLES${_r}"
+            printf '%s\n' "  mec telemetry enable"
+            printf '%s\n' "  mec telemetry status"
+            ;;
+        *)
+            echo "Unknown telemetry command: $subcmd" >&2
+            echo "Run 'mec telemetry help' for usage information" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------------
 # Logging Commands
 # ----------------------------------------------------------------------------
 
@@ -569,9 +625,10 @@ mec_logs() {
         status)
             echo "Logging Status"
             echo "--------------"
-            local logging_enabled
-            logging_enabled=$(config_get_default "logs.enabled" "false")
-            echo "  Logging enabled: $logging_enabled"
+            local output_enabled output_label
+            output_enabled=$(config_get_default "logs.enabled" "false")
+            [ "$output_enabled" = "true" ] && output_label="enabled" || output_label="disabled"
+            echo "  Output capture:  $output_label  (stdout/stderr)"
             local log_dir="${MEC_LOG_DIR:-${MEC_HOME}/logs}"
             echo "  Log directory:   $log_dir"
             if [ -d "$log_dir" ]; then
@@ -584,12 +641,15 @@ mec_logs() {
             ;;
         enable)
             config_set "logs.enabled" "true"
-            echo "Logging enabled."
-            echo "Logs will be written to ${MEC_LOG_DIR:-${MEC_HOME}/logs}/"
+            echo "Output capture enabled. stdout/stderr will be saved to log files."
+            echo "Note: logs may grow large. Use 'mec logs disable' to turn off when needed."
             ;;
         disable)
             config_set "logs.enabled" "false"
-            echo "Logging disabled."
+            echo "Output capture disabled. Session telemetry is still recorded."
+            ;;
+        show)
+            _mec_logs_show "$@"
             ;;
         list)
             _mec_logs_list "$@"
@@ -607,9 +667,10 @@ mec_logs() {
             printf '%s\n' "  mec logs <command>"
             printf '%s\n' ""
             printf '%s\n' "${_b}COMMANDS${_r}"
-            printf '%s\n' "  status                           Show logging status and log file count"
-            printf '%s\n' "  enable                           Enable logging"
-            printf '%s\n' "  disable                          Disable logging"
+            printf '%s\n' "  status                           Show output capture status and log file count"
+            printf '%s\n' "  enable                           Enable stdout/stderr capture in log files"
+            printf '%s\n' "  disable                          Disable stdout/stderr capture (telemetry still recorded)"
+            printf '%s\n' "  show <session_id>                Show log details for a session"
             printf '%s\n' "  list [--tool <name>] [--last N]  List recent executions (default: last 20)"
             printf '%s\n' "  failures [--last N]              List recent failed executions (default: last 20)"
             printf '%s\n' "  stats                            Show execution statistics"
@@ -618,6 +679,7 @@ mec_logs() {
             printf '%s\n' "${_b}EXAMPLES${_r}"
             printf '%s\n' "  mec logs status"
             printf '%s\n' "  mec logs enable"
+            printf '%s\n' "  mec logs show mec-node-1234567890"
             printf '%s\n' "  mec logs list"
             printf '%s\n' "  mec logs list --tool node"
             printf '%s\n' "  mec logs list --last 5"
@@ -639,6 +701,58 @@ _ai_sidecar_exists() {
     local ai_file
     ai_file=$(echo "$log_file" | sed 's|/logs/|/ai-analyses/|')
     [ -f "$ai_file" ]
+}
+
+# _mec_logs_show <session_id>
+# Print log details for a specific session
+_mec_logs_show() {
+    local session_id="$1"
+    if [ -z "$session_id" ]; then
+        echo "Usage: mec logs show <session_id>" >&2
+        return 1
+    fi
+
+    local log_file
+    log_file=$(log_find_by_session_id "$session_id")
+
+    if [ -z "$log_file" ]; then
+        echo "Session not found: $session_id" >&2
+        return 1
+    fi
+
+    local tool exit_code start_time end_time duration_str image command cwd duration_ms_val
+    tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    image=$(grep '"image"' "$log_file" 2>/dev/null | sed 's/.*"image"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    command=$(grep '"command"' "$log_file" 2>/dev/null | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    cwd=$(grep '"cwd"' "$log_file" 2>/dev/null | sed 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
+    start_time=$(grep '"start_time"' "$log_file" 2>/dev/null | sed 's/.*"start_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+    end_time=$(grep '"end_time"' "$log_file" 2>/dev/null | sed 's/.*"end_time"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
+
+    duration_str="-"
+    duration_ms_val=$(grep '"duration_ms"' "$log_file" 2>/dev/null | sed 's/.*"duration_ms"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
+    if [ -n "$duration_ms_val" ] && [ "$duration_ms_val" -ge 0 ] 2>/dev/null; then
+        duration_str="$(( duration_ms_val / 1000 ))s"
+    fi
+
+    local output_captured="yes"
+    if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
+        output_captured="no  (run 'mec logs enable' to capture)"
+    fi
+
+    local ts_display
+    ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
+
+    echo "Session:   ${session_id}"
+    echo "Timestamp: ${ts_display:-unknown} UTC"
+    echo "Tool:      ${tool:-unknown}"
+    echo "Image:     ${image:-unknown}"
+    echo "Command:   ${command:-unknown}"
+    echo "Directory: ${cwd:-unknown}"
+    echo "Exit code: ${exit_code:-?}"
+    echo "Duration:  ${duration_str}"
+    echo "Output:    ${output_captured}"
+    echo "Log file:  ${log_file}"
 }
 
 # _mec_logs_list [--tool <name>] [--last N]
@@ -692,13 +806,13 @@ _mec_logs_list() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "LOGS" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "---------------------" "------------" "------" "----------" "-----" "----" "----------"
 
     echo "$log_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
 
-        local tool exit_code start_time end_time has_ai duration_str session_id
+        local tool exit_code start_time end_time has_ai has_logs duration_str session_id
 
         # Extract fields using grep+sed (portable; BSD awk lacks POSIX char classes in -F)
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
@@ -714,15 +828,26 @@ _mec_logs_list() {
             has_ai="no"
         fi
 
+        # Check if output was captured (stdout: null or "" means capture was off)
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
+            has_logs="no"
+        else
+            has_logs="yes"
+        fi
+
         # Format timestamp (strip T and fractional seconds)
         local ts_display
         ts_display=$(echo "$start_time" | sed 's/T/ /; s/\.[0-9]*//' | cut -c1-19)
         [ -z "$ts_display" ] && ts_display="unknown"
 
-        # Compute duration in seconds
+        # Compute duration — prefer duration_ms field, fall back to timestamp diff
         duration_str="-"
-        if [ -n "$start_time" ] && [ -n "$end_time" ]; then
-            # Use python for date arithmetic if available, otherwise skip
+        local duration_ms_val
+        duration_ms_val=$(grep '"duration_ms"' "$log_file" 2>/dev/null | sed 's/.*"duration_ms"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/' | head -1)
+        if [ -n "$duration_ms_val" ] && [ "$duration_ms_val" -ge 0 ] 2>/dev/null; then
+            duration_str="$(( duration_ms_val / 1000 ))s"
+        elif [ -n "$start_time" ] && [ -n "$end_time" ]; then
+            # Fall back to python timestamp diff for pre-existing log files
             if command -v python3 >/dev/null 2>&1; then
                 duration_str=$(python3 -c "
 import sys
@@ -743,7 +868,7 @@ except:
         [ -z "$tool" ] && tool="unknown"
         [ -z "$exit_code" ] && exit_code="?"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_logs" "$has_ai" "${session_id:-?}"
     done
 }
 
@@ -782,15 +907,15 @@ _mec_logs_failures() {
     fi
 
     # Print table header
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "AI" "SESSION ID"
-    printf "%-21s %-12s %-6s %-10s %-4s %s\n" "---------------------" "------------" "------" "----------" "----" "----------"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "TIMESTAMP" "TOOL" "EXIT" "DURATION" "LOGS" "AI" "SESSION ID"
+    printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "---------------------" "------------" "------" "----------" "-----" "----" "----------"
 
     local shown=0
     echo "$all_files" | while IFS= read -r log_file; do
         [ -f "$log_file" ] || continue
         [ "$shown" -ge "$last_n" ] && break
 
-        local tool exit_code start_time end_time has_ai duration_str session_id
+        local tool exit_code start_time end_time has_ai has_logs duration_str session_id
 
         tool=$(grep '"tool"' "$log_file" 2>/dev/null | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | head -1)
         exit_code=$(grep '"exit_code"' "$log_file" 2>/dev/null | sed 's/.*"exit_code"[[:space:]]*:[[:space:]]*\(-\{0,1\}[0-9][0-9]*\).*/\1/' | head -1)
@@ -807,6 +932,12 @@ _mec_logs_failures() {
             has_ai="yes"
         else
             has_ai="no"
+        fi
+
+        if grep -q '"stdout": null' "$log_file" 2>/dev/null || grep -q '"stdout": ""' "$log_file" 2>/dev/null; then
+            has_logs="no"
+        else
+            has_logs="yes"
         fi
 
         local ts_display
@@ -834,7 +965,7 @@ except:
 
         [ -z "$tool" ] && tool="unknown"
 
-        printf "%-21s %-12s %-6s %-10s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_ai" "${session_id:-?}"
+        printf "%-21s %-12s %-6s %-10s %-5s %-4s %s\n" "$ts_display" "$tool" "$exit_code" "$duration_str" "$has_logs" "$has_ai" "${session_id:-?}"
         shown=$((shown + 1))
     done
 }
@@ -1391,18 +1522,29 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 5. Logging
+    # 5. Telemetry
+    # ------------------------------------------------------------------
+    local telemetry_enabled
+    telemetry_enabled=$(config_get_default "telemetry.enabled" "true")
+    if [ "$telemetry_enabled" = "true" ]; then
+        _doc_pass "Telemetry: enabled  (session_id, tool, exit_code, timing)"
+    else
+        _doc_warn "Telemetry: disabled  (run 'mec telemetry enable' to enable)"
+    fi
+
+    # ------------------------------------------------------------------
+    # 6. Logs (output capture)
     # ------------------------------------------------------------------
     local logs_enabled
     logs_enabled=$(config_get_default "logs.enabled" "false")
     if [ "$logs_enabled" = "true" ]; then
-        _doc_pass "Logs: enabled"
+        _doc_pass "Logs: output capture enabled  (stdout/stderr written to log files)"
     else
-        _doc_warn "Logs: disabled  (run 'mec logs enable' to persist sessions)"
+        _doc_warn "Logs: output capture off  (run 'mec logs enable' to capture stdout/stderr)"
     fi
 
     # ------------------------------------------------------------------
-    # 6. AI — enabled state (informational, no failure)
+    # 7. AI — enabled state (informational, no failure)
     # ------------------------------------------------------------------
     local ai_enabled
     ai_enabled=$(config_get_default "ai.enabled" "false")
@@ -1413,7 +1555,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 7. AI — middleware image
+    # 8. AI — middleware image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_AI_SERVICE" >/dev/null 2>&1; then
         _doc_pass "AI middleware image: available  (${MEC_IMAGE_AI_SERVICE})"
@@ -1422,7 +1564,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 8. AI — Claude Code image
+    # 9. AI — Claude Code image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_CLAUDE" >/dev/null 2>&1; then
         _doc_pass "Claude Code image: available  (${MEC_IMAGE_CLAUDE})"
@@ -1431,7 +1573,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 9. AI — auth
+    # 10. AI — auth
     # ------------------------------------------------------------------
     if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
         _doc_pass "AI auth: ANTHROPIC_API_KEY set"
@@ -1444,7 +1586,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 10. Dashboard image
+    # 11. Dashboard image
     # ------------------------------------------------------------------
     if docker image inspect "$MEC_IMAGE_DASHBOARD" >/dev/null 2>&1; then
         _doc_pass "Dashboard image: available  (${MEC_IMAGE_DASHBOARD})"
@@ -1453,7 +1595,7 @@ _mec_doctor_run() {
     fi
 
     # ------------------------------------------------------------------
-    # 11. Dashboard running
+    # 12. Dashboard running
     # ------------------------------------------------------------------
     local dashboard_url
     dashboard_url=$(_mec_dashboard_url)
@@ -1843,6 +1985,10 @@ case "$COMMAND" in
     ai)
         shift
         mec_ai "${1:---help}" "${@:2}"
+        ;;
+    telemetry)
+        shift
+        mec_telemetry "${1:---help}" "${@:2}"
         ;;
     logs)
         shift

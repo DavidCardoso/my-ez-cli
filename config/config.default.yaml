@@ -7,10 +7,17 @@
 # ============================================================================
 
 # ----------------------------------------------------------------------------
+# Telemetry Configuration
+# ----------------------------------------------------------------------------
+telemetry:
+  # Session metadata (session_id, tool, exit_code, timing). Opt-out — on by default.
+  enabled: true
+
+# ----------------------------------------------------------------------------
 # Logs Configuration
 # ----------------------------------------------------------------------------
 logs:
-  # Enable/disable logging system
+  # stdout/stderr capture. Opt-in — may be large or privacy-sensitive.
   enabled: false
 
   # Log level: debug, info, warn, error

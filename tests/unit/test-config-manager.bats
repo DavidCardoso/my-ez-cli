@@ -175,12 +175,12 @@ EOF
 # Validation Tests
 # ----------------------------------------------------------------------------
 
-@test "config_validate passes with valid config" {
+@test "config_validate passes with full config" {
     init_config
 
     cat > "$CONFIG_FILE" <<'EOF'
-logs:
-  enabled: false
+telemetry:
+  enabled: true
 
 ai:
   enabled: false
@@ -191,7 +191,7 @@ EOF
     [[ "$output" =~ "valid" ]]
 }
 
-@test "config_validate fails with missing sections" {
+@test "config_validate passes with partial config (user overrides only)" {
     init_config
 
     cat > "$CONFIG_FILE" <<'EOF'
@@ -199,8 +199,8 @@ some_key: value
 EOF
 
     run config_validate
-    [ "$status" -eq 1 ]
-    [[ "$output" =~ "ERROR" ]]
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "valid" ]]
 }
 
 # ----------------------------------------------------------------------------

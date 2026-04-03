@@ -20,6 +20,7 @@ DEFAULT_CONFIG_FILE="${MEC_HOME:-${HOME}/.my-ez-cli}/config.yaml"
 # Load configuration from config file or environment variables
 load_log_config() {
     # Default values
+    TELEMETRY_ENABLED="${MEC_TELEMETRY_ENABLED:-true}"
     LOG_ENABLED="${MEC_LOGS_ENABLED:-false}"
     LOG_LEVEL="${MEC_LOG_LEVEL:-info}"
     LOG_FORMAT="${MEC_LOG_FORMAT:-json}"
@@ -29,14 +30,11 @@ load_log_config() {
 
     # Legacy support
     if [ "$MEC_SAVE_LOGS" = "1" ]; then
-        LOG_ENABLED="true"
+        TELEMETRY_ENABLED="true"
     fi
 
     # Export for other scripts
-    export LOG_ENABLED
-    export LOG_LEVEL
-    export LOG_FORMAT
-    export LOG_DIR
+    export TELEMETRY_ENABLED LOG_ENABLED LOG_LEVEL LOG_FORMAT LOG_DIR
 }
 
 # ----------------------------------------------------------------------------
@@ -53,8 +51,8 @@ log_session_init() {
     # Load configuration
     load_log_config
 
-    # Check if logging is enabled
-    if [ "$LOG_ENABLED" != "true" ]; then
+    # Check if telemetry is enabled
+    if [ "$TELEMETRY_ENABLED" != "true" ]; then
         export LOG_SESSION_ENABLED="false"
         return 0
     fi
@@ -67,6 +65,7 @@ log_session_init() {
     SESSION_ID=$(get_session_id "$TOOL_NAME")
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%300Z" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
     LOG_TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+    LOG_SESSION_START_EPOCH=$(date +%s)
 
     # Create log file paths
     JSON_LOG_FILE="${TOOL_LOG_DIR}/${LOG_TIMESTAMP}.json"
@@ -80,6 +79,8 @@ log_session_init() {
     export LOG_SESSION_START_TIME="$TIMESTAMP"
     export LOG_SESSION_CWD="$(pwd)"
     export LOG_JSON_FILE="$JSON_LOG_FILE"
+    export LOG_SESSION_START_EPOCH
+    export LOG_ENABLED
 
     # Touch log file
     touch "$JSON_LOG_FILE"
@@ -110,6 +111,8 @@ log_session_finalize() {
 
     # Calculate end time and duration
     END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.%300Z" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+    END_EPOCH=$(date +%s)
+    DURATION_MS=$(( (END_EPOCH - ${LOG_SESSION_START_EPOCH:-END_EPOCH}) * 1000 ))
 
     # Get system information
     USERNAME=$(whoami)
@@ -120,10 +123,17 @@ log_session_finalize() {
     ENV_VARS=$(get_log_environment)
 
     # Escape JSON strings
-    STDOUT_ESCAPED=$(escape_json "$STDOUT")
-    STDERR_ESCAPED=$(escape_json "$STDERR")
     COMMAND_ESCAPED=$(escape_json "$LOG_SESSION_COMMAND")
     CWD_ESCAPED=$(escape_json "$LOG_SESSION_CWD")
+
+    # Build output block — null when capture is disabled, real strings when enabled
+    if [ "$LOG_ENABLED" = "true" ]; then
+        STDOUT_ESCAPED=$(escape_json "$STDOUT")
+        STDERR_ESCAPED=$(escape_json "$STDERR")
+        OUTPUT_BLOCK="\"output\": {\"stdout\": \"$STDOUT_ESCAPED\", \"stderr\": \"$STDERR_ESCAPED\"}"
+    else
+        OUTPUT_BLOCK="\"output\": {\"stdout\": null, \"stderr\": null}"
+    fi
 
     # Write JSON log entry
     cat > "$LOG_JSON_FILE" <<EOF
@@ -139,12 +149,10 @@ log_session_finalize() {
   "execution": {
     "start_time": "$LOG_SESSION_START_TIME",
     "end_time": "$END_TIME",
-    "exit_code": $EXIT_CODE
+    "exit_code": $EXIT_CODE,
+    "duration_ms": $DURATION_MS
   },
-  "output": {
-    "stdout": "$STDOUT_ESCAPED",
-    "stderr": "$STDERR_ESCAPED"
-  },
+  $OUTPUT_BLOCK,
   "metadata": {
     "user": "$USERNAME",
     "hostname": "$HOSTNAME",
@@ -236,7 +244,7 @@ redact_sensitive() {
 log_rotate() {
     load_log_config
 
-    if [ "$LOG_ENABLED" != "true" ]; then
+    if [ "$TELEMETRY_ENABLED" != "true" ]; then
         return 0
     fi
 

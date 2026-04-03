@@ -128,7 +128,7 @@
       <!-- Two-panel layout -->
       <div class="panels">
         <div class="panel">
-          <LogOutput :stdout="session.stdout" :stderr="session.stderr" />
+          <LogOutput :stdout="session.stdout" :stderr="session.stderr" :capture-disabled="session.output_capture_disabled" />
         </div>
         <div class="panel">
           <AiOutput :content="session.ai_result" :status="session.ai_status" />

@@ -28,9 +28,13 @@
           <pre class="output-pre output-pre--stderr"><code>{{ stderr }}</code></pre>
         </div>
       </template>
+      <div v-else-if="captureDisabled" class="state-msg">
+        <i class="pi pi-ban" style="font-size: 15px; opacity: 0.5;"></i>
+        <span>Output capture disabled — run <code>mec logs enable</code> to record stdout/stderr.</span>
+      </div>
       <div v-else class="state-msg">
         <i class="pi pi-minus-circle" style="font-size: 15px; opacity: 0.4;"></i>
-        <span>(no output)</span>
+        <span>No output for this session.</span>
       </div>
     </div>
   </div>
@@ -43,6 +47,7 @@ import Button from 'primevue/button'
 const props = defineProps({
   stdout: { type: String, default: '' },
   stderr: { type: String, default: '' },
+  captureDisabled: { type: Boolean, default: false },
 })
 
 const copied = ref(false)

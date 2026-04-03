@@ -199,6 +199,7 @@ class SessionSummary:
     ai_tokens_output: int | None = None
     command: str = ""
     cwd: str = ""
+    log_status: str = "none"  # "captured" | "none"
 
 
 @dataclass
@@ -209,6 +210,7 @@ class SessionDetail(SessionSummary):
     cwd: str = ""
     stdout: str = ""
     stderr: str = ""
+    output_capture_disabled: bool = False
     ai_result: str = ""
     claude_session_id: str = ""
     log_file: str = ""
@@ -305,6 +307,8 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
         execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
+        output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
+        log_status = "captured" if output.get("stdout") else "none"
         ai_path = _sidecar_path(log_path, data_root)
         status, _, _claude_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         results.append(
@@ -319,6 +323,7 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
                 ai_tokens_output=tok_out,
                 command=str(data.get("command", "")),
                 cwd=str(data.get("cwd", "")),
+                log_status=log_status,
             )
         )
     return {"sessions": results, "total": total}
@@ -334,6 +339,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
         exit_code_raw = execution.get("exit_code")
         exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
         output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
+        output_capture_disabled = output.get("stdout") is None and output.get("stderr") is None
         ai_path = _sidecar_path(log_path, data_root)
         status, result, claude_session_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
         return SessionDetail(
@@ -344,8 +350,9 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
             ai_status=status,
             command=str(data.get("command", "")),
             cwd=str(data.get("cwd", "")),
-            stdout=str(output.get("stdout", "")),
-            stderr=str(output.get("stderr", "")),
+            stdout=str(output.get("stdout") or ""),
+            stderr=str(output.get("stderr") or ""),
+            output_capture_disabled=output_capture_disabled,
             ai_result=result,
             claude_session_id=claude_session_id,
             log_file="$MEC_HOME/" + str(log_path.relative_to(data_root)),
@@ -462,6 +469,7 @@ def get_stats(data_root: Path) -> dict[str, object]:
     last_7_days = [{"date": d, "count": c} for d, c in day_counts.items()]
 
     config = _read_config(data_root)
+    telemetry_cfg: dict[str, object] = config.get("telemetry", {})  # type: ignore[assignment]
     logs_cfg: dict[str, object] = config.get("logs", {})  # type: ignore[assignment]
     ai_cfg: dict[str, object] = config.get("ai", {})  # type: ignore[assignment]
 
@@ -472,6 +480,7 @@ def get_stats(data_root: Path) -> dict[str, object]:
         "exit_code_distribution": exit_dist,
         "ai_analysis_rate": ai_rate,
         "last_7_days": last_7_days,
+        "telemetry_enabled": bool(telemetry_cfg.get("enabled", False)),
         "logs_enabled": bool(logs_cfg.get("enabled", False)),
         "ai_enabled": bool(ai_cfg.get("enabled", False)),
     }

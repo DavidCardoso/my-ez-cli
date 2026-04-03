@@ -27,33 +27,35 @@ teardown() {
 # ----------------------------------------------------------------------------
 
 @test "load_log_config sets default values" {
+    unset MEC_TELEMETRY_ENABLED
     unset MEC_LOGS_ENABLED
     unset MEC_LOG_LEVEL
 
     load_log_config
 
+    [ "$TELEMETRY_ENABLED" = "true" ]
     [ "$LOG_ENABLED" = "false" ]
     [ "$LOG_LEVEL" = "info" ]
     [ "$LOG_FORMAT" = "json" ]
 }
 
 @test "load_log_config respects environment variables" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
     export MEC_LOG_LEVEL="debug"
 
     load_log_config
 
-    [ "$LOG_ENABLED" = "true" ]
+    [ "$TELEMETRY_ENABLED" = "true" ]
     [ "$LOG_LEVEL" = "debug" ]
 }
 
 @test "load_log_config supports legacy MEC_SAVE_LOGS" {
     export MEC_SAVE_LOGS="1"
-    unset MEC_LOGS_ENABLED
+    unset MEC_TELEMETRY_ENABLED
 
     load_log_config
 
-    [ "$LOG_ENABLED" = "true" ]
+    [ "$TELEMETRY_ENABLED" = "true" ]
 }
 
 # ----------------------------------------------------------------------------
@@ -67,7 +69,7 @@ teardown() {
 }
 
 @test "log_session_init creates log directory when enabled" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     log_session_init "node" "node:24-alpine" "node server.js"
 
@@ -78,7 +80,7 @@ teardown() {
 }
 
 @test "log_session_init skips when disabled" {
-    export MEC_LOGS_ENABLED="false"
+    export MEC_TELEMETRY_ENABLED="false"
 
     log_session_init "node" "node:24-alpine" "node server.js"
 
@@ -86,7 +88,7 @@ teardown() {
 }
 
 @test "log_session_init creates JSON log file" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     log_session_init "node" "node:24-alpine" "node server.js"
 
@@ -107,7 +109,7 @@ teardown() {
 }
 
 @test "log_session_finalize creates valid JSON" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     log_session_init "node" "node:24-alpine" "node --version"
     log_session_finalize "v24.0.0" "" 0
@@ -122,6 +124,9 @@ teardown() {
     [ "$status" -eq 0 ]
 
     run grep '"tool": "node"' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    run grep '"duration_ms"' "$LOG_JSON_FILE"
     [ "$status" -eq 0 ]
 }
 
@@ -172,14 +177,14 @@ teardown() {
 # ----------------------------------------------------------------------------
 
 @test "log_rotate skips when logging disabled" {
-    export MEC_LOGS_ENABLED="false"
+    export MEC_TELEMETRY_ENABLED="false"
 
     run log_rotate
     [ "$status" -eq 0 ]
 }
 
 @test "log_cleanup removes tool log directory" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     mkdir -p "$TEST_LOG_DIR/node"
     echo "test" > "$TEST_LOG_DIR/node/test.log"
@@ -200,7 +205,7 @@ teardown() {
 }
 
 @test "log_list finds JSON log files" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     mkdir -p "$TEST_LOG_DIR/node"
     touch "$TEST_LOG_DIR/node/2026-01-15_10-00-00.json"
@@ -214,7 +219,7 @@ teardown() {
 }
 
 @test "log_latest returns most recent log" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     mkdir -p "$TEST_LOG_DIR/node"
     touch "$TEST_LOG_DIR/node/2026-01-15_10-00-00.json"
@@ -248,7 +253,8 @@ _make_test_log() {
   "execution": {
     "start_time": "2026-01-15T10:00:00.300Z",
     "end_time": "2026-01-15T10:00:01.300Z",
-    "exit_code": ${exit_code}
+    "exit_code": ${exit_code},
+    "duration_ms": 1000
   },
   "output": {"stdout": "", "stderr": ""},
   "metadata": {}
@@ -310,7 +316,7 @@ EOF
 }
 
 @test "log_session_finalize JSON is parseable by grep+sed extraction" {
-    export MEC_LOGS_ENABLED="true"
+    export MEC_TELEMETRY_ENABLED="true"
 
     log_session_init "yarn" "node:22-alpine" "yarn install"
     log_session_finalize "Done" "" 0
@@ -361,4 +367,55 @@ EOF
 
     [ "$status" -eq 0 ]
     [ -z "$output" ]
+}
+
+# ----------------------------------------------------------------------------
+# LOG_ENABLED (output capture) and duration_ms Tests
+# ----------------------------------------------------------------------------
+
+@test "load_log_config respects MEC_LOGS_ENABLED for output capture" {
+    export MEC_LOGS_ENABLED="true"
+    load_log_config
+    [ "$LOG_ENABLED" = "true" ]
+    unset MEC_LOGS_ENABLED
+}
+
+@test "log_session_finalize writes null output when LOG_ENABLED=false" {
+    export MEC_TELEMETRY_ENABLED="true"
+    export MEC_LOGS_ENABLED="false"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "v24.0.0" "" 0
+
+    run grep '"stdout": null' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    run grep '"stderr": null' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+
+    unset MEC_LOGS_ENABLED
+}
+
+@test "log_session_finalize writes stdout/stderr when LOG_ENABLED=true" {
+    export MEC_TELEMETRY_ENABLED="true"
+    export MEC_LOGS_ENABLED="true"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "v24.0.0" "" 0
+
+    run grep '"stdout":' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ v24.0.0 ]]
+
+    unset MEC_LOGS_ENABLED
+}
+
+@test "log_session_finalize includes duration_ms in execution block" {
+    export MEC_TELEMETRY_ENABLED="true"
+
+    log_session_init "node" "node:24-alpine" "node --version"
+    log_session_finalize "" "" 0
+
+    run grep '"duration_ms"' "$LOG_JSON_FILE"
+    [ "$status" -eq 0 ]
 }
