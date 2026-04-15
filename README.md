@@ -306,6 +306,20 @@ aws-sso
 aws-sso-cred $AWS_PROFILE
 ```
 
+**AWS SAML (Okta)** — authenticate using SAML via Okta:
+
+```shell
+aws-saml-okta
+# 1) configure  2) login  3) logout
+```
+
+Or non-interactively:
+
+```shell
+aws-saml-okta login
+aws-saml-okta login --profile saml
+```
+
 </details>
 
 <details>

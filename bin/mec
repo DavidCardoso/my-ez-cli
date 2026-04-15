@@ -81,6 +81,7 @@ show_help() {
     printf '%s\n' "  aws                 AWS CLI"
     printf '%s\n' "  aws-get-session-token  AWS session token helper"
     printf '%s\n' "  aws-sso             AWS SSO login"
+    printf '%s\n' "  aws-saml-okta       AWS SAML/Okta login"
     printf '%s\n' "  aws-sso-cred        AWS SSO credential provider"
     printf '%s\n' "  gcloud              Google Cloud CLI"
     printf '%s\n' "  gcloud-login        Google Cloud interactive login"
@@ -2046,7 +2047,7 @@ case "$COMMAND" in
         show_help
         ;;
     # Tool wrappers — delegate directly to the corresponding bin/ script
-    aws|aws-get-session-token|aws-sso|aws-sso-cred| \
+    aws|aws-get-session-token|aws-saml-okta|aws-sso|aws-sso-cred| \
     gcloud|gcloud-login| \
     node|node20|node22|node24| \
     npm|npm20|npm22| \
