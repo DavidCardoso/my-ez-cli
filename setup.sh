@@ -163,6 +163,9 @@ install_aws() {
         echo "alias aws-sso=\"${BASEDIR}/bin/aws-sso \"" >>~/.zshrc
         msg_ok "Activating aws-sso"
 
+        echo "alias aws-saml-okta=\"${BASEDIR}/bin/aws-saml-okta \"" >>~/.zshrc
+        msg_ok "Activating aws-saml-okta"
+
         sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
         msg_ok "Activating aws-sso-cred"
     else
@@ -179,6 +182,9 @@ install_aws() {
 
             echo "alias aws-sso=\"${BASEDIR}/bin/aws-sso \"" >>~/.zshrc
             msg_ok "Activating aws-sso"
+
+            echo "alias aws-saml-okta=\"${BASEDIR}/bin/aws-saml-okta \"" >>~/.zshrc
+            msg_ok "Activating aws-saml-okta"
 
             sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
             msg_ok "Activating aws-sso-cred"
@@ -926,6 +932,7 @@ uninstall_aws() {
     if [ -f ~/.zshrc ]; then
         sed -i.bak '/aws-get-session-token/d' ~/.zshrc
         sed -i.bak '/aws-sso.*bin\/aws-sso/d' ~/.zshrc
+        sed -i.bak '/aws-saml-okta/d' ~/.zshrc
         rm -f ~/.zshrc.bak
     fi
 

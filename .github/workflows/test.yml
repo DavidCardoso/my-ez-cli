@@ -167,6 +167,8 @@ jobs:
         run: |
           ./bin/mec help | grep -q 'TOOLS'
           echo "✓ mec help lists TOOLS section"
+          ./bin/mec help | grep -q 'aws-saml-okta'
+          echo "✓ mec help lists aws-saml-okta"
           ./bin/mec unknown-tool 2>&1 | grep -q 'Unknown command'
           echo "✓ mec unknown-tool returns error"
 
@@ -194,6 +196,7 @@ jobs:
       matrix:
         test-suite:
           - aws
+          - aws-saml-okta
           - common-utils
           - dashboard
           - doctor

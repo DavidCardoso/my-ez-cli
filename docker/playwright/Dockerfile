@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright:v1.59.1-jammy
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="playwright" \

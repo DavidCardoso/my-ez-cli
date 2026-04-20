@@ -23,7 +23,7 @@ setup_logging "aws" "$IMAGE" "aws ${*}"
 DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
-    --env AWS_PROFILE=$AWS_PROFILE \
+    ${AWS_PROFILE:+--env AWS_PROFILE=$AWS_PROFILE} \
     --env LANG=\"en_US.UTF-8\" \
     --volume $HOME/.aws:/root/.aws \
     --volume $PWD:$WORKDIR \

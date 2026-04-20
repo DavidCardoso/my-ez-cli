@@ -1,0 +1,837 @@
+#!/bin/bash
+set -e
+
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+BASEDIR="$SCRIPT_DIR"
+
+# Dependencies — curl and jq are required for Okta API calls
+for _dep in curl jq; do
+    if ! command -v "$_dep" >/dev/null 2>&1; then
+        echo "Error: $_dep is required but not found." >&2
+        echo "Install it with: brew install $_dep" >&2
+        exit 1
+    fi
+done
+unset _dep
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+show_help() {
+    cat <<EOF
+
+==========================================================
+Error: $1
+
+Usage examples:
+- aws-saml-okta           # 1) configure: Set up SAML/Okta env vars
+- aws-saml-okta           # 2) login [--profile <name>]: Authenticate via Okta and get AWS credentials
+- aws-saml-okta           # 3) logout: Clear SAML session credentials
+==========================================================
+EOF
+}
+
+# Load env vars from config/aws/.env that start with the given prefix.
+load_env_vars() {
+    local env_file="${BASEDIR}/../config/aws/.env"
+    if [ ! -f "$env_file" ]; then
+        echo "Error: $env_file not found." >&2
+        echo "Run 'aws-saml-okta' and choose 'configure', or copy .env.example to .env" >&2
+        exit 1
+    fi
+
+    while IFS="" read -r p || [ -n "$p" ]; do
+        if echo "$p" | grep -q "^$1"; then
+            eval "$p"
+        fi
+    done <"$env_file"
+}
+
+# Read a key's value from a section in ~/.aws/config.
+# Usage: read_aws_config_value <section-name> <key> [config-file]
+# The section name is matched as a substring (e.g. "okta" matches "[okta]" and "[profile okta]").
+read_aws_config_value() {
+    local section="$1" key="$2" config_file="${3:-$HOME/.aws/config}"
+    awk -v section="$section" -v key="$key" '
+        /^\[/{ in_section=($0 ~ section) }
+        in_section && $1==key{ print $3; exit }
+    ' "$config_file" 2>/dev/null || true
+}
+
+# Normalise an Okta app URL: accept both short form (home/amazon_aws/...)
+# and full https:// form. Short form is resolved relative to okta_domain.
+normalize_okta_url() {
+    local url="$1" domain="$2"
+    if [[ "$url" != https://* ]]; then
+        echo "https://${domain}/${url}"
+    else
+        echo "$url"
+    fi
+}
+
+next_steps() {
+    local profile="${1:-${AWS_SAML_PROFILE:-saml}}"
+    cat <<EOF
+
+==========================================================
+Credentials written to base profile: ${profile}
+
+Chained profiles in ~/.aws/config that use:
+  source_profile = ${profile}
+...will now resolve automatically.
+
+Or use directly:
+  export AWS_PROFILE=${profile}
+  aws s3 ls
+
+Or per-command:
+  aws s3 ls --profile ${profile}
+
+Note: Credentials expire after ${AWS_SAML_DURATION:-3600} seconds.
+==========================================================
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# Configure — interactive prompts to write config/aws/.env
+# ---------------------------------------------------------------------------
+
+saml_configure() {
+    local env_file="${BASEDIR}/../config/aws/.env"
+
+    cat <<EOF
+
+==========================================================
+Configuring AWS SAML/Okta settings...
+
+This will write SAML configuration to: $env_file
+==========================================================
+EOF
+
+    # Check for existing SAML config
+    local has_existing=false
+    if [ -f "$env_file" ] && grep -q "^AWS_SAML_" "$env_file"; then
+        has_existing=true
+        echo
+        echo "Existing SAML configuration found:"
+        grep "^AWS_SAML_" "$env_file" | while IFS='=' read -r key value; do
+            echo "  $key=$value"
+        done
+
+        echo
+        read -r -p "Replace existing SAML configuration? (y/N): " confirm
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+            echo "Configuration unchanged."
+            return 0
+        fi
+    fi
+
+    # Load existing values as defaults for the prompts
+    if [ "$has_existing" = true ]; then
+        load_env_vars AWS_SAML
+    fi
+
+    # Try to read defaults from ~/.aws/config [okta] section
+    local aws_config_saml_url aws_config_domain
+    aws_config_saml_url=$(read_aws_config_value "okta" "aws_saml_url")
+    aws_config_domain=$(read_aws_config_value "okta" "okta_domain")
+
+    echo
+    local cur="${AWS_SAML_IDP_URL:-$aws_config_saml_url}"
+    if [ -n "$aws_config_saml_url" ] && [ -z "${AWS_SAML_IDP_URL:-}" ]; then
+        echo "  (detected from ~/.aws/config [okta]: $aws_config_saml_url)"
+    fi
+    read -r -p "Okta SAML app URL${cur:+ [$cur]}: " idp_url
+    idp_url="${idp_url:-$cur}"
+
+    # If the URL is in short form, we need the domain too
+    local domain=""
+    if [[ "$idp_url" != https://* ]]; then
+        cur="${AWS_SAML_OKTA_DOMAIN:-$aws_config_domain}"
+        read -r -p "Okta domain (e.g. company.okta.com)${cur:+ [$cur]}: " domain
+        domain="${domain:-$cur}"
+        if [ -z "$domain" ]; then
+            echo "Error: Okta domain is required when URL is in short form." >&2
+            exit 1
+        fi
+    fi
+
+    cur="${AWS_SAML_PROFILE:-saml}"
+    read -r -p "AWS base profile name (used as source_profile by chained profiles) [$cur]: " profile
+    profile="${profile:-$cur}"
+
+    cur="${AWS_SAML_DURATION:-3600}"
+    read -r -p "Session duration in seconds [$cur]: " duration
+    duration="${duration:-$cur}"
+
+    cur="${AWS_SAML_REGION:-eu-west-1}"
+    read -r -p "AWS region [$cur]: " region
+    region="${region:-$cur}"
+
+    # Validate required fields
+    if [ -z "$idp_url" ]; then
+        echo "Error: Okta SAML app URL is required." >&2
+        exit 1
+    fi
+
+    if [ "$has_existing" = true ]; then
+        sed -i.bak \
+            -e "s|^AWS_SAML_IDP_URL=.*|AWS_SAML_IDP_URL=$idp_url|" \
+            -e "s|^AWS_SAML_PROFILE=.*|AWS_SAML_PROFILE=$profile|" \
+            -e "s|^AWS_SAML_DURATION=.*|AWS_SAML_DURATION=$duration|" \
+            -e "s|^AWS_SAML_REGION=.*|AWS_SAML_REGION=$region|" \
+            "$env_file"
+        # Remove stale ARN lines
+        sed -i.bak \
+            -e '/^AWS_SAML_IDP_ARN=/d' \
+            -e '/^AWS_SAML_ROLE_ARN=/d' \
+            "$env_file"
+        # Add or update domain line
+        if grep -q "^AWS_SAML_OKTA_DOMAIN=" "$env_file"; then
+            sed -i.bak "s|^AWS_SAML_OKTA_DOMAIN=.*|AWS_SAML_OKTA_DOMAIN=${domain}|" "$env_file"
+        elif [ -n "$domain" ]; then
+            echo "AWS_SAML_OKTA_DOMAIN=$domain" >> "$env_file"
+        fi
+        rm -f "${env_file}.bak"
+    else
+        {
+            echo ""
+            echo "# SAML / Okta"
+            echo "AWS_SAML_IDP_URL=$idp_url"
+            [ -n "$domain" ] && echo "AWS_SAML_OKTA_DOMAIN=$domain"
+            echo "AWS_SAML_PROFILE=$profile"
+            echo "AWS_SAML_DURATION=$duration"
+            echo "AWS_SAML_REGION=$region"
+        } >>"$env_file"
+    fi
+
+    echo
+    echo "SAML configuration saved to $env_file"
+    echo "Run 'aws-saml-okta' and choose 'login' to authenticate."
+}
+
+# ---------------------------------------------------------------------------
+# Okta primary authentication — returns full JSON response
+# ---------------------------------------------------------------------------
+
+okta_primary_auth() {
+    local okta_domain="$1"
+    local username="$2"
+    local password="$3"
+
+    local response
+    response=$(curl -s -w "\n%{http_code}" -X POST \
+        "https://${okta_domain}/api/v1/authn" \
+        -H "Content-Type: application/json" \
+        -H "Accept: application/json" \
+        -d "{\"username\":\"${username}\",\"password\":\"${password}\"}")
+
+    local http_code
+    http_code=$(echo "$response" | tail -1)
+    local body
+    body=$(echo "$response" | sed '$d')
+
+    if [ "$http_code" != "200" ]; then
+        local error_summary
+        error_summary=$(echo "$body" | jq -r '.errorSummary // "Unknown error"')
+        echo "Error: Okta authentication failed (HTTP $http_code): $error_summary" >&2
+        return 1
+    fi
+
+    echo "$body"
+}
+
+# ---------------------------------------------------------------------------
+# MFA verification — handles TOTP and push; respects mfa_factor_type config
+# ---------------------------------------------------------------------------
+
+okta_mfa_verify() {
+    local auth_response="$1"
+    local preferred_factor_type="${2:-}"   # optional: "push" or "token:software:totp"
+
+    local state_token
+    state_token=$(echo "$auth_response" | jq -r '.stateToken')
+
+    local factors
+    factors=$(echo "$auth_response" | jq -r '._embedded.factors[]
+        | "\(.id)|\(.factorType)|\(.provider)|\(._links.verify.href)"')
+
+    if [ -z "$factors" ]; then
+        echo "Error: MFA required but no factors available." >&2
+        return 1
+    fi
+
+    echo >/dev/tty
+    echo "MFA verification required." >/dev/tty
+
+    local totp_line="" push_line=""
+    while IFS= read -r line; do
+        local ftype
+        ftype=$(echo "$line" | cut -d'|' -f2)
+        case "$ftype" in
+            token:software:totp) [ -z "$totp_line" ] && totp_line="$line" ;;
+            push)                [ -z "$push_line" ] && push_line="$line" ;;
+        esac
+    done <<< "$factors"
+
+    local factor_id factor_type verify_url
+
+    # Auto-select if preferred_factor_type is configured
+    if [ -n "$preferred_factor_type" ]; then
+        case "$preferred_factor_type" in
+            push)
+                if [ -n "$push_line" ]; then
+                    factor_id=$(echo "$push_line" | cut -d'|' -f1)
+                    factor_type="push"
+                    verify_url=$(echo "$push_line" | cut -d'|' -f4)
+                    echo "Auto-selecting push MFA (from config)." >/dev/tty
+                fi
+                ;;
+            token:software:totp)
+                if [ -n "$totp_line" ]; then
+                    factor_id=$(echo "$totp_line" | cut -d'|' -f1)
+                    factor_type="token:software:totp"
+                    verify_url=$(echo "$totp_line" | cut -d'|' -f4)
+                    echo "Auto-selecting TOTP MFA (from config)." >/dev/tty
+                fi
+                ;;
+        esac
+    fi
+
+    # Fall back to interactive selection if not auto-selected
+    if [ -z "$factor_type" ]; then
+        if [ -n "$totp_line" ] && [ -n "$push_line" ]; then
+            echo "Available MFA methods:" >/dev/tty
+            echo "  1) Push notification (Okta Verify)" >/dev/tty
+            echo "  2) TOTP code (Okta Verify / Google Authenticator)" >/dev/tty
+            read -r -p "Enter 1 or 2 [1]: " mfa_choice </dev/tty >/dev/tty
+            mfa_choice="${mfa_choice:-1}"
+
+            if [ "$mfa_choice" = "2" ]; then
+                factor_id=$(echo "$totp_line" | cut -d'|' -f1)
+                factor_type="token:software:totp"
+                verify_url=$(echo "$totp_line" | cut -d'|' -f4)
+            else
+                factor_id=$(echo "$push_line" | cut -d'|' -f1)
+                factor_type="push"
+                verify_url=$(echo "$push_line" | cut -d'|' -f4)
+            fi
+        elif [ -n "$totp_line" ]; then
+            factor_id=$(echo "$totp_line" | cut -d'|' -f1)
+            factor_type="token:software:totp"
+            verify_url=$(echo "$totp_line" | cut -d'|' -f4)
+        elif [ -n "$push_line" ]; then
+            factor_id=$(echo "$push_line" | cut -d'|' -f1)
+            factor_type="push"
+            verify_url=$(echo "$push_line" | cut -d'|' -f4)
+        else
+            echo "Error: No supported MFA factor found (TOTP or push required)." >&2
+            return 1
+        fi
+    fi
+
+    local mfa_response
+    if [ "$factor_type" = "push" ]; then
+        echo "Sending push notification to Okta Verify..." >/dev/tty
+        mfa_response=$(curl -s -X POST "$verify_url" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"stateToken\":\"${state_token}\"}")
+
+        local result_url
+        result_url=$(echo "$mfa_response" | jq -r '._links.next.href // empty')
+        [ -z "$result_url" ] && result_url="$verify_url"
+
+        local factor_result="WAITING"
+        while [ "$factor_result" = "WAITING" ]; do
+            sleep 3
+            printf "." >/dev/tty
+            mfa_response=$(curl -s -X POST "$result_url" \
+                -H "Content-Type: application/json" \
+                -H "Accept: application/json" \
+                -d "{\"stateToken\":\"${state_token}\"}")
+
+            factor_result=$(echo "$mfa_response" | jq -r '.factorResult // .status // "WAITING"')
+            if [ "$factor_result" = "SUCCESS" ] || \
+               [ "$(echo "$mfa_response" | jq -r '.status')" = "SUCCESS" ]; then
+                factor_result="SUCCESS"
+            fi
+        done
+        echo >/dev/tty
+
+        if [ "$factor_result" != "SUCCESS" ]; then
+            echo "Error: Push verification failed: $factor_result" >&2
+            return 1
+        fi
+    else
+        read -r -p "Enter MFA code: " mfa_code </dev/tty >/dev/tty
+        mfa_response=$(curl -s -X POST "$verify_url" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"stateToken\":\"${state_token}\",\"passCode\":\"${mfa_code}\"}")
+
+        local mfa_status
+        mfa_status=$(echo "$mfa_response" | jq -r '.status')
+        if [ "$mfa_status" != "SUCCESS" ]; then
+            local mfa_error
+            mfa_error=$(echo "$mfa_response" | jq -r '.errorSummary // "Invalid code"')
+            echo "Error: MFA verification failed: $mfa_error" >&2
+            return 1
+        fi
+    fi
+
+    echo "$mfa_response" | jq -r '.sessionToken'
+}
+
+# ---------------------------------------------------------------------------
+# Fetch SAML assertion from Okta
+# ---------------------------------------------------------------------------
+
+okta_fetch_saml() {
+    local app_url="$1"
+    local session_token="$2"
+    local output_file="$3"  # temp file path to write assertion into
+
+    local cookie_jar
+    cookie_jar=$(mktemp)
+    trap "rm -f '$cookie_jar'" RETURN
+
+    # Try ?sessionToken= first (standard Okta param), fall back to ?onetimetoken=
+    local html_response
+    html_response=$(curl -s -L \
+        -c "$cookie_jar" -b "$cookie_jar" \
+        "${app_url}?sessionToken=${session_token}")
+
+    local saml_input saml_assertion
+    saml_input=$(echo "$html_response" | tr '\n' ' ' | \
+        grep -o '<input[^>]*name="SAMLResponse"[^>]*>' | head -1 || true)
+    if [ -n "$saml_input" ]; then
+        saml_assertion=$(echo "$saml_input" | sed 's/.*value="//;s/".*//')
+    fi
+
+    # If not found, retry with legacy onetimetoken param
+    if [ -z "$saml_assertion" ]; then
+        html_response=$(curl -s -L \
+            -c "$cookie_jar" -b "$cookie_jar" \
+            "${app_url}?onetimetoken=${session_token}")
+        saml_input=$(echo "$html_response" | tr '\n' ' ' | \
+            grep -o '<input[^>]*name="SAMLResponse"[^>]*>' | head -1 || true)
+        if [ -n "$saml_input" ]; then
+            saml_assertion=$(echo "$saml_input" | sed 's/.*value="//;s/".*//')
+        fi
+    fi
+
+    if [ -z "$saml_assertion" ]; then
+        echo "Error: Failed to extract SAML assertion from Okta response." >&2
+        echo "This may indicate an invalid app URL or expired session." >&2
+        return 1
+    fi
+
+    # Write assertion directly to temp file — avoids bash $() / <<< corruption
+    # of the large base64 string (which can contain HTML entities).
+    printf '%s' "$saml_assertion" > "$output_file"
+}
+
+# ---------------------------------------------------------------------------
+# Extract role/provider pairs from SAML assertion
+# ---------------------------------------------------------------------------
+
+extract_saml_roles() {
+    local assertion_file="$1"  # file containing raw base64 assertion
+
+    # Run inside a Docker container via mec-python.  The assertion is piped
+    # through stdin so the container never needs to access the host temp path.
+    # Logic mirrors libexec/saml-extract-roles.py (kept as a standalone utility).
+    local py_code
+    py_code=$(cat << 'PYEOF'
+import sys, re, base64, xml.etree.ElementTree as ET
+ROLE_ATTR = "https://aws.amazon.com/SAML/Attributes/Role"
+NS = "urn:oasis:names:tc:SAML:2.0:assertion"
+
+raw = sys.stdin.read()
+raw = re.sub(r"&#x([0-9a-fA-F]+);", lambda m: chr(int(m.group(1), 16)), raw)
+raw = re.sub(r"&#(\d+);",            lambda m: chr(int(m.group(1))),      raw)
+raw = re.sub(r"\s", "", raw)
+xml_bytes = base64.b64decode(raw)
+
+roles = []
+try:
+    root = ET.fromstring(xml_bytes)
+    for attr in root.iter(f"{{{NS}}}Attribute"):
+        if attr.get("Name") == ROLE_ATTR:
+            for av in attr.iter(f"{{{NS}}}AttributeValue"):
+                parts = [p.strip() for p in (av.text or "").strip().split(",")]
+                r = next((p for p in parts if ":role/" in p), None)
+                p = next((p for p in parts if ":saml-provider/" in p), None)
+                if r and p:
+                    roles.append(f"{r},{p}")
+except Exception:
+    pass
+
+if not roles:
+    sig_close = b"</ds:Signature>"
+    last_sig = xml_bytes.rfind(sig_close)
+    search_from = (last_sig + len(sig_close)) if last_sig >= 0 else 0
+    open_pos = xml_bytes.find(b"AttributeStatement", search_from)
+    if open_pos >= 0:
+        tag_start = xml_bytes.rfind(b"<", 0, open_pos)
+        close_pos = xml_bytes.find(b"/AttributeStatement>", open_pos)
+        blob = xml_bytes[tag_start : close_pos + 20] if close_pos >= 0 else xml_bytes[tag_start:]
+        clean = bytes(b for b in blob if b in (0x09, 0x0A, 0x0D) or 0x20 <= b <= 0x7E)
+        text = clean.decode("ascii", errors="ignore")
+        role_re = re.compile(
+            r'<(?:\w+:)?Attribute\b[^>]*\bName="' + re.escape(ROLE_ATTR) + r'"[^>]*>'
+            r"(.*?)</(?:\w+:)?Attribute>",
+            re.DOTALL,
+        )
+        val_re = re.compile(
+            r"<(?:\w+:)?AttributeValue[^>]*>(.*?)</(?:\w+:)?AttributeValue>",
+            re.DOTALL,
+        )
+        for am in role_re.finditer(text):
+            for vm in val_re.finditer(am.group(1)):
+                parts = [p.strip() for p in vm.group(1).strip().split(",")]
+                r = next((p for p in parts if ":role/" in p), None)
+                p = next((p for p in parts if ":saml-provider/" in p), None)
+                if r and p:
+                    roles.append(f"{r},{p}")
+
+if not roles:
+    if b"EncryptedAssertion" in xml_bytes:
+        print("Error: SAML assertion is encrypted — roles cannot be extracted.", file=sys.stderr)
+    else:
+        print("Error: No AWS roles found in SAML assertion.", file=sys.stderr)
+    sys.exit(1)
+
+for pair in roles:
+    print(pair)
+PYEOF
+)
+    cat "$assertion_file" | mec-python -c "$py_code"
+}
+
+# ---------------------------------------------------------------------------
+# Exchange SAML assertion for AWS temporary credentials via STS
+# ---------------------------------------------------------------------------
+
+aws_assume_saml() {
+    local role_arn="$1"
+    local idp_arn="$2"
+    local assertion_file="$3"  # file containing raw base64 assertion
+    local duration="$4"
+
+    # Decode HTML entities and strip whitespace from the raw assertion.
+    # The result is a clean base64 string (no binary, no null bytes), so
+    # capturing it in a shell variable and passing it as a direct argument
+    # is safe and avoids the Docker filesystem visibility problem that occurs
+    # when using file:// with a host-side temp path the container cannot see.
+    # Piping via stdin avoids mec-python needing to access the host temp path.
+    local py_code
+    py_code=$(cat << 'PYEOF'
+import re, sys
+d = sys.stdin.read()
+d = re.sub(r"&#x([0-9a-fA-F]+);", lambda m: chr(int(m.group(1), 16)), d)
+d = re.sub(r"&#(\d+);",            lambda m: chr(int(m.group(1))),      d)
+d = re.sub(r"\s", "", d)
+sys.stdout.write(d)
+PYEOF
+)
+    local clean_assertion
+    clean_assertion=$(cat "$assertion_file" | mec-python -c "$py_code")
+
+    local credentials_json
+    local sts_exit=0
+    unset AWS_PROFILE
+    credentials_json=$(aws sts assume-role-with-saml \
+        --no-cli-pager \
+        --role-arn "$role_arn" \
+        --principal-arn "$idp_arn" \
+        --saml-assertion "$clean_assertion" \
+        --duration-seconds "${duration:-3600}" \
+        --output json 2>&1) || sts_exit=$?
+
+    if [ $sts_exit -ne 0 ]; then
+        echo "Error: AWS STS AssumeRoleWithSAML failed:" >&2
+        echo "$credentials_json" >&2
+        return 1
+    fi
+
+    echo "$credentials_json"
+}
+
+# ---------------------------------------------------------------------------
+# Write temporary credentials to ~/.aws/credentials
+# ---------------------------------------------------------------------------
+
+write_credentials() {
+    local credentials_json="$1"
+    local profile="$2"
+    local region="$3"
+
+    local access_key secret_key session_token expiration
+    access_key=$(echo "$credentials_json" | jq -r '.Credentials.AccessKeyId')
+    secret_key=$(echo "$credentials_json" | jq -r '.Credentials.SecretAccessKey')
+    session_token=$(echo "$credentials_json" | jq -r '.Credentials.SessionToken')
+    expiration=$(echo "$credentials_json" | jq -r '.Credentials.Expiration')
+
+    unset AWS_PROFILE
+    aws configure set aws_access_key_id "$access_key" --profile "$profile"
+    aws configure set aws_secret_access_key "$secret_key" --profile "$profile"
+    aws configure set aws_session_token "$session_token" --profile "$profile"
+    aws configure set region "$region" --profile "$profile"
+
+    echo
+    echo "Credentials saved to profile: $profile"
+    echo "Expiration: $expiration"
+}
+
+# ---------------------------------------------------------------------------
+# Login — full SAML authentication flow
+# ---------------------------------------------------------------------------
+
+saml_login() {
+    # Parse optional --profile flag
+    local profile_override=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --profile)
+                profile_override="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    cat <<EOF
+
+==========================================================
+Logging in via Okta SAML...
+==========================================================
+EOF
+
+    load_env_vars AWS_SAML
+
+    if [ -z "$AWS_SAML_IDP_URL" ]; then
+        echo "Error: AWS_SAML_IDP_URL is not set." >&2
+        echo "Run 'aws-saml-okta' and choose 'configure' first." >&2
+        exit 1
+    fi
+
+    # Resolve domain: prefer explicit var, else extract from full URL
+    local okta_domain="${AWS_SAML_OKTA_DOMAIN:-}"
+    if [ -z "$okta_domain" ]; then
+        okta_domain=$(echo "$AWS_SAML_IDP_URL" | sed 's|https://||;s|/.*||')
+    fi
+
+    # Normalise URL (handles short form)
+    local saml_url
+    saml_url=$(normalize_okta_url "$AWS_SAML_IDP_URL" "$okta_domain")
+
+    # Read mfa_factor_type from ~/.aws/config [okta] if not set in env
+    local mfa_factor_type="${AWS_SAML_MFA_FACTOR_TYPE:-}"
+    if [ -z "$mfa_factor_type" ]; then
+        mfa_factor_type=$(read_aws_config_value "okta" "mfa_factor_type")
+    fi
+
+    echo
+    read -r -p "Okta username: " okta_username
+    read -r -s -p "Okta password: " okta_password
+    echo
+
+    echo
+    echo "Authenticating with Okta..."
+    local auth_response
+    auth_response=$(okta_primary_auth "$okta_domain" "$okta_username" "$okta_password")
+    unset okta_password
+
+    if [ -z "$auth_response" ]; then
+        exit 1
+    fi
+
+    local auth_status
+    auth_status=$(echo "$auth_response" | jq -r '.status')
+
+    local session_token
+    case "$auth_status" in
+        SUCCESS)
+            session_token=$(echo "$auth_response" | jq -r '.sessionToken')
+            ;;
+        MFA_REQUIRED)
+            session_token=$(okta_mfa_verify "$auth_response" "$mfa_factor_type")
+            if [ -z "$session_token" ]; then
+                exit 1
+            fi
+            ;;
+        LOCKED_OUT)
+            echo "Error: Account is locked. Contact your Okta administrator." >&2
+            exit 1
+            ;;
+        *)
+            echo "Error: Unexpected authentication status: $auth_status" >&2
+            exit 1
+            ;;
+    esac
+
+    echo "Fetching SAML assertion..."
+    local assertion_file
+    assertion_file=$(mktemp)
+    trap "rm -f '$assertion_file'" EXIT
+    okta_fetch_saml "$saml_url" "$session_token" "$assertion_file"
+    if [ ! -s "$assertion_file" ]; then
+        echo "Error: Failed to fetch SAML assertion." >&2
+        exit 1
+    fi
+
+    echo "Extracting available roles from SAML assertion..."
+    local saml_roles
+    saml_roles=$(extract_saml_roles "$assertion_file")
+
+    if [ -z "$saml_roles" ]; then
+        echo "Error: No AWS roles found in the SAML assertion." >&2
+        echo "Contact your Okta/AWS administrator." >&2
+        exit 1
+    fi
+
+    local role_count=0
+    local role_lines=()
+    while IFS= read -r line; do
+        role_lines+=("$line")
+        role_count=$((role_count + 1))
+    done <<< "$saml_roles"
+
+    local role_arn idp_arn
+    if [ "$role_count" -eq 1 ]; then
+        local arn1 arn2
+        arn1=$(echo "${role_lines[0]}" | cut -d',' -f1)
+        arn2=$(echo "${role_lines[0]}" | cut -d',' -f2)
+        if echo "$arn1" | grep -q ':role/'; then
+            role_arn="$arn1"; idp_arn="$arn2"
+        else
+            role_arn="$arn2"; idp_arn="$arn1"
+        fi
+        echo "Using role: $role_arn"
+        echo "  Provider: $idp_arn"
+    else
+        echo
+        echo "Available roles:"
+        local i=1
+        for pair in "${role_lines[@]}"; do
+            local arn1 arn2 r_arn
+            arn1=$(echo "$pair" | cut -d',' -f1)
+            arn2=$(echo "$pair" | cut -d',' -f2)
+            r_arn=$(echo "$arn1" | grep -q ':role/' && echo "$arn1" || echo "$arn2")
+            echo "  $i) $r_arn"
+            i=$((i + 1))
+        done
+
+        read -r -p "Choose role [1]: " role_choice
+        role_choice="${role_choice:-1}"
+        local idx=$((role_choice - 1))
+        if [ "$idx" -lt 0 ] || [ "$idx" -ge "$role_count" ]; then
+            echo "Error: Invalid selection." >&2
+            exit 1
+        fi
+
+        local arn1 arn2
+        arn1=$(echo "${role_lines[$idx]}" | cut -d',' -f1)
+        arn2=$(echo "${role_lines[$idx]}" | cut -d',' -f2)
+        if echo "$arn1" | grep -q ':role/'; then
+            role_arn="$arn1"; idp_arn="$arn2"
+        else
+            role_arn="$arn2"; idp_arn="$arn1"
+        fi
+        echo "Using role: $role_arn"
+        echo "  Provider: $idp_arn"
+    fi
+
+    echo "Exchanging SAML assertion for AWS credentials..."
+    local credentials_json
+    credentials_json=$(aws_assume_saml \
+        "$role_arn" \
+        "$idp_arn" \
+        "$assertion_file" \
+        "${AWS_SAML_DURATION:-3600}")
+    if [ -z "$credentials_json" ]; then
+        exit 1
+    fi
+
+    local target_profile="${profile_override:-${AWS_SAML_PROFILE:-saml}}"
+    write_credentials "$credentials_json" \
+        "$target_profile" \
+        "${AWS_SAML_REGION:-eu-west-1}"
+
+    next_steps "$target_profile"
+}
+
+# ---------------------------------------------------------------------------
+# Logout — remove SAML profile credentials section from ~/.aws/credentials
+# ---------------------------------------------------------------------------
+
+saml_logout() {
+    cat <<EOF
+
+==========================================================
+Clearing SAML session credentials...
+==========================================================
+EOF
+
+    load_env_vars AWS_SAML
+    local profile="${AWS_SAML_PROFILE:-saml}"
+
+    local cred_file="$HOME/.aws/credentials"
+    if [ ! -f "$cred_file" ]; then
+        echo "No credentials file found."
+        return 0
+    fi
+
+    if ! grep -q "^\[${profile}\]" "$cred_file"; then
+        echo "No credentials found for profile: $profile"
+        return 0
+    fi
+
+    # Use awk to delete the entire [profile] section (from the header line
+    # up to but not including the next section header, or EOF).
+    local tmp_file
+    tmp_file=$(mktemp)
+    awk -v profile="[${profile}]" '
+        $0 == profile { in_section=1; next }
+        in_section && /^\[/ { in_section=0 }
+        !in_section { print }
+    ' "$cred_file" > "$tmp_file"
+    mv "$tmp_file" "$cred_file"
+
+    echo "Cleared credentials for profile: $profile"
+}
+
+# ---------------------------------------------------------------------------
+# Main — dispatch by argument or interactive menu
+# ---------------------------------------------------------------------------
+
+if [ $# -gt 0 ]; then
+    cmd="$1"; shift
+    case "$cmd" in
+        configure) saml_configure ;;
+        login)     saml_login "$@" ;;
+        logout)    saml_logout ;;
+        *)         show_help "Unknown command: $cmd" && exit 2 ;;
+    esac
+    exit $?
+fi
+
+PS3="Choose an option: "
+select opt in configure login logout; do
+    case ${opt} in
+    configure) saml_configure ;;
+    login)     saml_login ;;
+    logout)    saml_logout ;;
+    *) show_help "Invalid argument." && exit 2 ;;
+    esac
+    break
+done
