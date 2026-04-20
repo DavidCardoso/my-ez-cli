@@ -116,7 +116,6 @@ Optional: set MFA type in `~/.aws/config` to skip interactive selection:
 
 ```ini
 [okta]
-mfa_provider = OKTA
 mfa_factor_type = push
 aws_saml_url = home/amazon_aws/0oaXXXXXX/272
 ```
