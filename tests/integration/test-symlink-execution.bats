@@ -16,7 +16,7 @@ teardown() {
     ln -sf "$BASEDIR/bin/node" "$SYMLINK_DIR/node"
     run "$SYMLINK_DIR/node" --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v24" ]]
+    [[ "$output" =~ "v22" ]]
 }
 
 @test "npm works when executed via symlink" {
