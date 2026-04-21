@@ -2,7 +2,7 @@
 set -e
 
 # Image configuration
-IMAGE_REPO=davidcardoso/my-ez-cli
+IMAGE_REPO=ghcr.io/my-ez-cli
 IMAGE_TOOL=dashboard
 
 # Auto-detect platform if not set
@@ -36,7 +36,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 echo "=========================================================="
-echo "Building '${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG}'..."
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
 echo "Build context: ${PROJECT_ROOT}/services/dashboard"
 echo "Build options: ${BUILD_OPTS}"
@@ -45,5 +45,5 @@ echo "=========================================================="
 docker buildx build \
     ${BUILD_OPTS} \
     --file "${SCRIPT_DIR}/Dockerfile" \
-    --tag ${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
     "${PROJECT_ROOT}/services/dashboard"

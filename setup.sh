@@ -613,6 +613,7 @@ install_python() {
     if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
         msg_ok "Activating python"
         sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/python
+        sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/mec-python
     else
         local existing_path="${detected#external:}"
         handle_tool_conflict "python" "$existing_path"
@@ -621,6 +622,7 @@ install_python() {
             # Replace
             msg_ok "Activating python"
             sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/python
+            sudo ln -sf ${BASEDIR}/bin/python /usr/local/bin/mec-python
         elif [[ $result -eq 1 ]]; then
             # Side-by-side
             msg_warn "Installing as 'mec-python' (side-by-side)"
@@ -885,6 +887,70 @@ install_claude() {
     esac
 }
 
+_mec_first_run_onboarding() {
+    echo ""
+    msg_info "Setting up core services for first use..."
+    echo ""
+
+    # Source images.conf to get image names from the single source of truth
+    # shellcheck source=config/images.conf
+    . "${BASEDIR}/config/images.conf"
+
+    # Core Group B images to provision on first install
+    local images=(
+        "ai-service:${MEC_IMAGE_AI_SERVICE}"
+        "claude:${MEC_IMAGE_CLAUDE}"
+        "config-service:${MEC_IMAGE_CONFIG_SERVICE}"
+        "dashboard:${MEC_IMAGE_DASHBOARD}"
+    )
+
+    for entry in "${images[@]}"; do
+        local tool="${entry%%:*}"
+        local img="${entry#*:}"
+        [[ -z "$img" ]] && continue
+
+        msg_info "Provisioning ${tool}..."
+
+        # Primary: pull from registry
+        if docker pull "$img" >/dev/null 2>&1; then
+            msg_ok "${tool} — pulled ${img}"
+            continue
+        fi
+
+        # Fallback: local build
+        local build_script="${BASEDIR}/docker/${tool}/build"
+        if [ -x "$build_script" ]; then
+            msg_warn "${tool} — pull failed, attempting local build..."
+            if bash "$build_script" >/dev/null 2>&1; then
+                msg_ok "${tool} — built locally"
+            else
+                msg_warn "${tool} — local build failed. Run: cd ${BASEDIR}/docker/${tool} && ./build"
+            fi
+        else
+            msg_warn "${tool} — could not provision (no build script). Run: docker pull ${img}"
+        fi
+    done
+
+    # Health check
+    echo ""
+    msg_info "Running health check..."
+    echo ""
+    /usr/local/bin/mec doctor
+
+    # Offer to start dashboard
+    echo ""
+    read -r -p "  -> Start the dashboard now? [Y/n] " start_dash
+    if [[ -z "$start_dash" || "$start_dash" =~ ^[Yy]$ ]]; then
+        /usr/local/bin/mec dashboard start
+        msg_ok "Dashboard started — run 'mec dashboard open' to view it."
+    else
+        msg_info "Skip. Run 'mec dashboard start' whenever you're ready."
+    fi
+
+    echo ""
+    msg_ok "Onboarding complete. Run 'mec help' to see all commands."
+}
+
 install_mec() {
     msg_ok "Activating mec (my-ez-cli command)"
     sudo ln -sf ${BASEDIR}/bin/mec /usr/local/bin/mec
@@ -899,6 +965,7 @@ install_mec() {
     fi
 
     track_install "mec"
+    _mec_first_run_onboarding
 }
 
 install_all() {

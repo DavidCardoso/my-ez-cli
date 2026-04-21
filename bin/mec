@@ -299,17 +299,47 @@ mec_ai() {
               run_claude_analysis "$log_file" ) &
             disown
             ;;
+        pull)
+            msg_info "Pulling AI service images..."
+            docker pull "$MEC_IMAGE_AI_SERVICE" \
+                && msg_ok "Pulled $MEC_IMAGE_AI_SERVICE" \
+                || msg_warn "Failed to pull $MEC_IMAGE_AI_SERVICE"
+            docker pull "$MEC_IMAGE_CLAUDE" \
+                && msg_ok "Pulled $MEC_IMAGE_CLAUDE" \
+                || msg_warn "Failed to pull $MEC_IMAGE_CLAUDE"
+            ;;
+        rebuild)
+            msg_info "Building AI service images locally..."
+            bash "${BASE_DIR}/docker/ai-service/build" \
+                && msg_ok "Built ai-service" \
+                || msg_warn "ai-service build failed"
+            bash "${BASE_DIR}/docker/claude/build" \
+                && msg_ok "Built claude" \
+                || msg_warn "claude build failed"
+            ;;
+        images)
+            echo "AI images:"
+            for img in "$MEC_IMAGE_AI_SERVICE" "$MEC_IMAGE_CLAUDE"; do
+                if docker image inspect "$img" >/dev/null 2>&1; then
+                    echo "  [ok] $img"
+                else
+                    echo "  [missing] $img  (run: mec ai pull)"
+                fi
+            done
+            ;;
         help|--help|-h)
             local _b="" _r=""
             if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
             printf '%s\n' "${_b}USAGE${_r}"
-            printf '%s\n' "  mec ai <command> [arguments]"
             printf '%s\n' ""
             printf '%s\n' "${_b}COMMANDS${_r}"
             printf '%s\n' "  status              Show AI integration status"
             printf '%s\n' "  enable              Enable AI integration"
             printf '%s\n' "  disable             Disable AI integration"
             printf '%s\n' "  test                Test Claude Code availability"
+            printf '%s\n' "  pull                Pull AI service images from registry"
+            printf '%s\n' "  rebuild             Build AI service images locally"
+            printf '%s\n' "  images              Show AI image status (present/missing)"
             printf '%s\n' "  last                Show the most recent AI analysis"
             printf '%s\n' "  show <session_id>   Show a specific session by ID"
             printf '%s\n' "  logs [--last N]     List recent sessions with AI status (default: last 20)"

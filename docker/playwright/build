@@ -2,7 +2,7 @@
 set -e
 
 # Image configuration
-IMAGE_REPO=davidcardoso/my-ez-cli
+IMAGE_REPO=ghcr.io/my-ez-cli
 IMAGE_TOOL=playwright
 
 # Auto-detect platform if not set
@@ -35,12 +35,12 @@ else
 fi
 
 echo "=========================================================="
-echo "Building '${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG}'..."
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
 docker buildx build \
     ${BUILD_OPTS} \
-    --tag ${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
     .

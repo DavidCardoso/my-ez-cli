@@ -270,3 +270,24 @@ EOF
     [ "$status" -eq 1 ]
     [[ "$output" =~ "Unknown command" ]]
 }
+
+@test "mec_config help mentions pull" {
+    run mec_config help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "pull" ]]
+}
+
+@test "mec_config help mentions image" {
+    run mec_config help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "image" ]]
+}
+
+@test "mec_config image reports missing when image not found" {
+    export MEC_IMAGE_CONFIG_SERVICE="ghcr.io/my-ez-cli/config-service:latest"
+    docker() { return 1; }
+    export -f docker
+    run mec_config image
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "missing" ]]
+}

@@ -227,3 +227,42 @@ _sys_path="/usr/bin:/bin"
     [[ "$output" =~ "note about something" ]]
     [[ "$output" =~ "→" ]]
 }
+
+# install_python mec-python symlink tests
+
+@test "install_python creates mec-python symlink in primary (no conflict) path" {
+    # mec-python must always be available for host scripts (common.sh shell standards)
+    local func_body
+    func_body=$(awk '/^install_python\(\)/{found=1} found{print; if(/^\}$/ && found > 1){exit} found++}' "$SETUP_SCRIPT")
+    # Primary path = first ln block (before handle_tool_conflict). Must include mec-python.
+    local primary_block
+    primary_block=$(echo "$func_body" | awk '/if.*detected.*none.*mec/{found=1} found{print; if(/^\s*else\s*$/ && found){exit}}')
+    echo "$primary_block" | grep -q 'mec-python'
+}
+
+@test "install_python creates mec-python symlink in replace path" {
+    local func_body
+    func_body=$(awk '/^install_python\(\)/{found=1} found{print; if(/^\}$/ && found > 1){exit} found++}' "$SETUP_SCRIPT")
+    # Replace path = result -eq 0 block. Must include mec-python.
+    local replace_block
+    replace_block=$(echo "$func_body" | awk '/result -eq 0/{found=1} found{print; if(/elif/ && found > 1){exit} found++}')
+    echo "$replace_block" | grep -q 'mec-python'
+}
+
+@test "install_python mec-python symlink count covers all active install paths" {
+    # Expects mec-python in: primary path, replace path, side-by-side path = 3 occurrences
+    local func_body count
+    func_body=$(awk '/^install_python\(\)/{found=1} found{print; if(/^\}$/ && found > 1){exit} found++}' "$SETUP_SCRIPT")
+    count=$(echo "$func_body" | grep -c 'mec-python')
+    [ "$count" -ge 3 ]
+}
+
+@test "_mec_first_run_onboarding function exists in setup.sh" {
+    grep -q '_mec_first_run_onboarding()' "$SETUP_SCRIPT"
+}
+
+@test "install_mec calls _mec_first_run_onboarding" {
+    local func_body
+    func_body=$(awk '/^install_mec\(\)/{found=1} found{print; if(/^\}$/ && found > 1){exit} found++}' "$SETUP_SCRIPT")
+    echo "$func_body" | grep -q '_mec_first_run_onboarding'
+}

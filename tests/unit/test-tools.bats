@@ -184,3 +184,29 @@ teardown() {
     run "$BASEDIR/bin/mec" help
     echo "$output" | grep -q 'reset'
 }
+
+# --- mec ai image management ---
+
+@test "mec ai help mentions pull" {
+    run "$BASEDIR/bin/mec" ai help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "pull" ]]
+}
+
+@test "mec ai help mentions rebuild" {
+    run "$BASEDIR/bin/mec" ai help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "rebuild" ]]
+}
+
+@test "mec ai help mentions images" {
+    run "$BASEDIR/bin/mec" ai help
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "images" ]]
+}
+
+@test "mec ai images exits 0 even when images missing" {
+    run "$BASEDIR/bin/mec" ai images
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "AI images" ]]
+}

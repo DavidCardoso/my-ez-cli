@@ -1,67 +1,67 @@
-# Docker Hub Setup
+# GitHub Container Registry Setup
 
-My Ez CLI uses Docker Hub to host all custom Docker images for the project. This document explains the setup, structure, and maintenance of these images.
+My Ez CLI uses GitHub Container Registry (`ghcr.io`) to host all custom Docker images for the project. This document explains the setup, structure, and maintenance of these images.
 
-## Repository Structure
+## Registry Structure
 
-All custom Docker images are stored in a single Docker Hub repository using tool-specific tags:
+All custom Docker images are published to per-tool repositories under the `ghcr.io/my-ez-cli` namespace:
 
-**Repository**: `davidcardoso/my-ez-cli`
+**Registry**: `ghcr.io/my-ez-cli`
 
 ### Available Images
 
 | Tool | Docker Image | Platforms | Build Workflow |
 |------|-------------|-----------|----------------|
-| AI Service | `davidcardoso/my-ez-cli:ai-service-latest` | amd64, arm64 | `.github/workflows/docker-build-ai-service.yml` |
-| AWS SSO Cred | `davidcardoso/my-ez-cli:aws-sso-cred-latest` | amd64, arm64 | `.github/workflows/docker-build-aws-sso-cred.yml` |
-| Claude Code | `davidcardoso/my-ez-cli:claude-latest` | amd64, arm64 | `.github/workflows/docker-build-claude.yml` |
-| Serverless | `davidcardoso/my-ez-cli:serverless-latest` | amd64, arm64 | `.github/workflows/docker-build-serverless.yml` |
-| Speedtest | `davidcardoso/my-ez-cli:speedtest-latest` | amd64, arm64 | `.github/workflows/docker-build-speedtest.yml` |
-| Yarn Berry | `davidcardoso/my-ez-cli:yarn-berry-latest` | amd64, arm64 | `.github/workflows/docker-build-yarn-berry.yml` |
-| Yarn Plus | `davidcardoso/my-ez-cli:yarn-plus-latest` | amd64, arm64 | `.github/workflows/docker-build-yarn-plus.yml` |
+| AI Service | `ghcr.io/my-ez-cli/ai-service:latest` | amd64, arm64 | `.github/workflows/docker-build-ai-service.yml` |
+| AWS SSO Cred | `ghcr.io/my-ez-cli/aws-sso-cred:latest` | amd64, arm64 | `.github/workflows/docker-build-aws-sso-cred.yml` |
+| Claude Code | `ghcr.io/my-ez-cli/claude:latest` | amd64, arm64 | `.github/workflows/docker-build-claude.yml` |
+| Serverless | `ghcr.io/my-ez-cli/serverless:latest` | amd64, arm64 | `.github/workflows/docker-build-serverless.yml` |
+| Speedtest | `ghcr.io/my-ez-cli/speedtest:latest` | amd64, arm64 | `.github/workflows/docker-build-speedtest.yml` |
+| Yarn Berry | `ghcr.io/my-ez-cli/yarn-berry:latest` | amd64, arm64 | `.github/workflows/docker-build-yarn-berry.yml` |
+| Yarn Plus | `ghcr.io/my-ez-cli/yarn-plus:latest` | amd64, arm64 | `.github/workflows/docker-build-yarn-plus.yml` |
 
 ### Tag Formats
 
 Each tool image uses multiple tags for versioning and tracking:
 
-- `{tool}-latest` - Latest version from main branch
-- `{tool}-main` - Main branch builds
-- `{tool}-sha-{git-sha}` - Specific commit builds
-- `{tool}-{version}` - Semantic version releases (e.g., `serverless-1.0.0`)
-- `{tool}-{major}.{minor}` - Major.minor version (e.g., `serverless-1.0`)
+- `latest` - Latest version from main branch
+- `<branch>` - Branch builds
+- `sha-{git-sha}` - Specific commit builds
+- `{version}` - Semantic version releases (e.g., `1.0.0`)
+- `{major}.{minor}` - Major.minor version (e.g., `1.0`)
 
 **Examples**:
-- `davidcardoso/my-ez-cli:aws-sso-cred-latest`
-- `davidcardoso/my-ez-cli:aws-sso-cred-sha-a1b2c3d`
-- `davidcardoso/my-ez-cli:serverless-1.0.0`
+- `ghcr.io/my-ez-cli/aws-sso-cred:latest`
+- `ghcr.io/my-ez-cli/aws-sso-cred:sha-a1b2c3d`
+- `ghcr.io/my-ez-cli/serverless:1.0.0`
 
 ## GitHub Secrets Setup
 
-The Docker build workflows require GitHub Secrets for authentication to Docker Hub.
+The Docker build workflows require a GitHub Secret for authentication to GitHub Container Registry.
 
 ### Required Secrets
 
 Navigate to your GitHub repository settings: **Settings → Secrets and variables → Actions**
 
-Add the following secrets:
+Add the following secret:
 
 | Secret Name | Value | Description |
 |------------|-------|-------------|
-| `DOCKERHUB_USERNAME` | `davidcardoso` | Your Docker Hub username |
-| `DOCKERHUB_TOKEN` | `dckr_pat_...` | Docker Hub access token |
+| `GHCR_TOKEN` | `ghp_...` | GitHub PAT with `write:packages` scope |
 
-### Creating a Docker Hub Access Token
+### Creating a GitHub PAT for ghcr.io
 
-1. Log in to [Docker Hub](https://hub.docker.com/)
-2. Click on your username → **Account Settings**
-3. Navigate to **Security** → **Access Tokens**
-4. Click **New Access Token**
+1. Log in to [GitHub](https://github.com/)
+2. Click on your avatar → **Settings**
+3. Navigate to **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+4. Click **Generate new token (classic)**
 5. Configure the token:
-   - **Description**: `GitHub Actions - My Ez CLI`
-   - **Access permissions**: `Read & Write`
-6. Click **Generate**
+   - **Note**: `GHCR_TOKEN - My Ez CLI CI`
+   - **Expiration**: 1 year (or as appropriate)
+   - **Scopes**: check `write:packages` (automatically includes `read:packages`)
+6. Click **Generate token**
 7. **IMPORTANT**: Copy the token immediately (it won't be shown again)
-8. Add it as `DOCKERHUB_TOKEN` secret in GitHub
+8. Add it as `GHCR_TOKEN` secret in the GitHub repository
 
 ### Verifying Secrets Setup
 
@@ -94,7 +94,7 @@ Docker images are automatically built when:
    - Triggers individual tool workflows based on path filters
    - Example: Changes to `docker/serverless/**` triggers serverless build
 
-2. **Pull Requests** - Build only (no push to Docker Hub)
+2. **Pull Requests** - Build only (no push to ghcr.io)
    - Validates image builds without publishing
 
 3. **Manual Dispatch** - Trigger builds manually
@@ -109,28 +109,26 @@ Docker images are automatically built when:
 ### Build Status
 
 Check build status at:
-- GitHub Actions: https://github.com/davidcardoso/my-ez-cli/actions
-- Docker Hub: https://hub.docker.com/r/davidcardoso/my-ez-cli
+- GitHub Actions: https://github.com/DavidCardoso/my-ez-cli/actions
+- GitHub Packages: https://github.com/orgs/my-ez-cli/packages
 
-## Docker Hub Repository Settings
+## GitHub Container Registry Settings
 
 ### Public Access
 
-The repository is configured as **public** to allow users to pull images without authentication:
+All images are configured as **public** to allow users to pull without authentication:
 
 ```bash
-docker pull davidcardoso/my-ez-cli:aws-sso-cred-latest
+docker pull ghcr.io/my-ez-cli/aws-sso-cred:latest
 ```
 
 ### Security Scanning
 
 All images are scanned for vulnerabilities using:
 - **Trivy** - During GitHub Actions build
-- **Docker Hub Scanning** - Automatic scanning on push
 
 Security scan results are available in:
-- GitHub Security tab
-- Docker Hub repository page
+- GitHub Security tab (SARIF uploads)
 
 ## Local Development
 
@@ -141,11 +139,11 @@ Each Docker image has a dedicated directory with a Dockerfile:
 ```bash
 # Build specific tool image
 cd docker/aws-sso-cred
-docker build -t davidcardoso/my-ez-cli:aws-sso-cred-local .
+docker build -t ghcr.io/my-ez-cli/aws-sso-cred:local .
 
 # Build with specific platform
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t davidcardoso/my-ez-cli:serverless-local .
+  -t ghcr.io/my-ez-cli/serverless:local .
 ```
 
 ### Testing Images Locally
@@ -154,25 +152,25 @@ Test the image before pushing:
 
 ```bash
 # Run the image
-docker run --rm davidcardoso/my-ez-cli:aws-sso-cred-local --help
+docker run --rm ghcr.io/my-ez-cli/aws-sso-cred:local --help
 
 # Or use the bin script with local image
-IMAGE=davidcardoso/my-ez-cli:aws-sso-cred-local ./bin/aws-sso-cred
+IMAGE=ghcr.io/my-ez-cli/aws-sso-cred:local ./bin/aws-sso-cred
 ```
 
-### Pushing to Docker Hub
+### Pushing to GitHub Container Registry
 
-Manual push (requires Docker Hub login):
+Manual push (requires ghcr.io login):
 
 ```bash
-# Login to Docker Hub
-docker login
+# Login to ghcr.io
+echo $GHCR_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
 
 # Tag the image
-docker tag local-image:tag davidcardoso/my-ez-cli:tool-version
+docker tag local-image:tag ghcr.io/my-ez-cli/<tool>:<version>
 
-# Push to Docker Hub
-docker push davidcardoso/my-ez-cli:tool-version
+# Push to ghcr.io
+docker push ghcr.io/my-ez-cli/<tool>:<version>
 ```
 
 ## Maintenance
@@ -188,13 +186,13 @@ Docker images should be updated periodically for security patches:
 
 ### Pruning Old Tags
 
-Docker Hub has storage limits. To clean up old tags:
+To clean up old package versions on ghcr.io:
 
-1. Go to https://hub.docker.com/r/davidcardoso/my-ez-cli/tags
-2. Select old SHA-based tags
-3. Click **Delete tags**
+1. Go to https://github.com/orgs/my-ez-cli/packages
+2. Select the package (tool) to manage
+3. Click on old SHA-based versions and delete them
 4. Keep:
-   - `*-latest` tags
+   - `latest` tag
    - Recent version tags
    - Last 5-10 SHA tags per tool
 
@@ -204,7 +202,7 @@ Keep images small for faster pulls and reduced storage:
 
 ```bash
 # Check image size
-docker images davidcardoso/my-ez-cli
+docker images ghcr.io/my-ez-cli
 
 # Use multi-stage builds in Dockerfiles
 # Use Alpine Linux when possible
@@ -217,24 +215,21 @@ docker images davidcardoso/my-ez-cli
 
 **Error**: `Error: Cannot perform an interactive login from a non TTY device`
 
-**Solution**: Ensure `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are correctly set in GitHub
+**Solution**: Ensure `GHCR_TOKEN` secret is correctly set in GitHub repository settings
 
 ### Build Fails with "manifest unknown"
 
-**Error**: `manifest for davidcardoso/my-ez-cli:tool-latest not found`
+**Error**: `manifest for ghcr.io/my-ez-cli/<tool>:latest not found`
 
 **Solution**: The image hasn't been built yet. Trigger the workflow manually or push to main
 
 ### Pull Rate Limit
 
-**Error**: `toomanyrequests: You have reached your pull rate limit`
+GitHub Container Registry (`ghcr.io`) has no pull rate limits for public images. If you encounter authentication errors when pulling, ensure you are either using a public image or are logged in:
 
-**Solution**:
-- Public repositories have generous limits (200 pulls/6 hours for anonymous)
-- Authenticate to Docker Hub for higher limits:
-  ```bash
-  docker login
-  ```
+```bash
+echo $GHCR_TOKEN | docker login ghcr.io -u <your-github-username> --password-stdin
+```
 
 ### Platform Mismatch
 
@@ -245,24 +240,30 @@ docker images davidcardoso/my-ez-cli
 platforms: linux/amd64,linux/arm64
 ```
 
-## Migration from GitHub Container Registry
+## Migration from Docker Hub
 
-Previous setup used GitHub Container Registry (`ghcr.io`). All images have been migrated to Docker Hub.
+Previous setup used Docker Hub (`davidcardoso/my-ez-cli`). All images have been migrated to GitHub Container Registry.
 
 ### Old vs New Images
 
-| Old (ghcr.io) | New (Docker Hub) |
-|--------------|------------------|
-| `ghcr.io/davidcardoso/my-ez-cli/aws-sso-cred:latest` | `davidcardoso/my-ez-cli:aws-sso-cred-latest` |
-| `ghcr.io/davidcardoso/my-ez-cli/serverless:latest` | `davidcardoso/my-ez-cli:serverless-latest` |
-| `ghcr.io/davidcardoso/my-ez-cli/speedtest:latest` | `davidcardoso/my-ez-cli:speedtest-latest` |
-| `ghcr.io/davidcardoso/my-ez-cli/yarn-berry:latest` | `davidcardoso/my-ez-cli:yarn-berry-latest` |
+| Old (Docker Hub) | New (ghcr.io) |
+|------------------|---------------|
+| `davidcardoso/my-ez-cli:aws-sso-cred-latest` | `ghcr.io/my-ez-cli/aws-sso-cred:latest` |
+| `davidcardoso/my-ez-cli:serverless-latest` | `ghcr.io/my-ez-cli/serverless:latest` |
+| `davidcardoso/my-ez-cli:speedtest-latest` | `ghcr.io/my-ez-cli/speedtest:latest` |
+| `davidcardoso/my-ez-cli:yarn-berry-latest` | `ghcr.io/my-ez-cli/yarn-berry:latest` |
+| `davidcardoso/my-ez-cli:yarn-plus-latest` | `ghcr.io/my-ez-cli/yarn-plus:latest` |
+| `davidcardoso/my-ez-cli:dashboard-latest` | `ghcr.io/my-ez-cli/dashboard:latest` |
+| `davidcardoso/my-ez-cli:config-service-latest` | `ghcr.io/my-ez-cli/config-service:latest` |
+| `davidcardoso/my-ez-cli:ai-service-latest` | `ghcr.io/my-ez-cli/ai-service:latest` |
+| `davidcardoso/my-ez-cli:claude-latest` | `ghcr.io/my-ez-cli/claude:latest` |
+| `davidcardoso/my-ez-cli:playwright-latest` | `ghcr.io/my-ez-cli/playwright:latest` |
 
-**Note**: Old images on ghcr.io are deprecated and will not receive updates.
+**Note**: Old images on Docker Hub are deprecated and will not receive updates. Run `mec <tool> pull` or `docker pull ghcr.io/my-ez-cli/<tool>:latest` to update.
 
 ## Resources
 
-- Docker Hub Repository: https://hub.docker.com/r/davidcardoso/my-ez-cli
-- GitHub Actions: https://github.com/davidcardoso/my-ez-cli/actions
+- GitHub Container Registry: https://github.com/orgs/my-ez-cli/packages
+- GitHub Actions: https://github.com/DavidCardoso/my-ez-cli/actions
 - Docker Documentation: https://docs.docker.com/
 - GitHub Actions Documentation: https://docs.github.com/en/actions

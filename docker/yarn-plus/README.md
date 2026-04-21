@@ -7,8 +7,8 @@ Docker image providing Yarn package manager with extra system tools pre-installe
 
 ## Docker Image
 
-**Repository:** `davidcardoso/my-ez-cli`
-**Tag:** `yarn-plus-latest`
+**Registry:** `ghcr.io/my-ez-cli`
+**Image:** `ghcr.io/my-ez-cli/yarn-plus:latest`
 **Base Image:** `node:{NODE_VERSION}-alpine` (default: `node:22-alpine`)
 **Extra tools:** `bash`, `git`, `ca-certificates`, `openssl`, `curl`, `jq`
 **Platforms:** linux/amd64, linux/arm64
@@ -41,13 +41,13 @@ cd docker/yarn-plus
 # Single platform (local use)
 docker buildx build --platform linux/amd64 \
   --build-arg NODE_VERSION=22 \
-  --tag davidcardoso/my-ez-cli:yarn-plus-latest \
+  --tag ghcr.io/my-ez-cli/yarn-plus:latest \
   --load .
 
 # Multi-platform (push to registry)
 docker buildx build --platform linux/amd64,linux/arm64 \
   --build-arg NODE_VERSION=22 \
-  --tag davidcardoso/my-ez-cli:yarn-plus-latest \
+  --tag ghcr.io/my-ez-cli/yarn-plus:latest \
   --push .
 ```
 
@@ -157,7 +157,7 @@ The Docker image is automatically built and published via GitHub Actions:
 
 - **Trigger:** Push to main, pull requests, releases, manual dispatch
 - **Platforms:** linux/amd64, linux/arm64
-- **Registry:** Docker Hub (`davidcardoso/my-ez-cli:yarn-plus-latest`)
+- **Registry:** Docker Hub (`ghcr.io/my-ez-cli/yarn-plus:latest`)
 - **Workflow:** `.github/workflows/docker-build-yarn-plus.yml`
 
 ## Troubleshooting
@@ -172,7 +172,7 @@ docker run --rm -it \
   --volume $HOME/.ssh:/root/.ssh:ro \
   --volume $PWD:/app \
   --workdir /app \
-  davidcardoso/my-ez-cli:yarn-plus-latest install
+  ghcr.io/my-ez-cli/yarn-plus:latest install
 ```
 
 ### Authentication Issues

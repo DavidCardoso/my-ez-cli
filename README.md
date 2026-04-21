@@ -49,20 +49,23 @@ CLI tools over Docker — managed by `mec`.
 
 ## Getting Started
 
-`mec` is the main interface for My Ez CLI. Run the setup wizard to install tools:
-
-```shell
-mec setup
-```
-
-Or install specific tools directly:
-
-```shell
-mec install node terraform aws
-```
-
 <!-- TODO: remove the ./setup.sh bootstrap step once this project is distributed as an installable package (Homebrew, npm, etc.) — at that point `mec` will be available immediately after install -->
-> **First time?** If `mec` is not yet available, run `./setup.sh` once to bootstrap it, then use `mec` for everything else.
+
+**Step 1 — Bootstrap `mec` (first time only):**
+
+```shell
+./setup.sh install mec
+```
+
+> This installs the `mec` command, provisions core service images, runs a health check,
+> and opens the dashboard. After that, use `mec` for everything.
+
+**Step 2 — Use `mec` to install tool wrappers:**
+
+```shell
+mec setup              # Interactive TUI — install/uninstall tools
+mec install node aws   # Or install specific tools directly
+```
 
 After setup, `mec` manages tools, configuration, AI analysis, logs, and the dashboard. Run `mec help` to see all commands.
 

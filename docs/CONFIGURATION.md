@@ -180,7 +180,7 @@ ai:
       - ".git/"
 
   claude:
-    image: "davidcardoso/my-ez-cli:claude-latest"
+    image: "ghcr.io/my-ez-cli/claude:latest"
     max_turns: 1
     output_format: text
 ```
@@ -436,8 +436,8 @@ docker images --filter "label=com.my-ez-cli.project=my-ez-cli"
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/davidcardoso/my-ez-cli/issues
-- Documentation: https://github.com/davidcardoso/my-ez-cli
+- GitHub Issues: https://github.com/DavidCardoso/my-ez-cli/issues
+- Documentation: https://github.com/DavidCardoso/my-ez-cli
 
 ---
 

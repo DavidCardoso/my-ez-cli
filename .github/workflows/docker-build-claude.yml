@@ -1,10 +1,10 @@
-name: Build AWS SSO Cred Docker Image
+name: Build Claude Docker Image
 
 on:
   pull_request:
     paths:
-      - 'docker/aws-sso-cred/**'
-      - '.github/workflows/docker-build-aws-sso-cred.yml'
+      - 'docker/claude/**'
+      - '.github/workflows/docker-build-claude.yml'
   workflow_call:
   workflow_dispatch:
   release:
@@ -12,8 +12,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/my-ez-cli/aws-sso-cred
-  TOOL_NAME: aws-sso-cred
+  IMAGE_NAME: ghcr.io/my-ez-cli/claude
+  TOOL_NAME: claude
 
 jobs:
   build:
@@ -32,6 +32,13 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Generate firewall domain files
+        run: |
+          mkdir -p docker/claude/firewall
+          echo "api.github.com" > docker/claude/firewall/github_meta_endpoints.txt
+          printf 'registry.npmjs.org\napi.anthropic.com\nsentry.io\nstatsig.anthropic.com\nstatsig.com\n' \
+            > docker/claude/firewall/dns_resolve_domains.txt
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -57,7 +64,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./docker/aws-sso-cred
+          context: ./docker/claude
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -71,10 +78,10 @@ jobs:
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: 'sarif'
-          output: 'trivy-results-aws-sso-cred.sarif'
+          output: 'trivy-results-claude.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results-aws-sso-cred.sarif'
+          sarif_file: 'trivy-results-claude.sarif'

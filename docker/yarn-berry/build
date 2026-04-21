@@ -2,7 +2,7 @@
 set -e
 
 # Image configuration
-IMAGE_REPO=davidcardoso/my-ez-cli
+IMAGE_REPO=ghcr.io/my-ez-cli
 IMAGE_TOOL=yarn-berry
 
 # Auto-detect platform if not set
@@ -43,7 +43,7 @@ else
 fi
 
 echo "=========================================================="
-echo "Building '${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG}'..."
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
 echo "Yarn version: ${YARN_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
@@ -52,5 +52,5 @@ echo "=========================================================="
 docker buildx build \
     ${BUILD_OPTS} \
     --build-arg YARN_VERSION=${YARN_VERSION} \
-    --tag ${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
     .

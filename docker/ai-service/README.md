@@ -6,8 +6,8 @@ This service does **not** perform AI analysis. All analysis goes through Claude 
 
 ## Docker Image
 
-**Repository:** `davidcardoso/my-ez-cli`
-**Tag:** `ai-service-latest`
+**Registry:** `ghcr.io/my-ez-cli`
+**Image:** `ghcr.io/my-ez-cli/ai-service:latest`
 **Base Image:** `python:3.14-alpine`
 **Platforms:** linux/amd64, linux/arm64
 
@@ -36,7 +36,7 @@ PLATFORM=linux/amd64 ./build
 # Build from repo root — context is services/ai/
 docker buildx build --platform linux/amd64 \
   --file docker/ai-service/Dockerfile \
-  --tag davidcardoso/my-ez-cli:ai-service-latest \
+  --tag ghcr.io/my-ez-cli/ai-service:latest \
   --load \
   services/ai/
 ```
@@ -56,20 +56,20 @@ filter <text|->   Filter output using configured patterns (reads stdin if "-")
 ```bash
 # Filter from stdin (pipe tool output through the service)
 echo "npm warn deprecated some-package" | docker run --rm -i \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   filter -
 
 # Filter inline text
 docker run --rm \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   filter "noisy output text here"
 ```
 
 ### Show version / help
 
 ```bash
-docker run --rm davidcardoso/my-ez-cli:ai-service-latest --version
-docker run --rm davidcardoso/my-ez-cli:ai-service-latest --help
+docker run --rm ghcr.io/my-ez-cli/ai-service:latest --version
+docker run --rm ghcr.io/my-ez-cli/ai-service:latest --help
 ```
 
 ## Running Tests
@@ -77,12 +77,12 @@ docker run --rm davidcardoso/my-ez-cli:ai-service-latest --help
 ```bash
 # Run all tests
 docker run --rm --entrypoint python \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   -m pytest tests/ -v
 
 # Run filter engine tests only
 docker run --rm --entrypoint python \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   -m pytest tests/test_filter_engine.py -v
 ```
 
@@ -111,7 +111,7 @@ The Docker image is automatically built and published via GitHub Actions:
 
 - **Trigger:** Push to main, pull requests, releases, manual dispatch
 - **Platforms:** linux/amd64, linux/arm64
-- **Registry:** Docker Hub (`davidcardoso/my-ez-cli:ai-service-latest`)
+- **Registry:** Docker Hub (`ghcr.io/my-ez-cli/ai-service:latest`)
 - **Build context:** `services/ai/` (not `docker/ai-service/`)
 - **Workflow:** `.github/workflows/docker-build-ai-service.yml`
 

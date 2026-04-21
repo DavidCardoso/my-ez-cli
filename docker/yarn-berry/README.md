@@ -7,8 +7,8 @@ Docker image providing Yarn Berry (v4+) package manager with full authentication
 
 ## Docker Image
 
-**Repository:** `davidcardoso/my-ez-cli`
-**Tag:** `yarn-berry-latest`
+**Registry:** `ghcr.io/my-ez-cli`
+**Image:** `ghcr.io/my-ez-cli/yarn-berry:latest`
 **Base Image:** `node:24-alpine`
 **Yarn Version:** 4.12.0
 **Platforms:** linux/amd64, linux/arm64
@@ -41,13 +41,13 @@ cd docker/yarn-berry
 # Single platform
 docker buildx build --platform linux/amd64 \
   --build-arg YARN_VERSION=4.12.0 \
-  --tag davidcardoso/my-ez-cli:yarn-berry-latest \
+  --tag ghcr.io/my-ez-cli/yarn-berry:latest \
   --load .
 
 # Multi-platform
 docker buildx build --platform linux/amd64,linux/arm64 \
   --build-arg YARN_VERSION=4.12.0 \
-  --tag davidcardoso/my-ez-cli:yarn-berry-latest \
+  --tag ghcr.io/my-ez-cli/yarn-berry:latest \
   --push .
 ```
 
@@ -191,7 +191,7 @@ The Docker image is automatically built and published via GitHub Actions:
 
 - **Trigger:** Push to main, pull requests, releases, manual dispatch, weekly schedule
 - **Platforms:** linux/amd64, linux/arm64
-- **Registry:** Docker Hub (`davidcardoso/my-ez-cli:yarn-berry-latest`)
+- **Registry:** Docker Hub (`ghcr.io/my-ez-cli/yarn-berry:latest`)
 - **Security:** Trivy vulnerability scanning
 - **Workflow:** `.github/workflows/docker-build-yarn-berry.yml`
 

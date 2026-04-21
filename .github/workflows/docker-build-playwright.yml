@@ -1,10 +1,10 @@
-name: Build AWS SSO Cred Docker Image
+name: Build Playwright Docker Image
 
 on:
   pull_request:
     paths:
-      - 'docker/aws-sso-cred/**'
-      - '.github/workflows/docker-build-aws-sso-cred.yml'
+      - 'docker/playwright/**'
+      - '.github/workflows/docker-build-playwright.yml'
   workflow_call:
   workflow_dispatch:
   release:
@@ -12,8 +12,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/my-ez-cli/aws-sso-cred
-  TOOL_NAME: aws-sso-cred
+  IMAGE_NAME: ghcr.io/my-ez-cli/playwright
+  TOOL_NAME: playwright
 
 jobs:
   build:
@@ -57,7 +57,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./docker/aws-sso-cred
+          context: ./docker/playwright
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -71,10 +71,10 @@ jobs:
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: 'sarif'
-          output: 'trivy-results-aws-sso-cred.sarif'
+          output: 'trivy-results-playwright.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results-aws-sso-cred.sarif'
+          sarif_file: 'trivy-results-playwright.sarif'

@@ -381,6 +381,23 @@ mec_config() {
         init)
             init_config "$@"
             ;;
+        pull)
+            docker pull "$MEC_IMAGE_CONFIG_SERVICE" \
+                && echo "Pulled $MEC_IMAGE_CONFIG_SERVICE" \
+                || echo "Failed to pull $MEC_IMAGE_CONFIG_SERVICE" >&2
+            ;;
+        rebuild)
+            bash "${BASE_DIR}/docker/config-service/build" \
+                && echo "Built config-service" \
+                || echo "Build failed" >&2
+            ;;
+        image)
+            if docker image inspect "$MEC_IMAGE_CONFIG_SERVICE" >/dev/null 2>&1; then
+                echo "[ok] $MEC_IMAGE_CONFIG_SERVICE"
+            else
+                echo "[missing] $MEC_IMAGE_CONFIG_SERVICE  (run: mec config pull)"
+            fi
+            ;;
         help|--help|-h)
             local _b="" _r=""
             if [ -t 1 ]; then _b=$(printf '\033[1m'); _r=$(printf '\033[0m'); fi
@@ -399,6 +416,9 @@ mec_config() {
             printf '%s\n' "  dir                 Show config directory path"
             printf '%s\n' "  export              Export config as environment variables"
             printf '%s\n' "  init                Initialize config directory and file"
+            printf '%s\n' "  pull                Pull config-service image from registry"
+            printf '%s\n' "  rebuild             Build config-service image locally"
+            printf '%s\n' "  image               Show config-service image status (present/missing)"
             printf '%s\n' "  help                Show this help"
             printf '%s\n' ""
             printf '%s\n' "${_b}CONFIGURABLE KEYS${_r}"

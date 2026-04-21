@@ -1,10 +1,11 @@
-name: Build AWS SSO Cred Docker Image
+name: Build AI Service Docker Image
 
 on:
   pull_request:
     paths:
-      - 'docker/aws-sso-cred/**'
-      - '.github/workflows/docker-build-aws-sso-cred.yml'
+      - 'services/ai/**'
+      - 'docker/ai-service/**'
+      - '.github/workflows/docker-build-ai-service.yml'
   workflow_call:
   workflow_dispatch:
   release:
@@ -12,8 +13,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/my-ez-cli/aws-sso-cred
-  TOOL_NAME: aws-sso-cred
+  IMAGE_NAME: ghcr.io/my-ez-cli/ai-service
+  TOOL_NAME: ai-service
 
 jobs:
   build:
@@ -32,6 +33,19 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Run unit tests inside image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --file ./docker/ai-service/Dockerfile \
+            --tag ai-service-test \
+            ./services/ai
+          docker run --rm \
+            --entrypoint python \
+            ai-service-test \
+            -m pytest tests/ -v
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -57,7 +71,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./docker/aws-sso-cred
+          context: ./services/ai
+          file: ./docker/ai-service/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -71,10 +86,10 @@ jobs:
         with:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: 'sarif'
-          output: 'trivy-results-aws-sso-cred.sarif'
+          output: 'trivy-results-ai-service.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results-aws-sso-cred.sarif'
+          sarif_file: 'trivy-results-ai-service.sarif'

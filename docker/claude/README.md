@@ -7,8 +7,8 @@ Docker image providing [Claude Code](https://claude.ai/code) — Anthropic's off
 
 ## Docker Image
 
-**Repository:** `davidcardoso/my-ez-cli`
-**Tag:** `claude-latest`
+**Registry:** `ghcr.io/my-ez-cli`
+**Image:** `ghcr.io/my-ez-cli/claude:latest`
 **Base Image:** `node:24-slim`
 **Extra tools:** `git`, `gh`, `jq`, `fzf`, `zsh`, `neovim`
 **Platforms:** linux/amd64, linux/arm64
@@ -44,13 +44,13 @@ cd docker/claude
 # Single platform (local use)
 docker buildx build --platform linux/amd64 \
   --build-arg CLAUDE_CODE_VERSION=latest \
-  --tag davidcardoso/my-ez-cli:claude-latest \
+  --tag ghcr.io/my-ez-cli/claude:latest \
   --load .
 
 # Multi-platform (push to registry)
 docker buildx build --platform linux/amd64,linux/arm64 \
   --build-arg CLAUDE_CODE_VERSION=latest \
-  --tag davidcardoso/my-ez-cli:claude-latest \
+  --tag ghcr.io/my-ez-cli/claude:latest \
   --push .
 ```
 
@@ -156,12 +156,12 @@ node server.js   # Claude Code runs automatically if there are issues
 docker run --rm -it \
   --volume $PWD:/workspace \
   --volume $HOME/.claude:/home/node/.claude \
-  davidcardoso/my-ez-cli:claude-latest
+  ghcr.io/my-ez-cli/claude:latest
 
 # Single-shot prompt with API key
 docker run --rm \
   --env ANTHROPIC_API_KEY \
-  davidcardoso/my-ez-cli:claude-latest \
+  ghcr.io/my-ez-cli/claude:latest \
   -p "what does this project do?" \
   --output-format text \
   --max-turns 1
@@ -181,7 +181,7 @@ The Docker image is automatically built and published via GitHub Actions:
 
 - **Trigger:** Push to main, pull requests, releases, manual dispatch
 - **Platforms:** linux/amd64, linux/arm64
-- **Registry:** Docker Hub (`davidcardoso/my-ez-cli:claude-latest`)
+- **Registry:** Docker Hub (`ghcr.io/my-ez-cli/claude:latest`)
 - **Workflow:** `.github/workflows/docker-build-claude.yml`
 
 ## Troubleshooting

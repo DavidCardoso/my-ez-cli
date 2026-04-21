@@ -98,12 +98,12 @@ The Python middleware (`services/ai/`) is a lean filtering and security layer. I
 ```bash
 # Filter output via CLI
 echo "npm warn deprecated package" | docker run --rm -i \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   filter -
 
 # Filter inline text
 docker run --rm \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   filter "noisy output text"
 ```
 
@@ -133,7 +133,7 @@ RUN npm install -g @anthropic-ai/claude-code@latest
 ENTRYPOINT ["claude"]
 ```
 
-Image: `davidcardoso/my-ez-cli:claude-latest`
+Image: `ghcr.io/my-ez-cli/claude:latest`
 
 ### Usage
 
@@ -242,7 +242,7 @@ mec dashboard open     # Open in default browser
 
 ### Architecture
 
-The dashboard is a single Docker container (`davidcardoso/my-ez-cli:dashboard-latest`) built from a multi-stage Dockerfile:
+The dashboard is a single Docker container (`ghcr.io/my-ez-cli/dashboard:latest`) built from a multi-stage Dockerfile:
 
 - **Stage 1** (`node:22-alpine`): builds the Vue 3 + Vite + PrimeVue frontend into `/frontend/dist/`
 - **Stage 2** (`python:3.12-alpine`): runs FastAPI + uvicorn; serves the built Vue assets from `/assets` and the REST API from `/api`
@@ -351,7 +351,7 @@ ai:
       - "node_modules/"
 
   claude:
-    image: "davidcardoso/my-ez-cli:claude-latest"
+    image: "ghcr.io/my-ez-cli/claude:latest"
     max_turns: 1
     output_format: json
 ```
@@ -365,22 +365,22 @@ ai:
 ```bash
 # All tests
 docker run --rm --entrypoint python \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   -m pytest tests/ -v
 
 # Claude response parser + sidecar writer tests
 docker run --rm --entrypoint python \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   -m pytest tests/test_claude_response.py -v
 
 # Filter engine tests
 docker run --rm --entrypoint python \
-  davidcardoso/my-ez-cli:ai-service-latest \
+  ghcr.io/my-ez-cli/ai-service:latest \
   -m pytest tests/test_filter_engine.py -v
 
 # Test filter command works
 echo "npm warn deprecated" | docker run --rm -i \
-  davidcardoso/my-ez-cli:ai-service-latest filter -
+  ghcr.io/my-ez-cli/ai-service:latest filter -
 
 # Test Claude Code auth
 ANTHROPIC_API_KEY=your-key mec ai test

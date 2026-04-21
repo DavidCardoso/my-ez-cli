@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - main
+      - rc-v1-alpha
     paths:
       - 'docker/**'
+      - 'services/**'
   workflow_dispatch:
   release:
     types: [published]
@@ -21,9 +23,29 @@ jobs:
     steps:
       - run: echo "Approved — publishing all Docker images"
 
+  build-ai-service:
+    needs: approve
+    uses: ./.github/workflows/docker-build-ai-service.yml
+    secrets: inherit
+
+  build-claude:
+    needs: approve
+    uses: ./.github/workflows/docker-build-claude.yml
+    secrets: inherit
+
   build-config-service:
     needs: approve
     uses: ./.github/workflows/docker-build-config-service.yml
+    secrets: inherit
+
+  build-dashboard:
+    needs: approve
+    uses: ./.github/workflows/docker-build-dashboard.yml
+    secrets: inherit
+
+  build-playwright:
+    needs: approve
+    uses: ./.github/workflows/docker-build-playwright.yml
     secrets: inherit
 
   build-serverless:
@@ -51,14 +73,9 @@ jobs:
     uses: ./.github/workflows/docker-build-yarn-plus.yml
     secrets: inherit
 
-  build-dashboard:
-    needs: approve
-    uses: ./.github/workflows/docker-build-dashboard.yml
-    secrets: inherit
-
   summary:
     runs-on: ubuntu-latest
-    needs: [build-config-service, build-serverless, build-aws-sso-cred, build-speedtest, build-yarn-berry, build-yarn-plus, build-dashboard]
+    needs: [build-ai-service, build-claude, build-config-service, build-dashboard, build-playwright, build-serverless, build-aws-sso-cred, build-speedtest, build-yarn-berry, build-yarn-plus]
     if: always()
     steps:
       - name: Build Summary
@@ -67,10 +84,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-service | ${{ needs.build-ai-service.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| claude | ${{ needs.build-claude.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| config-service | ${{ needs.build-config-service.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| dashboard | ${{ needs.build-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| playwright | ${{ needs.build-playwright.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| serverless | ${{ needs.build-serverless.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| aws-sso-cred | ${{ needs.build-aws-sso-cred.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| speedtest | ${{ needs.build-speedtest.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| yarn-berry | ${{ needs.build-yarn-berry.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| yarn-plus | ${{ needs.build-yarn-plus.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| dashboard | ${{ needs.build-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY

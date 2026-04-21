@@ -2,7 +2,7 @@
 set -e
 
 # Image configuration
-IMAGE_REPO=davidcardoso/my-ez-cli
+IMAGE_REPO=ghcr.io/my-ez-cli
 IMAGE_TOOL=claude
 TZ=${TZ:-"Europe/Amsterdam"}
 
@@ -91,7 +91,7 @@ else
 fi
 
 echo "=========================================================="
-echo "Building '${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG}'..."
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
 echo "Claude Code version: ${CLAUDE_CODE_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
@@ -103,5 +103,5 @@ docker buildx build \
     ${BUILD_OPTS} \
     --build-arg CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION} \
     --build-arg TZ=${TZ} \
-    --tag ${IMAGE_REPO}:${IMAGE_TOOL}-${IMAGE_TAG} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
     .
