@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Cache Docker images
         id: cache-docker
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -69,10 +69,10 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Load cached Docker images
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -210,10 +210,10 @@ jobs:
           - yarn
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Load cached Docker images
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -241,10 +241,10 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build config-service image for testing
         run: |
@@ -268,10 +268,10 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build dashboard image for testing
         run: |
@@ -294,10 +294,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -315,17 +315,17 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -369,10 +369,10 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Load cached Docker images
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
