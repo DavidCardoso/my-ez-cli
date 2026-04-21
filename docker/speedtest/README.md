@@ -1,7 +1,7 @@
 # Ookla Speedtest CLI via Docker
 
 - [Ookla official page](https://www.speedtest.net/apps/cli)
-- [Docker Hub](https://hub.docker.com/repository/docker/davidcardoso/docker-speedtest)
+- [GitHub Container Registry](https://github.com/orgs/my-ez-cli/packages/container/package/speedtest)
 
 ## Building the image
 

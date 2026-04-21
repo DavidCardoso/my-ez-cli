@@ -1,0 +1,29 @@
+services:
+  ai-service:
+    build:
+      context: .
+      dockerfile: ../../docker/ai-service/Dockerfile
+    image: davidcardoso/my-ez-cli:ai-service-latest
+    container_name: mec-ai-service-dev
+
+    # Mount config and logs for local testing
+    volumes:
+      - ${HOME}/.my-ez-cli:/root/.my-ez-cli:ro
+      - ./test-logs:/app/test-logs:ro
+
+    # Environment variables for API keys
+    # Note: Only set the key for the provider you're using
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - MEC_AI_ENABLED=${MEC_AI_ENABLED:-true}
+      - MEC_AI_PROVIDER=${MEC_AI_PROVIDER:-anthropic}
+
+    # Override command for interactive testing
+    # Usage: docker-compose run --rm ai-service analyze-port /app/test-logs/sample.json
+    command: ["--help"]
+
+    labels:
+      - "com.my-ez-cli.project=my-ez-cli"
+      - "com.my-ez-cli.component=ai-service"
+      - "com.my-ez-cli.environment=development"

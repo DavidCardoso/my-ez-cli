@@ -1,17 +1,61 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-IMAGE=davidcardoso/serverless-framework
+# Image configuration
+IMAGE_REPO=ghcr.io/my-ez-cli
+IMAGE_TOOL=serverless
 
-# Via env var
+# Auto-detect platform if not set
+if [ -z "$PLATFORM" ]; then
+    # Detect local architecture
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  PLATFORM=linux/amd64 ;;
+        aarch64|arm64) PLATFORM=linux/arm64 ;;
+        *)       PLATFORM=linux/amd64 ;;
+    esac
+    echo "PLATFORM not set, auto-detected: ${PLATFORM}"
+fi
+
+# Build configuration via env vars
 if [ -z "$IMAGE_TAG" ]; then
     IMAGE_TAG=latest
+    echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
+fi
+
+if [ -z "$SERVERLESS_VERSION" ]; then
+    SERVERLESS_VERSION=4.33.0
+    echo "SERVERLESS_VERSION not set, using default: ${SERVERLESS_VERSION}"
+fi
+
+if [ -z "$AWS_CLI_VERSION" ]; then
+    AWS_CLI_VERSION=2.15.0
+    echo "AWS_CLI_VERSION not set, using default: ${AWS_CLI_VERSION}"
+fi
+
+# Build options (use --load for local single-platform builds, --push for CI multi-platform)
+BUILD_OPTS="--platform ${PLATFORM}"
+
+if [ "$CI" = "true" ]; then
+    # CI mode: multi-platform build with push (if enabled)
+    echo "CI mode detected"
+    if [ "$PUSH" = "true" ]; then
+        BUILD_OPTS="${BUILD_OPTS} --push"
+    fi
+else
+    # Local mode: single-platform build with load
+    BUILD_OPTS="${BUILD_OPTS} --load"
 fi
 
 echo "=========================================================="
-echo "Building '${IMAGE}:${IMAGE_TAG}'..."
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
+echo "Platform: ${PLATFORM}"
+echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
-docker build \
-    --platform linux/amd64 \
-    --tag ${IMAGE}:${IMAGE_TAG} .
+docker buildx build \
+    ${BUILD_OPTS} \
+    --build-arg SERVERLESS_VERSION=${SERVERLESS_VERSION} \
+    --build-arg AWS_CLI_VERSION=${AWS_CLI_VERSION} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    .

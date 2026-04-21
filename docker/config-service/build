@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+
+# Image configuration
+IMAGE_REPO=ghcr.io/my-ez-cli
+IMAGE_TOOL=config-service
+
+# Auto-detect platform if not set
+if [ -z "$PLATFORM" ]; then
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  PLATFORM=linux/amd64 ;;
+        aarch64|arm64) PLATFORM=linux/arm64 ;;
+        *)       PLATFORM=linux/amd64 ;;
+    esac
+    echo "PLATFORM not set, auto-detected: ${PLATFORM}"
+fi
+
+# Build configuration via env vars
+if [ -z "$IMAGE_TAG" ]; then
+    IMAGE_TAG=latest
+    echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
+fi
+
+# Build options (use --load for local single-platform builds, --push for CI multi-platform)
+BUILD_OPTS="--platform ${PLATFORM}"
+
+if [ "$CI" = "true" ]; then
+    echo "CI mode detected"
+    if [ "$PUSH" = "true" ]; then
+        BUILD_OPTS="${BUILD_OPTS} --push"
+    fi
+else
+    BUILD_OPTS="${BUILD_OPTS} --load"
+fi
+
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+echo "=========================================================="
+echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
+echo "Platform: ${PLATFORM}"
+echo "Build context: ${PROJECT_ROOT}/services/config"
+echo "Build options: ${BUILD_OPTS}"
+echo "=========================================================="
+
+docker buildx build \
+    ${BUILD_OPTS} \
+    --file "${SCRIPT_DIR}/Dockerfile" \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    "${PROJECT_ROOT}/services/config"

@@ -1,0 +1,96 @@
+name: Build All Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - rc-v1-alpha
+    paths:
+      - 'docker/**'
+      - 'services/**'
+  workflow_dispatch:
+  release:
+    types: [published]
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  # Single approval gate — all images publish only after this is approved
+  approve:
+    runs-on: ubuntu-latest
+    environment: docker-publish
+    steps:
+      - run: echo "Approved — publishing all Docker images"
+
+  build-ai-service:
+    needs: approve
+    uses: ./.github/workflows/docker-build-ai-service.yml
+    secrets: inherit
+
+  build-claude:
+    needs: approve
+    uses: ./.github/workflows/docker-build-claude.yml
+    secrets: inherit
+
+  build-config-service:
+    needs: approve
+    uses: ./.github/workflows/docker-build-config-service.yml
+    secrets: inherit
+
+  build-dashboard:
+    needs: approve
+    uses: ./.github/workflows/docker-build-dashboard.yml
+    secrets: inherit
+
+  build-playwright:
+    needs: approve
+    uses: ./.github/workflows/docker-build-playwright.yml
+    secrets: inherit
+
+  build-serverless:
+    needs: approve
+    uses: ./.github/workflows/docker-build-serverless.yml
+    secrets: inherit
+
+  build-aws-sso-cred:
+    needs: approve
+    uses: ./.github/workflows/docker-build-aws-sso-cred.yml
+    secrets: inherit
+
+  build-speedtest:
+    needs: approve
+    uses: ./.github/workflows/docker-build-speedtest.yml
+    secrets: inherit
+
+  build-yarn-berry:
+    needs: approve
+    uses: ./.github/workflows/docker-build-yarn-berry.yml
+    secrets: inherit
+
+  build-yarn-plus:
+    needs: approve
+    uses: ./.github/workflows/docker-build-yarn-plus.yml
+    secrets: inherit
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [build-ai-service, build-claude, build-config-service, build-dashboard, build-playwright, build-serverless, build-aws-sso-cred, build-speedtest, build-yarn-berry, build-yarn-plus]
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Docker Images Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ai-service | ${{ needs.build-ai-service.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| claude | ${{ needs.build-claude.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| config-service | ${{ needs.build-config-service.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| dashboard | ${{ needs.build-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| playwright | ${{ needs.build-playwright.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| serverless | ${{ needs.build-serverless.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| aws-sso-cred | ${{ needs.build-aws-sso-cred.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| speedtest | ${{ needs.build-speedtest.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| yarn-berry | ${{ needs.build-yarn-berry.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| yarn-plus | ${{ needs.build-yarn-plus.result }} |" >> $GITHUB_STEP_SUMMARY

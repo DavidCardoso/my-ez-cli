@@ -1,0 +1,137 @@
+# Pre-commit hooks for My Ez CLI AI Service
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Update hooks: pre-commit autoupdate
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Run the linter
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix]
+        types_or: [python, pyi]
+
+      # Run the formatter
+      - id: ruff-format
+        name: ruff (format)
+        types_or: [python, pyi]
+
+  # Mypy - Static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        name: mypy (type check)
+        additional_dependencies:
+          - types-PyYAML>=6.0.0
+          - anthropic>=0.76.0
+        args: [--config-file=pyproject.toml]
+        pass_filenames: false
+        # Only run on src directory to avoid test issues
+        files: ^src/
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Check for files that would conflict in case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflict strings
+      - id: check-merge-conflict
+
+      # Check for debugger imports
+      - id: debug-statements
+
+      # Check JSON files are valid
+      - id: check-json
+
+      # Check YAML files are valid
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+
+      # Check TOML files are valid
+      - id: check-toml
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+        exclude: \.json$
+
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Check for files that contain merge conflict strings
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Python-specific checks
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      # Check for common Python anti-patterns
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-use-type-annotations
+
+# Configure pre-commit to run faster
+  # Local test suite hooks — run conditionally based on changed files
+  - repo: local
+    hooks:
+      # Bats unit tests — triggered when shell scripts or bats tests change
+      - id: bats-unit-tests
+        name: bats (unit tests)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bats tests/unit/'
+        pass_filenames: false
+        files: ^(bin/|tests/unit/|tests/integration/)
+
+      # AI service Python tests — triggered when ai-service source/tests change
+      - id: ai-service-pytest
+        name: pytest (ai-service)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/ai" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/ai/
+
+      # Config service Python tests — triggered when config-service source/tests change
+      - id: config-service-pytest
+        name: pytest (config-service)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/config" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/config/
+
+      # Dashboard Python tests — triggered when dashboard Python source/tests change
+      - id: dashboard-pytest
+        name: pytest (dashboard)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/dashboard" && python -m pytest tests/ -q'
+        pass_filenames: false
+        files: ^services/dashboard/(?!frontend/)
+
+      # Dashboard frontend tests — triggered when Vue/JS source files change
+      - id: frontend-vitest
+        name: vitest (dashboard frontend)
+        language: system
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)/services/dashboard/frontend" && npm test'
+        pass_filenames: false
+        files: ^services/dashboard/frontend/
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [bats-unit-tests, ai-service-pytest, config-service-pytest, dashboard-pytest, frontend-vitest]
+  submodules: false

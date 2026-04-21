@@ -1,7 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-BASEDIR=$(dirname "${0}")
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+BASEDIR="$SCRIPT_DIR"
 MFA_CODE=$1
 
 # Load env vars
@@ -34,7 +39,7 @@ export AWS_PROFILE=${AWS_STS_MFA_PROFILE}
 aws sts get-session-token \
     --duration-seconds ${AWS_STS_SESSION_EXPIRATION} \
     --serial-number ${AWS_STS_MFA_SERIAL_NUMBER} \
-    --token-code ${MFA_CODE} 
+    --token-code ${MFA_CODE}
 
 cat <<EOF
 ==========================================================

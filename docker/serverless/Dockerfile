@@ -1,23 +1,38 @@
-FROM amazonlinux:latest
+FROM node:24-alpine
 
-LABEL Author: David Cardoso <dev+github@davidcardoso.me>
+LABEL com.my-ez-cli.project="my-ez-cli" \
+      com.my-ez-cli.tool="serverless" \
+      org.opencontainers.image.title="My Ez CLI - Serverless Framework" \
+      org.opencontainers.image.description="Serverless Framework with AWS CLI and Node.js" \
+      org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
+      org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-ENV NODE_VERSION=20
-ENV SERVERLESS_VERSION=3.38.0
+ARG SERVERLESS_VERSION=4.33.0
+ARG AWS_CLI_VERSION=2.15.0
 
-# include aws exec in the PATH env var
-ENV PATH=$PATH:/root/.local/bin/
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    groff \
+    zip \
+    unzip \
+    jq \
+    ca-certificates
 
-# Add AWS CLI
-RUN yum install -y python-pip groff zip unzip jq bc &&\
-    pip install --user awscli &&\
-    # Add NodeJS + Yarn
-    curl -sL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash - &&\
-    curl -sL https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo &&\
-    yum install -y yarn &&\
-    # Add Java
-    yum install -y java &&\
-    # Add Serverless Framework
-    yarn global add serverless@${SERVERLESS_VERSION}
+# Install AWS CLI v2 (static binary)
+RUN apk add --no-cache --virtual .build-deps curl && \
+    ARCH=$(apk info --print-arch) && \
+    case "$ARCH" in \
+    aarch64) AWS_ARCH=aarch64 ;; \
+    *)       AWS_ARCH=x86_64  ;; \
+    esac && \
+    curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}-${AWS_CLI_VERSION}.zip" -o awscliv2.zip && \
+    unzip -q awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip && \
+    apk del .build-deps
+
+# Install Serverless Framework
+RUN npm install --global --no-audit --no-fund serverless@${SERVERLESS_VERSION}
 
 ENTRYPOINT [ "serverless" ]

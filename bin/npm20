@@ -1,8 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-# override default image
-IMAGE=node:20-alpine
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# import & run the default npm script
-. npm
+# override default image
+export IMAGE="node:20-alpine"
+
+# import & run the local default npm script
+. "${MEC_BASE_DIR}/bin/npm"

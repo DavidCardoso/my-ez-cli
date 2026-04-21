@@ -1,19 +1,78 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-IMAGE=node:18-alpine
-REALPATH=$(realpath "${0}")
-BASEDIR=$(cd $(dirname $REALPATH) && pwd)
-WORKDIR=/app
-YARN_LOCAL_DIR=$(cd $BASEDIR/../docker/yarn-berry && pwd)
-YARN_DIR=/root
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
 
-# should be executed from your working directory
-docker run -it --rm \
+# Check Docker availability
+check_docker
+
+# Naming
+TOOL_NAME=yarn-berry
+IMAGE=${IMAGE:-"$MEC_IMAGE_YARN_BERRY"}
+WORKDIR=/app
+NPM_TOKEN=${NPM_TOKEN:-""}
+
+# Container naming and labeling
+CONTAINER_NAME=$(get_container_name "${TOOL_NAME}")
+CONTAINER_LABELS=$(get_container_labels "${TOOL_NAME}" "$IMAGE")
+NPMRC_FILE=${NPMRC_FILE:-"$HOME/.npmrc"}
+YARNRC_FILE=${YARNRC_FILE:-"$HOME/.yarnrc.yml"}
+YARN_CACHE_FOLDER=${YARN_CACHE_FOLDER:-"$HOME/.cache/yarn/"}
+CONTAINER_YARN_CACHE_FOLDER=${CONTAINER_YARN_CACHE_FOLDER:-"/root/.cache/yarn/"}
+COREPACK_HOME=${COREPACK_HOME:-"$HOME/.cache/node/corepack"}
+CONTAINER_COREPACK_HOME=${CONTAINER_COREPACK_HOME:-"/root/.cache/node/corepack"}
+YARN_DEFAULT_VERSION=${YARN_DEFAULT_VERSION:-"4.12.0"}
+
+# Create .npmrc if it doesn't exist
+if [ ! -f "$NPMRC_FILE" ]; then
+    touch "$NPMRC_FILE"
+fi
+
+# Create .yarnrc.yml if it doesn't exist
+if [ ! -f "$YARNRC_FILE" ]; then
+    touch "$YARNRC_FILE"
+fi
+
+# Create yarn cache folder if it doesn't exist
+if [ ! -d "$YARN_CACHE_FOLDER" ]; then
+    mkdir -p "$YARN_CACHE_FOLDER"
+fi
+
+# Ensure corepack home exists and points to the expected Yarn version.
+# Overwrite lastKnownGood.json whenever the recorded version doesn't match,
+# so the host-mounted cache always resolves to the correct Yarn release.
+mkdir -p "$COREPACK_HOME"
+_lkg="$COREPACK_HOME/lastKnownGood.json"
+_recorded=$(grep -o '"yarn": *"[^"]*"' "$_lkg" 2>/dev/null | grep -o '[0-9][^"]*' || true)
+if [ "$_recorded" != "$YARN_DEFAULT_VERSION" ]; then
+    printf '{\n  "yarn": "%s"\n}\n' "$YARN_DEFAULT_VERSION" > "$_lkg"
+fi
+unset _lkg _recorded
+
+# Get port flags from MEC_BIND_PORTS
+PORTS=$(get_port_flags)
+
+# Setup logging (if enabled)
+setup_logging "${TOOL_NAME}" "$IMAGE" "yarn-berry ${*}"
+
+# Build docker command
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
+    --name $CONTAINER_NAME \
+    $CONTAINER_LABELS \
     --env NPM_TOKEN=$NPM_TOKEN \
-    --volume $HOME/.npmrc:/root/.npmrc \
-    --volume $YARN_LOCAL_DIR:$YARN_DIR \
+    --env YARN_CACHE_FOLDER=$CONTAINER_YARN_CACHE_FOLDER \
+    --env COREPACK_HOME=$CONTAINER_COREPACK_HOME \
+    --volume $NPMRC_FILE:/root/.npmrc \
+    --volume $YARNRC_FILE:/root/.yarnrc.yml \
+    --volume $YARN_CACHE_FOLDER:$CONTAINER_YARN_CACHE_FOLDER \
+    --volume $COREPACK_HOME:$CONTAINER_COREPACK_HOME \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
-    --entrypoint yarn \
-    $IMAGE "${@}"
+    $PORTS \
+    $IMAGE $(printf '%q ' "$@")"
+
+# Execute with AI analysis
+exec_with_ai "$DOCKER_CMD"
