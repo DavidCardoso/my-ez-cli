@@ -42,6 +42,10 @@ RUN mkdir -p /workspace "$HOME/.claude" && \
 ARG CLAUDE_CODE_VERSION=latest
 RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_VERSION}
 
+# Update npm to latest to remediate bundled dependency CVEs
+# (minimatch, picomatch, tar in /usr/lib/node_modules/npm/node_modules/)
+RUN npm install -g npm@latest
+
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /workspace
