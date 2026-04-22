@@ -15,7 +15,7 @@ WORKDIR=/app
 IMAGE=${IMAGE:-"$MEC_IMAGE_SERVERLESS"}
 
 # via env var
-if [ -z "${STACK_NAME}"]; then
+if [ -z "${STACK_NAME}" ]; then
     STACK_NAME=development
 fi
 

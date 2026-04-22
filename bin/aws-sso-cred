@@ -30,4 +30,4 @@ docker run -i $(get_tty_flag) --rm \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     --entrypoint /bin/bash \
-    $IMAGE -c "ssocred ${@}"
+    "$IMAGE" -c "ssocred $*"
