@@ -1,4 +1,4 @@
-# GitHub Container Registry Setup
+# GitHub Container Registry (GHCR)
 
 My Ez CLI uses GitHub Container Registry (`ghcr.io`) to host all custom Docker images for the project. This document explains the setup, structure, and maintenance of these images.
 
@@ -15,6 +15,9 @@ All custom Docker images are published to per-tool repositories under the `ghcr.
 | AI Service | `ghcr.io/my-ez-cli/ai-service:latest` | amd64, arm64 | `.github/workflows/docker-build-ai-service.yml` |
 | AWS SSO Cred | `ghcr.io/my-ez-cli/aws-sso-cred:latest` | amd64, arm64 | `.github/workflows/docker-build-aws-sso-cred.yml` |
 | Claude Code | `ghcr.io/my-ez-cli/claude:latest` | amd64, arm64 | `.github/workflows/docker-build-claude.yml` |
+| Config Service | `ghcr.io/my-ez-cli/config-service:latest` | amd64, arm64 | `.github/workflows/docker-build-config-service.yml` |
+| Dashboard | `ghcr.io/my-ez-cli/dashboard:latest` | amd64, arm64 | `.github/workflows/docker-build-dashboard.yml` |
+| Playwright | `ghcr.io/my-ez-cli/playwright:latest` | amd64, arm64 | `.github/workflows/docker-build-playwright.yml` |
 | Serverless | `ghcr.io/my-ez-cli/serverless:latest` | amd64, arm64 | `.github/workflows/docker-build-serverless.yml` |
 | Speedtest | `ghcr.io/my-ez-cli/speedtest:latest` | amd64, arm64 | `.github/workflows/docker-build-speedtest.yml` |
 | Yarn Berry | `ghcr.io/my-ez-cli/yarn-berry:latest` | amd64, arm64 | `.github/workflows/docker-build-yarn-berry.yml` |
@@ -239,27 +242,6 @@ echo $GHCR_TOKEN | docker login ghcr.io -u <your-github-username> --password-std
 ```yaml
 platforms: linux/amd64,linux/arm64
 ```
-
-## Migration from Docker Hub
-
-Previous setup used Docker Hub (`davidcardoso/my-ez-cli`). All images have been migrated to GitHub Container Registry.
-
-### Old vs New Images
-
-| Old (Docker Hub) | New (ghcr.io) |
-|------------------|---------------|
-| `davidcardoso/my-ez-cli:aws-sso-cred-latest` | `ghcr.io/my-ez-cli/aws-sso-cred:latest` |
-| `davidcardoso/my-ez-cli:serverless-latest` | `ghcr.io/my-ez-cli/serverless:latest` |
-| `davidcardoso/my-ez-cli:speedtest-latest` | `ghcr.io/my-ez-cli/speedtest:latest` |
-| `davidcardoso/my-ez-cli:yarn-berry-latest` | `ghcr.io/my-ez-cli/yarn-berry:latest` |
-| `davidcardoso/my-ez-cli:yarn-plus-latest` | `ghcr.io/my-ez-cli/yarn-plus:latest` |
-| `davidcardoso/my-ez-cli:dashboard-latest` | `ghcr.io/my-ez-cli/dashboard:latest` |
-| `davidcardoso/my-ez-cli:config-service-latest` | `ghcr.io/my-ez-cli/config-service:latest` |
-| `davidcardoso/my-ez-cli:ai-service-latest` | `ghcr.io/my-ez-cli/ai-service:latest` |
-| `davidcardoso/my-ez-cli:claude-latest` | `ghcr.io/my-ez-cli/claude:latest` |
-| `davidcardoso/my-ez-cli:playwright-latest` | `ghcr.io/my-ez-cli/playwright:latest` |
-
-**Note**: Old images on Docker Hub are deprecated and will not receive updates. Run `mec <tool> pull` or `docker pull ghcr.io/my-ez-cli/<tool>:latest` to update.
 
 ## Resources
 

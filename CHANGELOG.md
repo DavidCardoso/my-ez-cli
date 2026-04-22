@@ -25,7 +25,7 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 - Docker Hub migration: all custom images moved to `davidcardoso/my-ez-cli` repository
 - Container naming (`mec-{tool}-{timestamp}`) and labeling (`com.my-ez-cli.*`) across all bin scripts
 - GitHub Actions CI/CD workflows for multi-platform Docker image builds
-- Documentation: `docs/SETUP.md`, `docs/DOCKER_HUB.md`, `tests/README.md`
+- Documentation: `docs/SETUP.md`, `docs/CONTAINER_REGISTRY.md`, `tests/README.md`
 
 #### Phase 2 — AI Integration
 - `bin/claude` wrapper script + `docker/claude/Dockerfile` (Claude Code CLI in Docker)
