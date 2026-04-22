@@ -1,7 +1,11 @@
 # My Ez CLI
 
 [![CI](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/test.yml)
-[![Docker Builds](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-dashboard.yml)
+[![Build All](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-all.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/docker-build-all.yml)
+[![Security Scan](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/security-scan.yml/badge.svg)](https://github.com/DavidCardoso/my-ez-cli/actions/workflows/security-scan.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/DavidCardoso/my-ez-cli)](https://github.com/DavidCardoso/my-ez-cli/releases)
+[![GitHub issues](https://img.shields.io/github/issues/DavidCardoso/my-ez-cli)](https://github.com/DavidCardoso/my-ez-cli/issues)
 
 
 CLI tools over Docker — managed by `mec`.
