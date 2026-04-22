@@ -82,6 +82,40 @@ mec uninstall terraform
 
 For detailed installation options, see [docs/SETUP.md](./docs/SETUP.md).
 
+### Tool List — `mec list`
+
+```shell
+mec list   # List all tools and their active Docker image
+```
+
+### Image Updates — `mec update`
+
+```shell
+mec update                           # Pull latest images for all tools
+mec update node                      # Pull latest image for a specific tool
+mec update node node:22-alpine       # Pin a tool to a specific image:tag
+```
+
+Pinning is only supported for public images (e.g. `aws`, `node`, `terraform`). Custom my-ez-cli builds do not support version pinning.
+
+### Image Pin Reset — `mec reset`
+
+```shell
+mec reset node   # Remove image pin for a tool, reverting to the default image
+```
+
+Only supported for public-image tools. Run `mec list` to see available tools.
+
+### Telemetry — `mec telemetry`
+
+```shell
+mec telemetry status    # Show telemetry and output capture state
+mec telemetry enable    # Enable session telemetry (session_id, tool, exit_code, timing)
+mec telemetry disable
+```
+
+Telemetry writes session metadata to `~/.my-ez-cli/logs/` and is required for AI analysis.
+
 ### Configuration
 
 ```shell
@@ -89,18 +123,28 @@ mec config list                        # Show all config
 mec config get ai.dashboard.port       # Get a specific value
 mec config set ai.enabled true         # Set a value
 mec config set ai.dashboard.port 8080
+mec config unset ai.enabled            # Reset a value to its default
 mec config edit                        # Edit config file in $EDITOR
-mec config reset                       # Reset to defaults
+mec config validate                    # Validate the config file
+mec config reset                       # Reset entire config to defaults
+mec config path                        # Show config file path
+mec config dir                         # Show config directory path
+mec config export                      # Export config as environment variables
+mec config init                        # Initialize config directory and file
+mec config pull                        # Pull config-service image from registry
+mec config rebuild                     # Build config-service image locally
+mec config image                       # Show config-service image status
 ```
 
 Config is stored at `~/.my-ez-cli/config.yaml`. See [docs/CONFIGURATION.md](./docs/CONFIGURATION.md) for all keys.
 
-### Log Management
+### Log Management — `mec logs`
 
 ```shell
 mec logs status                        # Show logging status
-mec logs enable                        # Enable log persistence
+mec logs enable                        # Enable log persistence (stdout/stderr capture)
 mec logs disable
+mec logs show <session_id>             # Show full log details for a session
 mec logs list                          # List recent sessions
 mec logs list --tool node --last 20
 mec logs failures                      # Show only failed sessions (exit code != 0)
@@ -114,9 +158,13 @@ mec ai status            # Show AI status and configuration
 mec ai enable            # Enable automated analysis after each tool run
 mec ai disable
 mec ai test              # Test Claude Code connectivity
+mec ai pull              # Pull AI service images from registry
+mec ai rebuild           # Build AI service images locally
+mec ai images            # Show AI image status (present/missing)
 mec ai last              # Show most recent AI analysis
 mec ai show <session_id> # Show analysis for a specific session
 mec ai logs              # List recent sessions with AI status
+mec ai logs --last 5
 mec ai analyze <log>     # Analyze a log file manually
 ```
 
@@ -125,11 +173,13 @@ See [AI Features](#ai-features) for the full workflow.
 ### Dashboard — `mec dashboard`
 
 ```shell
-mec dashboard start      # Start the web UI (Docker container on port 4242)
+mec dashboard start              # Start the web UI (Docker container on port 4242)
 mec dashboard stop
 mec dashboard restart
+mec dashboard restart --rebuild  # Rebuild image then restart
+mec dashboard rebuild            # Build the dashboard Docker image locally
 mec dashboard status
-mec dashboard open       # Open the dashboard in the default browser
+mec dashboard open               # Open the dashboard in the default browser
 ```
 
 See [Web Dashboard](#web-dashboard----mec-dashboard) for page reference.
@@ -156,11 +206,18 @@ mec purge data -y                        # Skip confirmation prompt
 ### Claude Code — `mec claude`
 
 ```shell
-mec claude                                      # Launch interactive Claude Code session
-mec claude firewall status                      # Show network firewall config
-mec claude firewall enable                      # Enable container firewall
-mec claude firewall add dns registry.npmjs.org  # Allow a domain (requires image rebuild: mec claude firewall rebuild)
+mec claude                                             # Launch interactive Claude Code session
+mec claude firewall status                             # Show firewall enabled state and domain lists
+mec claude firewall list                               # List all configured firewall domains
+mec claude firewall enable                             # Enable container firewall
+mec claude firewall disable
+mec claude firewall add dns registry.npmjs.org         # Add a domain to the DNS allow list
+mec claude firewall add github-meta api.github.com     # Add a GitHub meta endpoint
+mec claude firewall remove dns registry.npmjs.org      # Remove a domain from the allow list
+mec claude firewall rebuild                            # Rebuild Docker image with fresh IP resolution
 ```
+
+After adding or removing domains, run `mec claude firewall rebuild` to apply changes.
 
 ### Other
 
