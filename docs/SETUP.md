@@ -198,7 +198,7 @@ mec dashboard restart
 
 ## Manual Testing Checklist
 
-Use this checklist to verify the release candidate before tagging v1.0.0.
+Use this checklist to verify the v1.0.0 release.
 
 ### Setup & Installation
 
@@ -219,10 +219,10 @@ Use this checklist to verify the release candidate before tagging v1.0.0.
 
 - [x] `mec install npm` (with native npm in PATH) — shows 3-option conflict menu
 - [x] Option 1 (side-by-side) — creates `/usr/local/bin/mec-npm`, existing npm untouched
-- [ ] Option 2 (replace) — shows confirmation, overwrites existing symlink
+- [ ] Option 2 (replace) — shows confirmation, overwrites existing symlink (tracked in #157)
 - [x] Option 3 (skip) — no symlinks created, shows direct-run hint
 - [x] `mec uninstall npm` — removes both `/usr/local/bin/npm` and `/usr/local/bin/mec-npm`
-- [ ] `mec install npx` (with native node+npx) — shows native node warning before conflict menu
+- [ ] `mec install npx` (with native node+npx) — shows native node warning before conflict menu (tracked in #158)
 
 ### AI Integration
 
@@ -272,5 +272,5 @@ Use this checklist to verify the release candidate before tagging v1.0.0.
 
 ---
 
-*Last updated: 2026-03-27*
-*Version: 1.0.0-rc*
+*Last updated: 2026-04-22*
+*Version: 1.0.0*
