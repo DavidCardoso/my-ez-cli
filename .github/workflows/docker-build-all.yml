@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - rc-v1-alpha
     paths:
       - 'docker/**'
       - 'services/**'

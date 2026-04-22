@@ -29,7 +29,7 @@ All wrapper scripts in `bin/` follow a consistent pattern:
 - `docker/`: Custom Dockerfiles (aws-sso-cred, serverless, speedtest, yarn-berry, yarn-plus, claude, dashboard, ai-service, config-service, playwright)
 - `config/`: Default configuration (`config.default.yaml`)
 - `docs/`: Project documentation
-- `services/ai/`: AI I/O middleware (Python 3.14, filter-only)
+- `services/ai/`: AI I/O middleware (Python 3.12, filter-only)
 - `services/dashboard/`: Dashboard server (FastAPI + Vue 3)
 - `tests/`: bats-core test suite (unit + integration)
 - `setup.sh`: Bootstrap installer (use `mec` after initial setup)
@@ -70,7 +70,7 @@ All of the above, plus **every item below is required** — missing any caused t
 
 ## AI Integration
 
-- **I/O middleware** (`services/ai/`): Python 3.14, filter/token-optimization only — no analysis
+- **I/O middleware** (`services/ai/`): Python 3.12, filter/token-optimization only — no analysis
 - **Claude Code** (`bin/claude`): Docker container, sole analysis engine
 - **Flow**: `exec_with_ai()` in `bin/utils/common.sh` fires background Claude analysis when `MEC_AI_ENABLED=true`
 

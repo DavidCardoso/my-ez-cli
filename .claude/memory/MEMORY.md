@@ -4,8 +4,7 @@
 > New memories go here first; the home-folder MEMORY.md mirrors this index.
 
 ## Project
-- [project_branching_strategy.md](./project_branching_strategy.md) — All new branches/PRs target `rc-v1-alpha`, not `main`; `main` only for v1 stable release
-- [project_dockerhub_naming.md](./project_dockerhub_naming.md) — Open question: evaluate moving images from davidcardoso/ to a dedicated org (GH #92)
+- [project_dockerhub_naming.md](./project_dockerhub_naming.md) — Images migrated to GHCR (`ghcr.io/my-ez-cli/*`); Docker Hub org naming resolved via #92 (closed)
 
 ## Feedback
 - [feedback_verify_external_corrections.md](./feedback_verify_external_corrections.md) — Don't blindly apply corrections from automated reviewers; verify with user first (dates, naming, config values, etc.)
