@@ -321,7 +321,7 @@ For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATIO
 - **[docs/ROADMAP.md](./docs/ROADMAP.md)** — Phase status and future plans
 - **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** — Python code standards (type hints, error handling, logging)
 - **[docs/LOG_FORMAT.md](./docs/LOG_FORMAT.md)** — JSON log schema, sidecar files, rotation
-- **[docs/DOCKER_HUB.md](./docs/DOCKER_HUB.md)** — Docker Hub images, CI/CD workflows, GitHub Secrets
+- **[docs/CONTAINER_REGISTRY.md](./docs/CONTAINER_REGISTRY.md)** — Container registry images, CI/CD workflows, GitHub Secrets
 - **[tests/README.md](./tests/README.md)** — Testing framework, writing and running tests
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Contribution guidelines
 - **[CHANGELOG.md](./CHANGELOG.md)** — Release history
