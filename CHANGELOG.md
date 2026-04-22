@@ -133,3 +133,40 @@ First release candidate for v1.0.0. Combines Phase 1 (Docker tooling foundation)
 ---
 
 *Prior to v1.0.0, releases were 0.x.y pre-release/beta with no formal changelog.*
+
+---
+
+## [Archive] Roadmap History (migrated from docs/ROADMAP.md)
+
+This section preserves the completed work that was tracked in `docs/ROADMAP.md` before that file was removed. Items are ordered newest to oldest. All ongoing and future work is tracked in [GitHub Issues](https://github.com/DavidCardoso/my-ez-cli/issues) and the [v1.0.0 milestone](https://github.com/DavidCardoso/my-ez-cli/milestone/1).
+
+### Completed for v1.0.0
+
+| Commit | Issue | Description |
+|--------|-------|-------------|
+| `2cc5f1a9` | [#100](https://github.com/DavidCardoso/my-ez-cli/issues/100) | Separate `mec` session telemetry from command output logging |
+| `e87fe668` | [#106](https://github.com/DavidCardoso/my-ez-cli/issues/106) | Fix corrupted `/home/node/.claude.json` in `mec ai analyze` |
+| `c0288100` | [#105](https://github.com/DavidCardoso/my-ez-cli/issues/105) | `mec ai analyze` — accept session ID instead of log file path |
+| `08584d79` | [#94](https://github.com/DavidCardoso/my-ez-cli/issues/94) | Display AI execution time + token usage in `mec` TUI and dashboard UI |
+| `7137e58b` | [#78](https://github.com/DavidCardoso/my-ez-cli/issues/78) | `mec setup` output styling (colors, icons) |
+| `a35a7a4f` | [#77](https://github.com/DavidCardoso/my-ez-cli/issues/77) | Dashboard — retroactive AI analysis trigger (CLI command display) |
+| `40280aee` | [#81](https://github.com/DavidCardoso/my-ez-cli/issues/81) | `add-mec-tool` Claude Code skill |
+| `5cca9eee` | [#82](https://github.com/DavidCardoso/my-ez-cli/issues/82) | Docs — checklist for adding new tools with custom Docker images |
+| `523eb561` | [#76](https://github.com/DavidCardoso/my-ez-cli/issues/76) | `MEC_HOME` env var to replace hardcoded `~/.my-ez-cli/` |
+| `ce3b8a05` | [#75](https://github.com/DavidCardoso/my-ez-cli/issues/75) | `mec logs` — add session ID column |
+| `3e24b9f8` | [#74](https://github.com/DavidCardoso/my-ez-cli/issues/74) | `mec <tool>` subcommand dispatch for all tool wrappers |
+| `eaef8810` | [#89](https://github.com/DavidCardoso/my-ez-cli/issues/89) | Custom image local fallback on pull failure (`check_custom_image`) |
+| — | [#92](https://github.com/DavidCardoso/my-ez-cli/issues/92) | Evaluated Docker Hub org naming — resolved: images migrated to GHCR (`ghcr.io/davidcardoso/my-ez-cli`) |
+
+### Completed — Foundation and AI Integration
+
+| Commit | Area | Description |
+|--------|------|-------------|
+| `89c0cf9b` | Phase 1 | Path resolution, `setup.sh`, bats tests (73+), CI/CD, Docker Hub |
+| `4a77b506` | Phase 2 | Claude Code wrapper, I/O middleware, `mec ai` subcommands, `exec_with_ai()` |
+| `4a77b506` | Phase 2.9 | Immutable logs — AI sidecars in `ai-analyses/`, log files never mutated after finalization |
+| `883e6b9c` | Phase 3.1 | Async analysis — background Claude Code analysis, `mec ai last/show/logs` |
+| `98a43992` | Phase 3.2 | Dashboard daemon + `mec dashboard` subcommands |
+| `b35b38c9` | Phase 3.3 | FastAPI + Vue 3 at port 4242, session list/detail, WebSocket hot-reload |
+| `9b615c05` | Phase 3.4 | `mec doctor` with output and scriptable exit code |
+| `618b32f5` | Phase 3.5 | `mec purge` subcommand; AI sidecar extended with execution time + token metadata |

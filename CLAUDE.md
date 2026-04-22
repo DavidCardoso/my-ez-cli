@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> See [docs/ROADMAP.md](./docs/ROADMAP.md) for current phase status and implementation plan.
-
 ## Project Overview
 
 My Ez CLI is a collection of Docker-based wrapper scripts providing sandboxed access to development tools (AWS CLI, Terraform, Node.js, Python, etc.) without local installation. `mec` is the main CLI managing tools, configuration, AI analysis, logs, and the dashboard.
