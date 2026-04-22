@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - rc-v1-alpha
     paths:
       - 'docker/**'
       - 'services/**'
@@ -12,8 +11,8 @@ on:
   release:
     types: [published]
   schedule:
-    # Run weekly on Sundays at 2 AM UTC
-    - cron: '0 2 * * 0'
+    # Run weekly on Sundays at 1 AM UTC
+    - cron: '0 1 * * 0'
 
 jobs:
   # Single approval gate — all images publish only after this is approved
