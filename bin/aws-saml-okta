@@ -279,14 +279,13 @@ okta_mfa_verify() {
         esac
     done <<< "$factors"
 
-    local factor_id factor_type verify_url
+    local factor_type verify_url
 
     # Auto-select if preferred_factor_type is configured
     if [ -n "$preferred_factor_type" ]; then
         case "$preferred_factor_type" in
             push)
                 if [ -n "$push_line" ]; then
-                    factor_id=$(echo "$push_line" | cut -d'|' -f1)
                     factor_type="push"
                     verify_url=$(echo "$push_line" | cut -d'|' -f4)
                     echo "Auto-selecting push MFA (from config)." >/dev/tty
@@ -294,7 +293,6 @@ okta_mfa_verify() {
                 ;;
             token:software:totp)
                 if [ -n "$totp_line" ]; then
-                    factor_id=$(echo "$totp_line" | cut -d'|' -f1)
                     factor_type="token:software:totp"
                     verify_url=$(echo "$totp_line" | cut -d'|' -f4)
                     echo "Auto-selecting TOTP MFA (from config)." >/dev/tty
@@ -313,20 +311,16 @@ okta_mfa_verify() {
             mfa_choice="${mfa_choice:-1}"
 
             if [ "$mfa_choice" = "2" ]; then
-                factor_id=$(echo "$totp_line" | cut -d'|' -f1)
                 factor_type="token:software:totp"
                 verify_url=$(echo "$totp_line" | cut -d'|' -f4)
             else
-                factor_id=$(echo "$push_line" | cut -d'|' -f1)
                 factor_type="push"
                 verify_url=$(echo "$push_line" | cut -d'|' -f4)
             fi
         elif [ -n "$totp_line" ]; then
-            factor_id=$(echo "$totp_line" | cut -d'|' -f1)
             factor_type="token:software:totp"
             verify_url=$(echo "$totp_line" | cut -d'|' -f4)
         elif [ -n "$push_line" ]; then
-            factor_id=$(echo "$push_line" | cut -d'|' -f1)
             factor_type="push"
             verify_url=$(echo "$push_line" | cut -d'|' -f4)
         else
@@ -399,7 +393,7 @@ okta_fetch_saml() {
 
     local cookie_jar
     cookie_jar=$(mktemp)
-    trap "rm -f '$cookie_jar'" RETURN
+    trap 'rm -f "$cookie_jar"' RETURN
 
     # Try ?sessionToken= first (standard Okta param), fall back to ?onetimetoken=
     local html_response
@@ -682,7 +676,7 @@ EOF
     echo "Fetching SAML assertion..."
     local assertion_file
     assertion_file=$(mktemp)
-    trap "rm -f '$assertion_file'" EXIT
+    trap 'rm -f "$assertion_file"' EXIT
     okta_fetch_saml "$saml_url" "$session_token" "$assertion_file"
     if [ ! -s "$assertion_file" ]; then
         echo "Error: Failed to fetch SAML assertion." >&2

@@ -42,8 +42,8 @@ DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --env AWS_PROFILE=${AWS_PROFILE} \
     --env AWS_SDK_LOAD_CONFIG=1 \
     --env STACK_NAME=${STACK_NAME} \
-    --env SLS_DEBUG="${SLS_DEBUG:-0}" \
-    --env DEBUG="${DEBUG:-0}" \
+    --env "SLS_DEBUG=${SLS_DEBUG:-0}" \
+    --env "DEBUG=${DEBUG:-0}" \
     --volume ${HOME}/.aws:/root/.aws \
     --volume ${PWD}:${WORKDIR} \
     --workdir ${WORKDIR} \
