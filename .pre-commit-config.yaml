@@ -1,4 +1,4 @@
-# Pre-commit hooks for My Ez CLI AI Service
+# Pre-commit hooks for My Ez CLI
 # Install: pre-commit install
 # Run manually: pre-commit run --all-files
 # Update hooks: pre-commit autoupdate
@@ -80,7 +80,15 @@ repos:
       - id: python-check-blanket-type-ignore
       - id: python-use-type-annotations
 
-# Configure pre-commit to run faster
+  # ShellCheck — static analysis for shell scripts
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        args: [--severity=warning]
+        files: ^bin/
+
   # Local test suite hooks — run conditionally based on changed files
   - repo: local
     hooks:

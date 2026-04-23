@@ -21,6 +21,7 @@ CONTAINER_LABELS=$(get_container_labels "aws-sso-cred" "$IMAGE")
 setup_logging "aws-sso-cred"
 
 # run from your working directory
+# shellcheck disable=SC2046  # get_tty_flag intentionally word-splits to pass -t or nothing
 docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
@@ -30,4 +31,4 @@ docker run -i $(get_tty_flag) --rm \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     --entrypoint /bin/bash \
-    $IMAGE -c "ssocred ${@}"
+    "$IMAGE" -c "ssocred $*"

@@ -7,7 +7,6 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "${MEC_BASE_DIR}/bin/utils/common.sh"
 
 BASEDIR="$SCRIPT_DIR"
-ARGS=("${@}")
 
 # Warning: Requires AWS CLI. See './aws'.
 
@@ -36,7 +35,7 @@ Loading env vars...
 EOF
 
     while IFS="" read -r p || [ -n "$p" ]; do
-        if [ $(echo "$p" | grep $1) ]; then
+        if [ "$(echo "$p" | grep "$1")" ]; then
             printf '%s\n' "$p"
             eval "$p"
         fi

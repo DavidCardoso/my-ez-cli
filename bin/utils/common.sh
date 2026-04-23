@@ -66,10 +66,11 @@ is_valid_json_file() {
 # Use only for ~/.claude.json — other config files have different reset rules.
 reset_claude_config() {
     local config_file="${HOME}/.claude.json"
-    local backup="${config_file}.bak.$(date +%s)"
-    msg_warn "~/.claude.json is corrupted — backing up to $(basename "$backup") and resetting"
+    local backup
+    backup="${config_file}.bak.$(date +%s)"
+    msg_warn "$HOME/.claude.json is corrupted — backing up to $(basename "$backup") and resetting"
     cp "$config_file" "$backup"
-    > "$config_file"
+    true > "$config_file"
 }
 
 # ----------------------------------------------------------------------------

@@ -1,0 +1,24 @@
+name: ShellCheck
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run ShellCheck on bin/
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: './bin'
+          severity: warning

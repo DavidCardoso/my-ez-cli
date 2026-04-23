@@ -1,0 +1,70 @@
+name: Hadolint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+
+jobs:
+  hadolint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Lint docker/ai-service/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/ai-service/Dockerfile
+
+      - name: Lint docker/aws-sso-cred/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/aws-sso-cred/Dockerfile
+
+      - name: Lint docker/claude/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/claude/Dockerfile
+
+      - name: Lint docker/config-service/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/config-service/Dockerfile
+
+      - name: Lint docker/dashboard/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/dashboard/Dockerfile
+
+      - name: Lint docker/playwright/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/playwright/Dockerfile
+
+      - name: Lint docker/serverless/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/serverless/Dockerfile
+
+      - name: Lint docker/speedtest/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/speedtest/Dockerfile
+
+      - name: Lint docker/yarn-berry/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/yarn-berry/Dockerfile
+
+      - name: Lint docker/yarn-plus/Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: docker/yarn-plus/Dockerfile

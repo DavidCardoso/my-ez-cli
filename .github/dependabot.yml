@@ -1,0 +1,113 @@
+version: 2
+updates:
+  # Python (Poetry) — AI service
+  - package-ecosystem: "pip"
+    directory: "/services/ai"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Python (Poetry) — Dashboard service
+  - package-ecosystem: "pip"
+    directory: "/services/dashboard"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # npm — Dashboard frontend (Vue 3)
+  - package-ecosystem: "npm"
+    directory: "/services/dashboard/frontend"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — ai-service
+  - package-ecosystem: "docker"
+    directory: "/docker/ai-service"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — aws-sso-cred
+  - package-ecosystem: "docker"
+    directory: "/docker/aws-sso-cred"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — claude
+  - package-ecosystem: "docker"
+    directory: "/docker/claude"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — config-service
+  - package-ecosystem: "docker"
+    directory: "/docker/config-service"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — dashboard
+  - package-ecosystem: "docker"
+    directory: "/docker/dashboard"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — playwright
+  - package-ecosystem: "docker"
+    directory: "/docker/playwright"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — serverless
+  - package-ecosystem: "docker"
+    directory: "/docker/serverless"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — speedtest
+  - package-ecosystem: "docker"
+    directory: "/docker/speedtest"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — yarn-berry
+  - package-ecosystem: "docker"
+    directory: "/docker/yarn-berry"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
+  # Docker base images — yarn-plus
+  - package-ecosystem: "docker"
+    directory: "/docker/yarn-plus"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5

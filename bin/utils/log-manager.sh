@@ -11,6 +11,7 @@
 # ----------------------------------------------------------------------------
 LOG_FORMAT_VERSION="1.0"
 DEFAULT_LOG_DIR="${MEC_HOME:-${HOME}/.my-ez-cli}/logs"
+# shellcheck disable=SC2034  # used by sourcing scripts
 DEFAULT_CONFIG_FILE="${MEC_HOME:-${HOME}/.my-ez-cli}/config.yaml"
 
 # ----------------------------------------------------------------------------
@@ -77,7 +78,8 @@ log_session_init() {
     export LOG_SESSION_IMAGE="$IMAGE_NAME"
     export LOG_SESSION_COMMAND="$COMMAND"
     export LOG_SESSION_START_TIME="$TIMESTAMP"
-    export LOG_SESSION_CWD="$(pwd)"
+    LOG_SESSION_CWD="$(pwd)"
+    export LOG_SESSION_CWD
     export LOG_JSON_FILE="$JSON_LOG_FILE"
     export LOG_SESSION_START_EPOCH
     export LOG_ENABLED
@@ -265,7 +267,7 @@ log_cleanup() {
     load_log_config
 
     if [ -d "${LOG_DIR}/${TOOL_NAME}" ]; then
-        rm -rf "${LOG_DIR}/${TOOL_NAME}"
+        rm -rf "${LOG_DIR:?}/${TOOL_NAME}"
     fi
 }
 

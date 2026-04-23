@@ -28,14 +28,14 @@ jobs:
 
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/my-ez-cli/${{ matrix.tool }}:latest
           format: 'sarif'
           output: trivy-results-${{ matrix.tool }}.sarif
 
       - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results-${{ matrix.tool }}.sarif
           category: trivy-${{ matrix.tool }}

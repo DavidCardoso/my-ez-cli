@@ -33,6 +33,7 @@ CONTAINER_LABELS=$(get_container_labels "gcloud-login" "$IMAGE")
 setup_logging "gcloud-login"
 
 # run from your working directory
+# shellcheck disable=SC2046  # get_tty_flag intentionally word-splits to pass -t or nothing
 docker run -i $(get_tty_flag) \
     --platform linux/amd64 \
     --name gcloud-config \
