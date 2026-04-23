@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:25-alpine
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="serverless" \
