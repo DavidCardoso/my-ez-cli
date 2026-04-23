@@ -10,7 +10,7 @@
 
 CLI tools over Docker — managed by `mec`.
 
-> Docker-based dev tools + AI analysis powered by Claude Code. See [docs/ROADMAP.md](./docs/ROADMAP.md) for current status.
+> Docker-based dev tools + AI analysis powered by Claude Code.
 
 ## Table of Contents
 
@@ -318,7 +318,6 @@ For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATIO
 ### For contributors
 
 - **[CLAUDE.md](./CLAUDE.md)** — Architecture reference and contributor guide
-- **[docs/ROADMAP.md](./docs/ROADMAP.md)** — Phase status and future plans
 - **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** — Python code standards (type hints, error handling, logging)
 - **[docs/LOG_FORMAT.md](./docs/LOG_FORMAT.md)** — JSON log schema, sidecar files, rotation
 - **[docs/CONTAINER_REGISTRY.md](./docs/CONTAINER_REGISTRY.md)** — Container registry images, CI/CD workflows, GitHub Secrets
