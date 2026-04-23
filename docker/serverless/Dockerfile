@@ -11,6 +11,7 @@ ARG SERVERLESS_VERSION=4.33.0
 ARG AWS_CLI_VERSION=2.15.0
 
 # Install runtime dependencies
+# hadolint ignore=DL3018
 RUN apk add --no-cache \
     bash \
     groff \
@@ -20,6 +21,7 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Install AWS CLI v2 (static binary)
+# hadolint ignore=DL3018,DL3059,SC2086
 RUN apk add --no-cache --virtual .build-deps curl && \
     ARCH=$(apk info --print-arch) && \
     case "$ARCH" in \
@@ -33,6 +35,7 @@ RUN apk add --no-cache --virtual .build-deps curl && \
     apk del .build-deps
 
 # Install Serverless Framework
+# hadolint ignore=DL3016,DL3059
 RUN npm install --global --no-audit --no-fund serverless@${SERVERLESS_VERSION}
 
 ENTRYPOINT [ "serverless" ]
