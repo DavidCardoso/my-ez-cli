@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 # Metadata
 LABEL com.my-ez-cli.project="my-ez-cli"
