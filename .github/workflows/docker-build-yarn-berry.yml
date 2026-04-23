@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/yarn-berry
   TOOL_NAME: yarn-berry
+  YARN_VERSION: 4.14.1
 
 jobs:
   build:
@@ -48,6 +49,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.YARN_VERSION }},enable={{is_default_branch}}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
@@ -62,6 +64,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            YARN_VERSION=${{ env.YARN_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

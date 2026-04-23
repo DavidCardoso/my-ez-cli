@@ -24,7 +24,7 @@ if [ -z "$IMAGE_TAG" ]; then
 fi
 
 if [ -z "$YARN_VERSION" ]; then
-    YARN_VERSION=4.12.0
+    YARN_VERSION=4.14.1
     echo "YARN_VERSION not set, using default: ${YARN_VERSION}"
 fi
 
@@ -53,4 +53,5 @@ docker buildx build \
     ${BUILD_OPTS} \
     --build-arg YARN_VERSION=${YARN_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${YARN_VERSION} \
     .
