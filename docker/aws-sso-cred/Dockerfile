@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:25-alpine
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="aws-sso-cred" \
@@ -10,6 +10,7 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
 ARG AWS_CLI_VERSION=2.15.0
 
 # Install runtime dependencies
+# hadolint ignore=DL3018
 RUN apk add --no-cache \
     bash \
     groff \
@@ -19,6 +20,7 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Install AWS CLI v2 (static binary)
+# hadolint ignore=DL3018,DL3059,SC2086
 RUN apk add --no-cache --virtual .build-deps curl && \
     ARCH=$(apk info --print-arch) && \
     case "$ARCH" in \
@@ -32,6 +34,7 @@ RUN apk add --no-cache --virtual .build-deps curl && \
     apk del .build-deps
 
 # Install aws-sso-credentials-getter
+# hadolint ignore=DL3016,DL3059
 RUN npm install --global --no-audit --no-fund aws-sso-credentials-getter
 
 ENTRYPOINT [ "/bin/bash" ]

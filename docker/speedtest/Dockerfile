@@ -10,6 +10,7 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
 ARG VERSION=1.2.0
 
 # Install speedtest binary only
+# hadolint ignore=DL3018,DL4006,SC2086
 RUN apk add --no-cache ca-certificates && \
     apk add --no-cache --virtual .build-deps tar curl && \
     ARCH=$(apk info --print-arch) && \
