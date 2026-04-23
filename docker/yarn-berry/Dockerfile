@@ -1,4 +1,6 @@
-FROM node:25-alpine
+FROM alpine:3.23
+
+ARG YARN_VERSION=4.14.1
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="yarn-berry" \
@@ -7,16 +9,20 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
       org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
       org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-# Install runtime dependencies
+# Install runtime dependencies.
+# npm is needed only to install corepack (not bundled in Alpine's nodejs package)
+# and is removed afterwards.
 # hadolint ignore=DL3018
 RUN apk add --no-cache \
     bash \
     git \
-    ca-certificates
-
-# Enable corepack so `yarn` dispatches through the version manager
-# hadolint ignore=DL3059
-RUN corepack enable
+    ca-certificates \
+    nodejs \
+    npm \
+    && npm install -g corepack@0.34.7 \
+    && corepack enable \
+    && corepack prepare yarn@${YARN_VERSION} --activate \
+    && apk del npm
 
 # Set working directory
 WORKDIR /app
