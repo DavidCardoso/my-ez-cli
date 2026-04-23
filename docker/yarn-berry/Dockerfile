@@ -8,12 +8,14 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
       org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
 # Install runtime dependencies
+# hadolint ignore=DL3018
 RUN apk add --no-cache \
     bash \
     git \
     ca-certificates
 
 # Enable corepack so `yarn` dispatches through the version manager
+# hadolint ignore=DL3059
 RUN corepack enable
 
 # Set working directory

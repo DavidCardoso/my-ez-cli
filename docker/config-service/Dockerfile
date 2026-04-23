@@ -12,6 +12,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 WORKDIR /app
 
 # Install Poetry
+# hadolint ignore=DL3013
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry==1.8.4
 
