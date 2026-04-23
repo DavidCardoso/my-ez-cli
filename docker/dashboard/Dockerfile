@@ -17,7 +17,7 @@ RUN npx vite build
 # ===========================================================================
 # Stage 2: Python / FastAPI runtime
 # ===========================================================================
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 LABEL org.opencontainers.image.title="mec-dashboard" \
       org.opencontainers.image.description="My Ez CLI — log and AI analysis dashboard" \
