@@ -54,14 +54,19 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
-@test "mec list shows Remote images section" {
+@test "mec list shows Public images section" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep -q 'Remote images'
+    echo "$output" | grep -q 'Public images'
 }
 
-@test "mec list shows MEC custom builds section" {
+@test "mec list shows MEC custom tools section" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep -q 'MEC custom builds'
+    echo "$output" | grep -q 'MEC custom tools'
+}
+
+@test "mec list shows MEC internal services section" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep -q 'MEC internal services'
 }
 
 @test "mec list shows terraform" {
@@ -112,9 +117,9 @@ teardown() {
     [ "$status" -ne 0 ]
 }
 
-@test "mec update with tag on custom tool prints 'custom' error" {
+@test "mec update with invalid version on custom tool prints validation error" {
     run "$BASEDIR/bin/mec" update claude davidcardoso/my-ez-cli:claude-test
-    echo "$output" | grep -qi 'custom'
+    echo "$output" | grep -qi 'aborted\|failed\|invalid'
 }
 
 @test "mec update unknown tool exits non-zero" {
@@ -143,14 +148,14 @@ teardown() {
     echo "$output" | grep 'terraform' | grep -q '1.14.5'
 }
 
-@test "mec reset on custom tool exits non-zero" {
+@test "mec reset on custom tool exits zero" {
     run "$BASEDIR/bin/mec" reset claude
-    [ "$status" -ne 0 ]
+    [ "$status" -eq 0 ]
 }
 
-@test "mec reset on custom tool prints 'custom' error" {
+@test "mec reset on custom tool prints reset confirmation" {
     run "$BASEDIR/bin/mec" reset claude
-    echo "$output" | grep -qi 'custom'
+    echo "$output" | grep -qi 'reset'
 }
 
 @test "mec reset without args exits non-zero" {

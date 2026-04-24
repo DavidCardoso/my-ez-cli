@@ -24,7 +24,9 @@ YARN_CACHE_FOLDER=${YARN_CACHE_FOLDER:-"$HOME/.cache/yarn/"}
 CONTAINER_YARN_CACHE_FOLDER=${CONTAINER_YARN_CACHE_FOLDER:-"/root/.cache/yarn/"}
 COREPACK_HOME=${COREPACK_HOME:-"$HOME/.cache/node/corepack"}
 CONTAINER_COREPACK_HOME=${CONTAINER_COREPACK_HOME:-"/root/.cache/node/corepack"}
-YARN_DEFAULT_VERSION=${YARN_DEFAULT_VERSION:-"4.12.0"}
+# MEC_YARN_BERRY_VERSION is set via images.conf (user pin or mec source default).
+# The hardcoded value is the last-resort fallback matching this mec release.
+YARN_DEFAULT_VERSION=${MEC_YARN_BERRY_VERSION:-"4.14.1"}
 
 # Create .npmrc if it doesn't exist
 if [ ! -f "$NPMRC_FILE" ]; then

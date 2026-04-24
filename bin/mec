@@ -1793,7 +1793,8 @@ mec_purge() {
 
 mec_list() {
     local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE promptfoo:MEC_IMAGE_PROMPTFOO"
-    local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
+    local _custom_tools="claude:MEC_IMAGE_CLAUDE playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS"
+    local _internal_services="dashboard:MEC_IMAGE_DASHBOARD ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
 
     local _b="" _r="" _dim=""
     if [ -t 1 ]; then
@@ -1804,7 +1805,7 @@ mec_list() {
 
     printf '%s\n' "${_b}Tools${_r}"
     printf '\n'
-    printf '%s\n' "${_b}Remote images${_r}${_dim} — mec update <tool> [image:tag] | mec reset <tool>${_r}"
+    printf '%s\n' "${_b}Public images${_r}${_dim} — mec update <tool> [image:tag] | mec reset <tool>${_r}"
     printf '  %-20s  %s\n' "TOOL" "IMAGE"
     printf '  %-20s  %s\n' "----" "-----"
     for _entry in $_public_tools; do
@@ -1816,7 +1817,7 @@ mec_list() {
     done
 
     printf '\n'
-    printf '%s\n' "${_b}MEC custom builds${_r}${_dim} — mec update <tool> (pull only)${_r}"
+    printf '%s\n' "${_b}MEC custom tools${_r}${_dim} — mec update <tool>[:<version>] | mec reset <tool>${_r}"
     printf '  %-20s  %s\n' "TOOL" "IMAGE"
     printf '  %-20s  %s\n' "----" "-----"
     for _entry in $_custom_tools; do
@@ -1826,6 +1827,50 @@ mec_list() {
         _image=$(eval echo "\${$_var}")
         printf '  %-20s  %s\n' "$_tool" "$_image"
     done
+
+    printf '\n'
+    printf '%s\n' "${_b}MEC internal services${_r}${_dim} — mec update <service> | mec reset <service>${_r}"
+    printf '  %-20s  %s\n' "SERVICE" "IMAGE"
+    printf '  %-20s  %s\n' "-------" "-----"
+    for _entry in $_internal_services; do
+        local _tool="${_entry%%:*}"
+        local _var="${_entry##*:}"
+        local _image
+        _image=$(eval echo "\${$_var}")
+        printf '  %-20s  %s\n' "$_tool" "$_image"
+    done
+}
+
+# _mec_resolve_latest_custom_version <slug>
+# Queries the GHCR tags API for the given image slug, filters to semver-only tags
+# (x.y.z), and prints the highest version. Prints nothing and returns 1 on failure.
+_mec_resolve_latest_custom_version() {
+    local _slug="$1"
+    local _token _tags _latest
+
+    _token=$(curl -sf \
+        "https://ghcr.io/token?scope=repository:my-ez-cli/${_slug}:pull" \
+        | grep -o '"token":"[^"]*"' | cut -d'"' -f4) || true
+
+    if [ -z "$_token" ]; then
+        return 1
+    fi
+
+    _tags=$(curl -sf \
+        -H "Authorization: Bearer ${_token}" \
+        "https://ghcr.io/v2/my-ez-cli/${_slug}/tags/list" \
+        | grep -o '"[^"]*"' | tr -d '"') || true
+
+    _latest=$(printf '%s\n' $_tags \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -t. -k1,1n -k2,2n -k3,3n \
+        | tail -1)
+
+    if [ -z "$_latest" ]; then
+        return 1
+    fi
+
+    printf '%s' "$_latest"
 }
 
 # _mec_validate_public_image <tool> <image>
@@ -1882,8 +1927,22 @@ mec_update() {
     local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
     local _all_tools="$_public_tools $_custom_tools"
 
-    local _target_tool="${1:-}"
+    # Maps custom tool name → GHCR image slug
+    local _custom_tool_slugs="claude:claude dashboard:dashboard playwright:playwright aws-sso-cred:aws-sso-cred serverless:serverless speedtest:speedtest yarn-berry:yarn-berry yarn-plus:yarn-plus ai-service:ai-service config-service:config-service"
+
+    # Maps tool name → secondary MEC_<TOOL>_VERSION variable (only tools that need it)
+    local _tool_version_vars="yarn-berry:MEC_YARN_BERRY_VERSION"
+
+    # Parse <tool>[:<version>] from $1; preserve $2 for public-tool backwards compat
+    local _raw_tool="${1:-}"
     local _target_tag="${2:-}"
+    local _target_tool=""
+    if echo "$_raw_tool" | grep -q ':'; then
+        _target_tool="${_raw_tool%%:*}"
+        _target_tag="${_raw_tool##*:}"
+    else
+        _target_tool="$_raw_tool"
+    fi
 
     # Validate tool name when a specific tool is given (before any other checks)
     if [ -n "$_target_tool" ]; then
@@ -1901,21 +1960,95 @@ mec_update() {
         fi
     fi
 
-    # If a tag is given, only allow for Group A tools
-    if [ -n "$_target_tool" ] && [ -n "$_target_tag" ]; then
-        local _is_public=0
-        for _entry in $_public_tools; do
+    # Determine if the target tool is a custom build
+    local _is_custom=0
+    if [ -n "$_target_tool" ]; then
+        for _entry in $_custom_tools; do
             if [ "${_entry%%:*}" = "$_target_tool" ]; then
-                _is_public=1
+                _is_custom=1
                 break
             fi
         done
-        if [ "$_is_public" -eq 0 ]; then
-            echo "Cannot pin '$_target_tool': this is a custom my-ez-cli build." >&2
-            echo "Custom image version management is tracked in a separate issue." >&2
-            echo "To pull the latest published build: mec update $_target_tool" >&2
+    fi
+
+    # --- Custom tool pin flow ---
+    if [ -n "$_target_tool" ] && [ "$_is_custom" -eq 1 ]; then
+        # Resolve GHCR slug for this tool
+        local _slug=""
+        for _entry in $_custom_tool_slugs; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _slug="${_entry##*:}"
+                break
+            fi
+        done
+
+        # If no version given, resolve latest semver tag from GHCR
+        if [ -z "$_target_tag" ]; then
+            printf '[mec] Resolving latest version of %s from GHCR ... ' "$_target_tool" >&2
+            _target_tag=$(_mec_resolve_latest_custom_version "$_slug" 2>/dev/null) || true
+            if [ -z "$_target_tag" ]; then
+                echo "FAILED" >&2
+                echo "[mec] Could not resolve latest version. Specify a version: mec update ${_target_tool}:<version>" >&2
+                exit 1
+            fi
+            echo "$_target_tag" >&2
+        fi
+
+        local _image="${MEC_IMAGE_REPO}/${_slug}:${_target_tag}"
+
+        # Supply-chain validation: image must report the expected version
+        printf '[mec] Validating image %s ... ' "$_image" >&2
+        local _out
+        if ! _out=$(docker run --rm "$_image" --version 2>&1); then
+            echo "FAILED" >&2
+            echo "[mec] '$_image --version' exited non-zero. Pin aborted." >&2
             exit 1
         fi
+        if ! echo "$_out" | grep -qF "$_target_tag"; then
+            echo "FAILED" >&2
+            echo "[mec] Version '$_target_tag' not found in output: $_out" >&2
+            echo "[mec] Pin aborted for safety." >&2
+            exit 1
+        fi
+        echo "ok" >&2
+
+        # Resolve image variable name and write pin
+        local _var=""
+        for _entry in $_custom_tools; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _var="${_entry##*:}"
+                break
+            fi
+        done
+        local _user_images="${MEC_HOME}/images.conf"
+        mkdir -p "$MEC_HOME"
+
+        # Remove any existing pins for this tool's vars before rewriting
+        local _version_var=""
+        for _entry in $_tool_version_vars; do
+            if [ "${_entry%%:*}" = "$_target_tool" ]; then
+                _version_var="${_entry##*:}"
+                break
+            fi
+        done
+        if [ -f "$_user_images" ]; then
+            local _grep_pattern="^${_var}="
+            if [ -n "$_version_var" ]; then
+                _grep_pattern="${_grep_pattern}\|^${_version_var}="
+            fi
+            (grep -v "$_grep_pattern" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
+        fi
+
+        echo "${_var}=${_image}" >> "$_user_images"
+        if [ -n "$_version_var" ]; then
+            echo "${_version_var}=${_target_tag}" >> "$_user_images"
+        fi
+        # shellcheck disable=SC1090
+        . "$_user_images"
+        echo "Pinned $_target_tool to $_target_tag"
+
+    # --- Public tool pin flow (unchanged) ---
+    elif [ -n "$_target_tool" ] && [ -n "$_target_tag" ]; then
         # Validate the image actually contains the expected tool (supply-chain check)
         if ! _mec_validate_public_image "$_target_tool" "$_target_tag"; then
             exit 1
@@ -1971,20 +2104,13 @@ mec_reset() {
     fi
 
     local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE node20:MEC_IMAGE_NODE20 node22:MEC_IMAGE_NODE22 node24:MEC_IMAGE_NODE24 promptfoo:MEC_IMAGE_PROMPTFOO"
-    local _custom_tool_names="claude dashboard playwright aws-sso-cred serverless speedtest yarn-berry yarn-plus ai-service config-service"
+    local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
+    local _tool_version_vars="yarn-berry:MEC_YARN_BERRY_VERSION"
+    local _all_tools="$_public_tools $_custom_tools"
 
-    # Reject reset for custom-build tools
-    for _custom in $_custom_tool_names; do
-        if [ "$_custom" = "$_tool" ]; then
-            echo "Cannot reset '$_tool': this is a custom my-ez-cli build with no pinnable version." >&2
-            echo "Custom image version management is tracked in a separate issue." >&2
-            exit 1
-        fi
-    done
-
-    # Resolve variable for public tools
+    # Resolve variable name from all tools
     local _var=""
-    for _entry in $_public_tools; do
+    for _entry in $_all_tools; do
         if [ "${_entry%%:*}" = "$_tool" ]; then
             _var="${_entry##*:}"
             break
@@ -1992,14 +2118,28 @@ mec_reset() {
     done
     if [ -z "$_var" ]; then
         echo "Unknown tool: $_tool" >&2
+        echo "Run 'mec list' to see available tools." >&2
         exit 1
     fi
 
+    # Also resolve secondary version var if defined for this tool
+    local _version_var=""
+    for _entry in $_tool_version_vars; do
+        if [ "${_entry%%:*}" = "$_tool" ]; then
+            _version_var="${_entry##*:}"
+            break
+        fi
+    done
+
     local _user_images="${MEC_HOME}/images.conf"
     if [ -f "$_user_images" ]; then
-        (grep -v "^${_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
+        local _grep_pattern="^${_var}="
+        if [ -n "$_version_var" ]; then
+            _grep_pattern="${_grep_pattern}\|^${_version_var}="
+        fi
+        (grep -v "$_grep_pattern" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
     fi
-    echo "Reset $_tool to default image"
+    echo "Reset $_tool to default"
 }
 
 # ----------------------------------------------------------------------------
