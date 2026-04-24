@@ -8,7 +8,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = ">=0.115,<0.137"
-uvicorn = {extras = ["standard"], version = ">=0.32,<0.46"}
+uvicorn = {extras = ["standard"], version = ">=0.32,<0.47"}
 watchfiles = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
