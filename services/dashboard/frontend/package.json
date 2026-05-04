@@ -13,7 +13,7 @@
   "dependencies": {
     "vue": "^3.5.33",
     "vue-router": "^4.4.0",
-    "primevue": "^4.3.0",
+    "primevue": "^4.5.5",
     "@primevue/themes": "^4.3.0",
     "primeicons": "^7.0.0",
     "chart.js": "^4.4.0",
