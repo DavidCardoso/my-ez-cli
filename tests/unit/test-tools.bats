@@ -47,6 +47,79 @@ teardown() {
     grep -q 'MEC_IMAGE_PLAYWRIGHT' "$BASEDIR/config/images.conf"
 }
 
+# --- config/images.conf version vars ---
+
+@test "config/images.conf defines MEC_TERRAFORM_VERSION" {
+    grep -q 'MEC_TERRAFORM_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_AWS_VERSION" {
+    grep -q 'MEC_AWS_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_GCLOUD_VERSION" {
+    grep -q 'MEC_GCLOUD_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_PYTHON_VERSION" {
+    grep -q 'MEC_PYTHON_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_NODE_VERSION" {
+    grep -q 'MEC_NODE_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_PROMPTFOO_VERSION" {
+    grep -q 'MEC_PROMPTFOO_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_CLAUDE_VERSION" {
+    grep -q 'MEC_CLAUDE_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_PLAYWRIGHT_VERSION" {
+    grep -q 'MEC_PLAYWRIGHT_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_SERVERLESS_VERSION" {
+    grep -q 'MEC_SERVERLESS_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_SPEEDTEST_VERSION" {
+    grep -q 'MEC_SPEEDTEST_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_AWS_SSO_CRED_VERSION" {
+    grep -q 'MEC_AWS_SSO_CRED_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_YARN_PLUS_VERSION" {
+    grep -q 'MEC_YARN_PLUS_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_DASHBOARD_VERSION" {
+    grep -q 'MEC_DASHBOARD_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_AI_SERVICE_VERSION" {
+    grep -q 'MEC_AI_SERVICE_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf defines MEC_CONFIG_SERVICE_VERSION" {
+    grep -q 'MEC_CONFIG_SERVICE_VERSION' "$BASEDIR/config/images.conf"
+}
+
+@test "config/images.conf version var declared before image var for terraform" {
+    local _vline _iline
+    _vline=$(grep -n 'MEC_TERRAFORM_VERSION=' "$BASEDIR/config/images.conf" | head -1 | cut -d: -f1)
+    _iline=$(grep -n 'MEC_IMAGE_TERRAFORM=' "$BASEDIR/config/images.conf" | head -1 | cut -d: -f1)
+    [ "$_vline" -lt "$_iline" ]
+}
+
+@test "config/images.conf MEC_IMAGE_TERRAFORM derived from MEC_TERRAFORM_VERSION" {
+    grep 'MEC_IMAGE_TERRAFORM=' "$BASEDIR/config/images.conf" | grep -q 'MEC_TERRAFORM_VERSION'
+}
+
 # --- mec list ---
 
 @test "mec list exits 0" {
