@@ -1788,6 +1788,59 @@ mec_purge() {
 }
 
 # ----------------------------------------------------------------------------
+# Tool Registry
+# ----------------------------------------------------------------------------
+
+# Format per entry: tool:type:image_var:version_var:ghcr_slug
+# type: public (upstream Docker Hub/registry), custom (mec-built semver), internal (mec-built sha-pinnable)
+# slug: GHCR image name for custom/internal tools; empty for public tools
+_MEC_TOOL_REGISTRY="
+aws:public:MEC_IMAGE_AWS:MEC_AWS_VERSION:
+terraform:public:MEC_IMAGE_TERRAFORM:MEC_TERRAFORM_VERSION:
+gcloud:public:MEC_IMAGE_GCLOUD:MEC_GCLOUD_VERSION:
+python:public:MEC_IMAGE_PYTHON:MEC_PYTHON_VERSION:
+node:public:MEC_IMAGE_NODE:MEC_NODE_VERSION:
+promptfoo:public:MEC_IMAGE_PROMPTFOO:MEC_PROMPTFOO_VERSION:
+claude:custom:MEC_IMAGE_CLAUDE:MEC_CLAUDE_VERSION:claude
+playwright:custom:MEC_IMAGE_PLAYWRIGHT:MEC_PLAYWRIGHT_VERSION:playwright
+serverless:custom:MEC_IMAGE_SERVERLESS:MEC_SERVERLESS_VERSION:serverless
+speedtest:custom:MEC_IMAGE_SPEEDTEST:MEC_SPEEDTEST_VERSION:speedtest
+aws-sso-cred:custom:MEC_IMAGE_AWS_SSO_CRED:MEC_AWS_SSO_CRED_VERSION:aws-sso-cred
+yarn-berry:custom:MEC_IMAGE_YARN_BERRY:MEC_YARN_BERRY_VERSION:yarn-berry
+yarn-plus:custom:MEC_IMAGE_YARN_PLUS:MEC_YARN_PLUS_VERSION:yarn-plus
+dashboard:internal:MEC_IMAGE_DASHBOARD:MEC_DASHBOARD_VERSION:dashboard
+ai-service:internal:MEC_IMAGE_AI_SERVICE:MEC_AI_SERVICE_VERSION:ai-service
+config-service:internal:MEC_IMAGE_CONFIG_SERVICE:MEC_CONFIG_SERVICE_VERSION:config-service
+"
+
+# _mec_tool_field <tool> <field>
+# Returns the value of <field> for <tool> from the registry.
+# field: type | image_var | version_var | slug
+# Returns empty string and exits 0 if tool or field not found.
+_mec_tool_field() {
+    local _tool="$1"
+    local _field="$2"
+    local _entry
+
+    # Use while loop with newline-based field splitting since the registry uses embedded newlines
+    while IFS= read -r _entry; do
+        [ -z "$_entry" ] && continue
+        if [ "${_entry%%:*}" = "$_tool" ]; then
+            case "$_field" in
+                type)        echo "$_entry" | cut -d: -f2 ;;
+                image_var)   echo "$_entry" | cut -d: -f3 ;;
+                version_var) echo "$_entry" | cut -d: -f4 ;;
+                slug)        echo "$_entry" | cut -d: -f5 ;;
+            esac
+            return 0
+        fi
+    done <<EOF
+$_MEC_TOOL_REGISTRY
+EOF
+    return 0
+}
+
+# ----------------------------------------------------------------------------
 # List Command
 # ----------------------------------------------------------------------------
 

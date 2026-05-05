@@ -120,6 +120,107 @@ teardown() {
     grep 'MEC_IMAGE_TERRAFORM=' "$BASEDIR/config/images.conf" | grep -q 'MEC_TERRAFORM_VERSION'
 }
 
+# --- _mec_tool_field ---
+
+_load_mec_functions() {
+    # Extract the registry and _mec_tool_field function directly from bin/mec
+    # This avoids sourcing the entire script which has `set -e` and relative path issues
+    eval "$(sed -n '/^_MEC_TOOL_REGISTRY=/,/^}/p' "$BASEDIR/bin/mec")"
+}
+
+@test "_mec_tool_field returns type for public tool" {
+    _load_mec_functions
+    result=$(_mec_tool_field "terraform" "type")
+    [ "$result" = "public" ]
+}
+
+@test "_mec_tool_field returns type for custom tool" {
+    _load_mec_functions
+    result=$(_mec_tool_field "playwright" "type")
+    [ "$result" = "custom" ]
+}
+
+@test "_mec_tool_field returns type for internal service" {
+    _load_mec_functions
+    result=$(_mec_tool_field "dashboard" "type")
+    [ "$result" = "internal" ]
+}
+
+@test "_mec_tool_field returns image_var for terraform" {
+    _load_mec_functions
+    result=$(_mec_tool_field "terraform" "image_var")
+    [ "$result" = "MEC_IMAGE_TERRAFORM" ]
+}
+
+@test "_mec_tool_field returns version_var for terraform" {
+    _load_mec_functions
+    result=$(_mec_tool_field "terraform" "version_var")
+    [ "$result" = "MEC_TERRAFORM_VERSION" ]
+}
+
+@test "_mec_tool_field returns slug for custom tool" {
+    _load_mec_functions
+    result=$(_mec_tool_field "playwright" "slug")
+    [ "$result" = "playwright" ]
+}
+
+@test "_mec_tool_field returns empty for unknown tool" {
+    _load_mec_functions
+    result=$(_mec_tool_field "notarealtool" "type")
+    [ -z "$result" ]
+}
+
+@test "_mec_tool_field returns empty slug for public tool" {
+    _load_mec_functions
+    result=$(_mec_tool_field "terraform" "slug")
+    [ -z "$result" ]
+}
+
+# --- Registry integrity ---
+
+@test "registry: all tools have non-empty type" {
+    _load_mec_functions
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+        result=$(_mec_tool_field "$_tool" "type")
+        [ -n "$result" ] || { echo "Missing type for: $_tool"; return 1; }
+    done
+}
+
+@test "registry: all tools have non-empty image_var" {
+    _load_mec_functions
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+        result=$(_mec_tool_field "$_tool" "image_var")
+        [ -n "$result" ] || { echo "Missing image_var for: $_tool"; return 1; }
+    done
+}
+
+@test "registry: all tools have non-empty version_var" {
+    _load_mec_functions
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+        result=$(_mec_tool_field "$_tool" "version_var")
+        [ -n "$result" ] || { echo "Missing version_var for: $_tool"; return 1; }
+    done
+}
+
+@test "registry: custom and internal tools have non-empty slug" {
+    _load_mec_functions
+    for _tool in claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+        result=$(_mec_tool_field "$_tool" "slug")
+        [ -n "$result" ] || { echo "Missing slug for: $_tool"; return 1; }
+    done
+}
+
+@test "registry: type values are valid" {
+    _load_mec_functions
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+        result=$(_mec_tool_field "$_tool" "type")
+        case "$result" in
+            public|custom|internal) ;;
+            *) echo "Invalid type '$result' for: $_tool"; return 1 ;;
+        esac
+    done
+}
+
 # --- mec list ---
 
 @test "mec list exits 0" {
