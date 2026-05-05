@@ -325,6 +325,96 @@ _load_mec_functions() {
     echo "$output" | grep 'dashboard' | grep -q '\[pinned\]'
 }
 
+# --- mec update — typed handlers ---
+
+@test "mec update public tool writes MEC_IMAGE var to user images.conf" {
+    # Mock docker to skip actual pull and validation
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    # Mock docker: always succeed, print version string for validation
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "run" ]; then echo "Terraform v1.15.0"; exit 0; fi
+if [ "$1" = "pull" ]; then exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update terraform 1.15.0
+    [ "$status" -eq 0 ]
+    grep -q 'MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.15.0' "$MEC_HOME/images.conf"
+}
+
+@test "mec update public tool writes MEC_<TOOL>_VERSION to user images.conf" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "run" ]; then echo "Terraform v1.15.0"; exit 0; fi
+if [ "$1" = "pull" ]; then exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update terraform 1.15.0
+    [ "$status" -eq 0 ]
+    grep -q 'MEC_TERRAFORM_VERSION=1.15.0' "$MEC_HOME/images.conf"
+}
+
+@test "mec update public tool: validation failure aborts pin" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    # Mock docker: return output that doesn't match expected string (no mention of tool)
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "run" ]; then echo "unrelated output from wrong image"; exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update terraform 1.15.0
+    [ "$status" -ne 0 ]
+    ! grep -q 'MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.15.0' "$MEC_HOME/images.conf" 2>/dev/null
+}
+
+@test "mec update custom tool with explicit version writes both vars" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "run" ]; then echo "1.52.0"; exit 0; fi
+if [ "$1" = "pull" ]; then exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update playwright:1.52.0
+    [ "$status" -eq 0 ]
+    grep -q 'MEC_IMAGE_PLAYWRIGHT=ghcr.io/my-ez-cli/playwright:1.52.0' "$MEC_HOME/images.conf"
+    grep -q 'MEC_PLAYWRIGHT_VERSION=1.52.0' "$MEC_HOME/images.conf"
+}
+
+@test "mec update internal service with sha writes both vars" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "pull" ]; then exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update dashboard:sha-18d92e9
+    [ "$status" -eq 0 ]
+    grep -q 'MEC_IMAGE_DASHBOARD=ghcr.io/my-ez-cli/dashboard:sha-18d92e9' "$MEC_HOME/images.conf"
+    grep -q 'MEC_DASHBOARD_VERSION=sha-18d92e9' "$MEC_HOME/images.conf"
+}
+
+@test "mec update unknown tool exits non-zero" {
+    run "$BASEDIR/bin/mec" update notarealtool 1.0.0
+    [ "$status" -ne 0 ]
+}
+
 # --- mec update (pin public tool) ---
 
 @test "mec update with tag on custom tool exits non-zero" {
@@ -335,11 +425,6 @@ _load_mec_functions() {
 @test "mec update with invalid version on custom tool prints validation error" {
     run "$BASEDIR/bin/mec" update claude davidcardoso/my-ez-cli:claude-test
     echo "$output" | grep -qi 'aborted\|failed\|invalid'
-}
-
-@test "mec update unknown tool exits non-zero" {
-    run "$BASEDIR/bin/mec" update notarealtool some-image:tag
-    [ "$status" -ne 0 ]
 }
 
 @test "mec update unknown tool mentions mec list" {
