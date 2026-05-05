@@ -23,9 +23,9 @@ if [ -z "$IMAGE_TAG" ]; then
     echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
-if [ -z "$SERVERLESS_VERSION" ]; then
-    SERVERLESS_VERSION=4.33.0
-    echo "SERVERLESS_VERSION not set, using default: ${SERVERLESS_VERSION}"
+if [ -z "$MEC_SERVERLESS_VERSION" ]; then
+    MEC_SERVERLESS_VERSION=4.33.0
+    echo "MEC_SERVERLESS_VERSION not set, using default: ${MEC_SERVERLESS_VERSION}"
 fi
 
 if [ -z "$AWS_CLI_VERSION" ]; then
@@ -50,12 +50,19 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
+echo "Serverless version: ${MEC_SERVERLESS_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
+_extra_tags=""
+if [ "$MEC_SERVERLESS_VERSION" != "latest" ]; then
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_SERVERLESS_VERSION}"
+fi
+
 docker buildx build \
     ${BUILD_OPTS} \
-    --build-arg SERVERLESS_VERSION=${SERVERLESS_VERSION} \
+    --build-arg MEC_SERVERLESS_VERSION=${MEC_SERVERLESS_VERSION} \
     --build-arg AWS_CLI_VERSION=${AWS_CLI_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    ${_extra_tags} \
     .

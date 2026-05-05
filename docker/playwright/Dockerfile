@@ -1,4 +1,5 @@
-FROM mcr.microsoft.com/playwright:v1.59.1-jammy
+ARG MEC_PLAYWRIGHT_VERSION=1.59.1
+FROM mcr.microsoft.com/playwright:v${MEC_PLAYWRIGHT_VERSION}-jammy
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="playwright" \

@@ -22,6 +22,11 @@ if [ -z "$IMAGE_TAG" ]; then
     echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
+if [ -z "$MEC_PLAYWRIGHT_VERSION" ]; then
+    MEC_PLAYWRIGHT_VERSION=latest
+    echo "MEC_PLAYWRIGHT_VERSION not set, using default: ${MEC_PLAYWRIGHT_VERSION}"
+fi
+
 # Build options (use --load for local single-platform builds, --push for CI multi-platform)
 BUILD_OPTS="--platform ${PLATFORM}"
 
@@ -37,10 +42,18 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
+echo "Playwright version: ${MEC_PLAYWRIGHT_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
+_extra_tags=""
+if [ "$MEC_PLAYWRIGHT_VERSION" != "latest" ]; then
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_PLAYWRIGHT_VERSION}"
+fi
+
 docker buildx build \
     ${BUILD_OPTS} \
+    --build-arg MEC_PLAYWRIGHT_VERSION=${MEC_PLAYWRIGHT_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    ${_extra_tags} \
     .

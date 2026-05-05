@@ -7,7 +7,7 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
       org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
       org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-ARG SERVERLESS_VERSION=4.33.0
+ARG MEC_SERVERLESS_VERSION=4.33.0
 ARG AWS_CLI_VERSION=2.15.0
 
 # Install runtime dependencies
@@ -36,6 +36,6 @@ RUN apk add --no-cache --virtual .build-deps curl && \
 
 # Install Serverless Framework
 # hadolint ignore=DL3016,DL3059
-RUN npm install --global --no-audit --no-fund serverless@${SERVERLESS_VERSION}
+RUN npm install --global --no-audit --no-fund serverless@${MEC_SERVERLESS_VERSION}
 
 ENTRYPOINT [ "serverless" ]
