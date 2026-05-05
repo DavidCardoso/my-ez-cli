@@ -515,3 +515,43 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" =~ "AI images" ]]
 }
+
+# --- mec reset — registry-driven ---
+
+@test "mec reset removes MEC_IMAGE var from user images.conf" {
+    echo "MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.12.0" > "$MEC_HOME/images.conf"
+    echo "MEC_TERRAFORM_VERSION=1.12.0" >> "$MEC_HOME/images.conf"
+    run "$BASEDIR/bin/mec" reset terraform
+    [ "$status" -eq 0 ]
+    ! grep -q 'MEC_IMAGE_TERRAFORM' "$MEC_HOME/images.conf" 2>/dev/null
+}
+
+@test "mec reset removes MEC_<TOOL>_VERSION from user images.conf" {
+    echo "MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.12.0" > "$MEC_HOME/images.conf"
+    echo "MEC_TERRAFORM_VERSION=1.12.0" >> "$MEC_HOME/images.conf"
+    run "$BASEDIR/bin/mec" reset terraform
+    [ "$status" -eq 0 ]
+    ! grep -q 'MEC_TERRAFORM_VERSION' "$MEC_HOME/images.conf" 2>/dev/null
+}
+
+@test "mec reset is a no-op when tool is not pinned" {
+    run "$BASEDIR/bin/mec" reset terraform
+    [ "$status" -eq 0 ]
+}
+
+@test "mec reset reverts mec list to show default version" {
+    echo "MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.12.0" > "$MEC_HOME/images.conf"
+    echo "MEC_TERRAFORM_VERSION=1.12.0" >> "$MEC_HOME/images.conf"
+    "$BASEDIR/bin/mec" reset terraform
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep 'terraform' | grep -q '1.14.5'
+}
+
+@test "mec reset internal service removes both vars" {
+    echo "MEC_IMAGE_DASHBOARD=ghcr.io/my-ez-cli/dashboard:sha-18d92e9" > "$MEC_HOME/images.conf"
+    echo "MEC_DASHBOARD_VERSION=sha-18d92e9" >> "$MEC_HOME/images.conf"
+    run "$BASEDIR/bin/mec" reset dashboard
+    [ "$status" -eq 0 ]
+    ! grep -q 'MEC_IMAGE_DASHBOARD' "$MEC_HOME/images.conf" 2>/dev/null
+    ! grep -q 'MEC_DASHBOARD_VERSION' "$MEC_HOME/images.conf" 2>/dev/null
+}

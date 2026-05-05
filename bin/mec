@@ -2135,6 +2135,21 @@ mec_update() {
 # Reset Command
 # ----------------------------------------------------------------------------
 
+# _mec_reset_tool <tool>
+# Removes both the image var and version var pins for <tool> from user images.conf.
+# No-op if the tool is not currently pinned.
+_mec_reset_tool() {
+    local _tool="$1"
+    local _image_var _version_var
+    _image_var=$(_mec_tool_field "$_tool" image_var)
+    _version_var=$(_mec_tool_field "$_tool" version_var)
+
+    local _user_images="${MEC_HOME}/images.conf"
+    if [ -f "$_user_images" ]; then
+        (grep -v "^${_image_var}=\|^${_version_var}=" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
+    fi
+}
+
 mec_reset() {
     local _tool="${1:-}"
     if [ -z "$_tool" ]; then
@@ -2143,42 +2158,16 @@ mec_reset() {
         exit 1
     fi
 
-    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE node20:MEC_IMAGE_NODE20 node22:MEC_IMAGE_NODE22 node24:MEC_IMAGE_NODE24 promptfoo:MEC_IMAGE_PROMPTFOO"
-    local _custom_tools="claude:MEC_IMAGE_CLAUDE dashboard:MEC_IMAGE_DASHBOARD playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
-    local _tool_version_vars="yarn-berry:MEC_YARN_BERRY_VERSION"
-    local _all_tools="$_public_tools $_custom_tools"
+    local _type
+    _type=$(_mec_tool_field "$_tool" type)
 
-    # Resolve variable name from all tools
-    local _var=""
-    for _entry in $_all_tools; do
-        if [ "${_entry%%:*}" = "$_tool" ]; then
-            _var="${_entry##*:}"
-            break
-        fi
-    done
-    if [ -z "$_var" ]; then
+    if [ -z "$_type" ]; then
         echo "Unknown tool: $_tool" >&2
         echo "Run 'mec list' to see available tools." >&2
         exit 1
     fi
 
-    # Also resolve secondary version var if defined for this tool
-    local _version_var=""
-    for _entry in $_tool_version_vars; do
-        if [ "${_entry%%:*}" = "$_tool" ]; then
-            _version_var="${_entry##*:}"
-            break
-        fi
-    done
-
-    local _user_images="${MEC_HOME}/images.conf"
-    if [ -f "$_user_images" ]; then
-        local _grep_pattern="^${_var}="
-        if [ -n "$_version_var" ]; then
-            _grep_pattern="${_grep_pattern}\|^${_version_var}="
-        fi
-        (grep -v "$_grep_pattern" "$_user_images" > "${_user_images}.tmp" || true) && mv "${_user_images}.tmp" "$_user_images"
-    fi
+    _mec_reset_tool "$_tool"
     echo "Reset $_tool to default"
 }
 
