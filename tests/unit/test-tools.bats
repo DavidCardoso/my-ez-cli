@@ -284,6 +284,47 @@ _load_mec_functions() {
     echo "$output" | grep 'terraform' | grep -q '1.12.0'
 }
 
+# --- mec list — version-aware display ---
+
+@test "mec list shows VERSION column header" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep -q 'VERSION'
+}
+
+@test "mec list shows terraform version from MEC_TERRAFORM_VERSION" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep 'terraform' | grep -q '1.14.5'
+}
+
+@test "mec list shows node version from MEC_NODE_VERSION" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep '^  node ' | grep -q '22-alpine'
+}
+
+@test "mec list shows [pinned] when tool is pinned in user images.conf" {
+    echo "MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.12.0" > "$MEC_HOME/images.conf"
+    echo "MEC_TERRAFORM_VERSION=1.12.0" >> "$MEC_HOME/images.conf"
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep 'terraform' | grep -q '\[pinned\]'
+}
+
+@test "mec list does not show [pinned] for unmodified tool" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep '^  aws ' | grep -qv '\[pinned\]'
+}
+
+@test "mec list shows internal service dashboard" {
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep -q 'dashboard'
+}
+
+@test "mec list shows [pinned] for internal service pinned to sha" {
+    echo "MEC_IMAGE_DASHBOARD=ghcr.io/my-ez-cli/dashboard:sha-abc1234" > "$MEC_HOME/images.conf"
+    echo "MEC_DASHBOARD_VERSION=sha-abc1234" >> "$MEC_HOME/images.conf"
+    run "$BASEDIR/bin/mec" list
+    echo "$output" | grep 'dashboard' | grep -q '\[pinned\]'
+}
+
 # --- mec update (pin public tool) ---
 
 @test "mec update with tag on custom tool exits non-zero" {

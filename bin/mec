@@ -1845,53 +1845,54 @@ EOF
 # ----------------------------------------------------------------------------
 
 mec_list() {
-    local _public_tools="aws:MEC_IMAGE_AWS terraform:MEC_IMAGE_TERRAFORM gcloud:MEC_IMAGE_GCLOUD python:MEC_IMAGE_PYTHON node:MEC_IMAGE_NODE promptfoo:MEC_IMAGE_PROMPTFOO"
-    local _custom_tools="claude:MEC_IMAGE_CLAUDE playwright:MEC_IMAGE_PLAYWRIGHT aws-sso-cred:MEC_IMAGE_AWS_SSO_CRED serverless:MEC_IMAGE_SERVERLESS speedtest:MEC_IMAGE_SPEEDTEST yarn-berry:MEC_IMAGE_YARN_BERRY yarn-plus:MEC_IMAGE_YARN_PLUS"
-    local _internal_services="dashboard:MEC_IMAGE_DASHBOARD ai-service:MEC_IMAGE_AI_SERVICE config-service:MEC_IMAGE_CONFIG_SERVICE"
-
-    local _b="" _r="" _dim=""
+    local _b="" _r="" _dim="" _green=""
     if [ -t 1 ]; then
         _b=$(printf '\033[1m')
         _r=$(printf '\033[0m')
         _dim=$(printf '\033[2m')
+        _green=$(printf '\033[32m')
     fi
 
+    local _user_images="${MEC_HOME}/images.conf"
+
+    _mec_list_section() {
+        local _section_type="$1"
+        local _header="$2"
+        local _hint="$3"
+
+        printf '\n'
+        printf '%s\n' "${_b}${_header}${_r}${_dim} — ${_hint}${_r}"
+        printf '  %-20s  %-16s  %s\n' "TOOL" "VERSION" "IMAGE"
+        printf '  %-20s  %-16s  %s\n' "----" "-------" "-----"
+
+        local _entry
+        for _entry in $_MEC_TOOL_REGISTRY; do
+            [ -z "$_entry" ] && continue
+            local _tool_name="${_entry%%:*}"
+            local _type
+            _type=$(echo "$_entry" | cut -d: -f2)
+            [ "$_type" != "$_section_type" ] && continue
+
+            local _image_var _version_var _image _version _pinned_marker
+            _image_var=$(echo "$_entry" | cut -d: -f3)
+            _version_var=$(echo "$_entry" | cut -d: -f4)
+            _image=$(eval echo "\${$_image_var}")
+            _version=$(eval echo "\${$_version_var}")
+            _pinned_marker=""
+
+            if [ -f "$_user_images" ] && grep -q "^${_image_var}=\|^${_version_var}=" "$_user_images" 2>/dev/null; then
+                _pinned_marker=" ${_green}[pinned]${_r}"
+            fi
+
+            printf '  %-20s  %-16s  %s%s\n' "$_tool_name" "$_version" "$_image" "$_pinned_marker"
+        done
+    }
+
     printf '%s\n' "${_b}Tools${_r}"
-    printf '\n'
-    printf '%s\n' "${_b}Public images${_r}${_dim} — mec update <tool> [image:tag] | mec reset <tool>${_r}"
-    printf '  %-20s  %s\n' "TOOL" "IMAGE"
-    printf '  %-20s  %s\n' "----" "-----"
-    for _entry in $_public_tools; do
-        local _tool="${_entry%%:*}"
-        local _var="${_entry##*:}"
-        local _image
-        _image=$(eval echo "\${$_var}")
-        printf '  %-20s  %s\n' "$_tool" "$_image"
-    done
 
-    printf '\n'
-    printf '%s\n' "${_b}MEC custom tools${_r}${_dim} — mec update <tool>[:<version>] | mec reset <tool>${_r}"
-    printf '  %-20s  %s\n' "TOOL" "IMAGE"
-    printf '  %-20s  %s\n' "----" "-----"
-    for _entry in $_custom_tools; do
-        local _tool="${_entry%%:*}"
-        local _var="${_entry##*:}"
-        local _image
-        _image=$(eval echo "\${$_var}")
-        printf '  %-20s  %s\n' "$_tool" "$_image"
-    done
-
-    printf '\n'
-    printf '%s\n' "${_b}MEC internal services${_r}${_dim} — mec update <service> | mec reset <service>${_r}"
-    printf '  %-20s  %s\n' "SERVICE" "IMAGE"
-    printf '  %-20s  %s\n' "-------" "-----"
-    for _entry in $_internal_services; do
-        local _tool="${_entry%%:*}"
-        local _var="${_entry##*:}"
-        local _image
-        _image=$(eval echo "\${$_var}")
-        printf '  %-20s  %s\n' "$_tool" "$_image"
-    done
+    _mec_list_section "public"   "Public images"         "mec update <tool> <version> | mec reset <tool>"
+    _mec_list_section "custom"   "MEC custom tools"      "mec update <tool>[:<version>] | mec reset <tool>"
+    _mec_list_section "internal" "MEC internal services" "mec update <service>[:<sha>] | mec reset <service>"
 }
 
 # _mec_resolve_latest_custom_version <slug>
