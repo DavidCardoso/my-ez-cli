@@ -1,6 +1,6 @@
-ARG MEC_YARN_PLUS_VERSION=${MEC_YARN_PLUS_VERSION:-22}
+ARG MEC_YARN_PLUS_BASE_VERSION=22
 
-FROM node:${MEC_YARN_PLUS_VERSION}-alpine
+FROM node:${MEC_YARN_PLUS_BASE_VERSION}-alpine
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="yarn-plus" \

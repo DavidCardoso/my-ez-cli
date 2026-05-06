@@ -14,7 +14,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/yarn-plus
   TOOL_NAME: yarn-plus
-  MEC_YARN_PLUS_VERSION: "22"
+  MEC_YARN_PLUS_VERSION: 1.22.22
+  MEC_YARN_PLUS_BASE_VERSION: "22"
 
 jobs:
   build:
@@ -49,7 +50,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ env.MEC_YARN_PLUS_VERSION }},enable=${{ github.ref_name == github.event.repository.default_branch && env.MEC_YARN_PLUS_VERSION != 'latest' }}
+            type=raw,value=${{ env.MEC_YARN_PLUS_VERSION }}-node${{ env.MEC_YARN_PLUS_BASE_VERSION }},enable=${{ github.ref_name == github.event.repository.default_branch && env.MEC_YARN_PLUS_VERSION != 'latest' }}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
@@ -65,7 +66,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            MEC_YARN_PLUS_VERSION=${{ env.MEC_YARN_PLUS_VERSION }}
+            MEC_YARN_PLUS_BASE_VERSION=${{ env.MEC_YARN_PLUS_BASE_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

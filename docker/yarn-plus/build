@@ -24,8 +24,13 @@ if [ -z "$IMAGE_TAG" ]; then
 fi
 
 if [ -z "$MEC_YARN_PLUS_VERSION" ]; then
-    MEC_YARN_PLUS_VERSION=22
+    MEC_YARN_PLUS_VERSION=1.22.22
     echo "MEC_YARN_PLUS_VERSION not set, using default: ${MEC_YARN_PLUS_VERSION}"
+fi
+
+if [ -z "$MEC_YARN_PLUS_BASE_VERSION" ]; then
+    MEC_YARN_PLUS_BASE_VERSION=22
+    echo "MEC_YARN_PLUS_BASE_VERSION not set, using default: ${MEC_YARN_PLUS_BASE_VERSION}"
 fi
 
 # Build options (use --load for local single-platform builds, --push for CI multi-platform)
@@ -45,18 +50,18 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
-echo "Node version: ${MEC_YARN_PLUS_VERSION}"
+echo "Yarn version: ${MEC_YARN_PLUS_VERSION} (Node base: ${MEC_YARN_PLUS_BASE_VERSION})"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
 _extra_tags=""
 if [ "$MEC_YARN_PLUS_VERSION" != "latest" ]; then
-    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_YARN_PLUS_VERSION}"
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_YARN_PLUS_VERSION}-node${MEC_YARN_PLUS_BASE_VERSION}"
 fi
 
 docker buildx build \
     ${BUILD_OPTS} \
-    --build-arg MEC_YARN_PLUS_VERSION=${MEC_YARN_PLUS_VERSION} \
+    --build-arg MEC_YARN_PLUS_BASE_VERSION=${MEC_YARN_PLUS_BASE_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
     ${_extra_tags} \
     .
