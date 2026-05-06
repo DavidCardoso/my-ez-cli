@@ -42,6 +42,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
+      - name: Resolve Playwright base tag
+        id: playwright_tag
+        run: |
+          if [ "${{ env.MEC_PLAYWRIGHT_VERSION }}" = "latest" ]; then
+            echo "base_tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_tag=v${{ env.MEC_PLAYWRIGHT_VERSION }}-jammy" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -65,7 +74,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            MEC_PLAYWRIGHT_VERSION=${{ env.MEC_PLAYWRIGHT_VERSION }}
+            MEC_PLAYWRIGHT_BASE_TAG=${{ steps.playwright_tag.outputs.base_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
