@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/playwright
   TOOL_NAME: playwright
+  MEC_PLAYWRIGHT_VERSION: latest
 
 jobs:
   build:
@@ -48,6 +49,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.MEC_PLAYWRIGHT_VERSION }},enable={{is_default_branch}}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
@@ -62,6 +64,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            MEC_PLAYWRIGHT_VERSION=${{ env.MEC_PLAYWRIGHT_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
