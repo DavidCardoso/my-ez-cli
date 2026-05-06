@@ -49,7 +49,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ env.MEC_SPEEDTEST_VERSION }},enable={{is_default_branch}}
+            type=raw,value=${{ env.MEC_SPEEDTEST_VERSION }},enable=${{ github.ref_name == github.event.repository.default_branch && env.MEC_SPEEDTEST_VERSION != 'latest' }}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
