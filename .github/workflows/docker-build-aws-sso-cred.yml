@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/aws-sso-cred
   TOOL_NAME: aws-sso-cred
+  MEC_AWS_SSO_CRED_VERSION: 2.15.0
 
 jobs:
   build:
@@ -48,6 +49,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.MEC_AWS_SSO_CRED_VERSION }},enable=${{ github.ref_name == github.event.repository.default_branch && env.MEC_AWS_SSO_CRED_VERSION != 'latest' }}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
@@ -62,6 +64,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            AWS_CLI_VERSION=${{ env.MEC_AWS_SSO_CRED_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
