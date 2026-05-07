@@ -1972,6 +1972,29 @@ _mec_validate_public_image() {
     return 0
 }
 
+# _mec_validate_custom_image <image> <version>
+# Runs the image with its default entrypoint and checks that <version> appears
+# in the output. Returns 0 on success, 1 on failure (pin aborted).
+_mec_validate_custom_image() {
+    local _image="$1" _version="$2"
+
+    printf '[mec] Validating image %s ... ' "$_image" >&2
+    local _out
+    if ! _out=$(docker run --rm "$_image" --version 2>&1); then
+        echo "FAILED" >&2
+        echo "[mec] '$_image --version' exited non-zero. Pin aborted." >&2
+        return 1
+    fi
+    if ! echo "$_out" | grep -qF "$_version"; then
+        echo "FAILED" >&2
+        echo "[mec] Version '$_version' not found in output: $_out" >&2
+        echo "[mec] Pin aborted for safety." >&2
+        return 1
+    fi
+    echo "ok" >&2
+    return 0
+}
+
 # ----------------------------------------------------------------------------
 # Update Handlers (typed by tool category)
 # ----------------------------------------------------------------------------
@@ -2046,20 +2069,9 @@ _mec_update_custom() {
 
     _image="${MEC_IMAGE_REPO}/${_slug}:${_version}"
 
-    printf '[mec] Validating image %s ... ' "$_image" >&2
-    local _out
-    if ! _out=$(docker run --rm "$_image" --version 2>&1); then
-        echo "FAILED" >&2
-        echo "[mec] '$_image --version' exited non-zero. Pin aborted." >&2
+    if ! _mec_validate_custom_image "$_image" "$_version"; then
         exit 1
     fi
-    if ! echo "$_out" | grep -qF "$_version"; then
-        echo "FAILED" >&2
-        echo "[mec] Version '$_version' not found in output: $_out" >&2
-        echo "[mec] Pin aborted for safety." >&2
-        exit 1
-    fi
-    echo "ok" >&2
 
     _mec_write_pin "$_image_var" "$_image" "$_version_var" "$_version"
     echo "Pinned $_tool to $_version"
