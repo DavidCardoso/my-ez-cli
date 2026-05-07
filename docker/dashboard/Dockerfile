@@ -1,7 +1,7 @@
 # ===========================================================================
 # Stage 1: Build Vue 3 + PrimeVue frontend
 # ===========================================================================
-FROM node:25-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 
 WORKDIR /frontend
 
