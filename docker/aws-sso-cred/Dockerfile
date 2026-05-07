@@ -1,4 +1,4 @@
-FROM node:25-alpine
+FROM node:26-alpine
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="aws-sso-cred" \
