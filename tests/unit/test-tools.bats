@@ -377,6 +377,22 @@ EOF
     ! grep -q 'MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.15.0' "$MEC_HOME/images.conf" 2>/dev/null
 }
 
+@test "mec update public tool: validation rejects mismatched version in output" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    # docker run returns a version string for a DIFFERENT version
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "run" ]; then echo "Terraform v1.14.0"; exit 0; fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update terraform 1.15.0
+    [ "$status" -ne 0 ]
+    ! grep -q 'MEC_IMAGE_TERRAFORM=hashicorp/terraform:1.15.0' "$MEC_HOME/images.conf" 2>/dev/null
+}
+
 @test "mec update custom tool with explicit version writes both vars" {
     export PATH="$BATS_TMPDIR/mock_bin:$PATH"
     mkdir -p "$BATS_TMPDIR/mock_bin"

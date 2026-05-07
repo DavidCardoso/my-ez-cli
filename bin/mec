@@ -1927,12 +1927,14 @@ _mec_resolve_latest_custom_version() {
     printf '%s' "$_latest"
 }
 
-# _mec_validate_public_image <tool> <image>
+# _mec_validate_public_image <tool> <image> [version]
 # Returns 0 if the image contains the expected tool binary with recognizable output.
+# When <version> is supplied, the version string must appear in the output.
 # Prints a warning and returns 1 on failure — pin is aborted for safety.
 _mec_validate_public_image() {
     local _tool="$1"
     local _image="$2"
+    local _version="${3:-}"
 
     # "tool:binary:expected-substring-in-version-output"
     local _validators="aws:aws:aws-cli terraform:terraform:Terraform node:node:v node20:node:v node22:node:v node24:node:v gcloud:gcloud:Google Cloud SDK python:python:Python promptfoo:promptfoo:promptfoo"
@@ -1951,6 +1953,15 @@ _mec_validate_public_image() {
         return 0
     fi
 
+    # When the caller supplies an exact version, validate against it.
+    # Otherwise fall back to the static tool-presence substring.
+    local _grep_pattern
+    if [ -n "$_version" ]; then
+        _grep_pattern="$_version"
+    else
+        _grep_pattern="$_expected"
+    fi
+
     printf '[mec] Validating image %s contains %s ... ' "$_image" "$_tool" >&2
     local _out
     if ! _out=$(docker run --rm --entrypoint "" "$_image" "$_binary" --version 2>&1); then
@@ -1960,9 +1971,9 @@ _mec_validate_public_image() {
         return 1
     fi
 
-    if ! echo "$_out" | grep -qi "$_expected"; then
+    if ! echo "$_out" | grep -qF "$_grep_pattern"; then
         echo "FAILED" >&2
-        echo "[mec] WARNING: Expected '$_expected' in output of '$_binary --version' but got:" >&2
+        echo "[mec] WARNING: Expected '$_grep_pattern' in output of '$_binary --version' but got:" >&2
         echo "  $_out" >&2
         echo "[mec] This image may not be a valid '$_tool' image. Pin aborted for safety." >&2
         return 1
@@ -2078,7 +2089,7 @@ _mec_update_public() {
     _base_image=$(eval echo "\${$_image_var}" | sed 's|:.*||')
     _image="${_base_image}:${_version}"
 
-    if ! _mec_validate_public_image "$_tool" "$_image"; then
+    if ! _mec_validate_public_image "$_tool" "$_image" "$_version"; then
         exit 1
     fi
 
