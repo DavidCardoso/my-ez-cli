@@ -400,6 +400,15 @@ EOF
     cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
 #!/bin/sh
 if [ "$1" = "pull" ]; then exit 0; fi
+if [ "$1" = "inspect" ]; then
+    # Return label value based on --format argument
+    case "$3" in
+        *"com.my-ez-cli.tool"*) echo "dashboard" ;;
+        *"org.opencontainers.image.revision"*) echo "18d92e9abc123" ;;
+        *) echo "" ;;
+    esac
+    exit 0
+fi
 exit 0
 EOF
     chmod +x "$BATS_TMPDIR/mock_bin/docker"
@@ -408,6 +417,51 @@ EOF
     [ "$status" -eq 0 ]
     grep -q 'MEC_IMAGE_DASHBOARD=ghcr.io/my-ez-cli/dashboard:sha-18d92e9' "$MEC_HOME/images.conf"
     grep -q 'MEC_DASHBOARD_VERSION=sha-18d92e9' "$MEC_HOME/images.conf"
+}
+
+@test "mec update internal service aborts when tool label does not match" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "pull" ]; then exit 0; fi
+if [ "$1" = "inspect" ]; then
+    case "$3" in
+        *"com.my-ez-cli.tool"*) echo "some-other-tool" ;;
+        *) echo "" ;;
+    esac
+    exit 0
+fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update dashboard:sha-18d92e9
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -qi 'aborted'
+}
+
+@test "mec update internal service aborts when sha does not match revision label" {
+    export PATH="$BATS_TMPDIR/mock_bin:$PATH"
+    mkdir -p "$BATS_TMPDIR/mock_bin"
+    cat > "$BATS_TMPDIR/mock_bin/docker" <<'EOF'
+#!/bin/sh
+if [ "$1" = "pull" ]; then exit 0; fi
+if [ "$1" = "inspect" ]; then
+    case "$3" in
+        *"com.my-ez-cli.tool"*) echo "dashboard" ;;
+        *"org.opencontainers.image.revision"*) echo "deadbeefcafe" ;;
+        *) echo "" ;;
+    esac
+    exit 0
+fi
+exit 0
+EOF
+    chmod +x "$BATS_TMPDIR/mock_bin/docker"
+
+    run "$BASEDIR/bin/mec" update dashboard:sha-18d92e9
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -qi 'aborted'
 }
 
 @test "mec update unknown tool exits non-zero" {

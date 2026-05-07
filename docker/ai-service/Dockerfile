@@ -2,8 +2,7 @@ FROM python:3.14-alpine
 
 # Metadata
 LABEL com.my-ez-cli.project="my-ez-cli"
-LABEL com.my-ez-cli.component="ai-service"
-LABEL com.my-ez-cli.version="1.0.0"
+LABEL com.my-ez-cli.tool="ai-service"
 LABEL org.opencontainers.image.source="https://github.com/DavidCardoso/my-ez-cli"
 LABEL org.opencontainers.image.description="I/O filtering and middleware service for My Ez CLI"
 LABEL org.opencontainers.image.licenses="MIT"

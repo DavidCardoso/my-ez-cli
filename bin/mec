@@ -1999,6 +1999,50 @@ _mec_validate_custom_image() {
 # Update Handlers (typed by tool category)
 # ----------------------------------------------------------------------------
 
+# _mec_validate_internal_image <image> <slug> <version>
+# Pulls the image, then inspects its labels to verify:
+#   1. com.my-ez-cli.tool matches <slug> (image is the right service)
+#   2. If <version> is sha-<hash>, org.opencontainers.image.revision starts
+#      with <hash> (image matches the commit the user intended to pin)
+# Returns 0 on success, 1 on failure (pin aborted).
+_mec_validate_internal_image() {
+    local _image="$1" _slug="$2" _version="$3"
+
+    printf '[mec] Pulling %s for validation ... ' "$_image" >&2
+    if ! docker pull "$_image" >/dev/null 2>&1; then
+        echo "FAILED" >&2
+        echo "[mec] Could not pull '$_image'. Pin aborted." >&2
+        return 1
+    fi
+    echo "done" >&2
+
+    printf '[mec] Validating image labels ... ' >&2
+
+    local _label_tool
+    _label_tool=$(docker inspect --format '{{ index .Config.Labels "com.my-ez-cli.tool" }}' "$_image" 2>/dev/null)
+    if [ "$_label_tool" != "$_slug" ]; then
+        echo "FAILED" >&2
+        echo "[mec] Label com.my-ez-cli.tool='$_label_tool' does not match expected '$_slug'." >&2
+        echo "[mec] This image may not be a legitimate mec '$_slug' image. Pin aborted." >&2
+        return 1
+    fi
+
+    if echo "$_version" | grep -q '^sha-'; then
+        local _hash="${_version#sha-}"
+        local _revision
+        _revision=$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$_image" 2>/dev/null)
+        if ! echo "$_revision" | grep -qi "^${_hash}"; then
+            echo "FAILED" >&2
+            echo "[mec] Image revision '$_revision' does not start with expected hash '$_hash'." >&2
+            echo "[mec] Pin aborted for safety." >&2
+            return 1
+        fi
+    fi
+
+    echo "ok" >&2
+    return 0
+}
+
 # _mec_write_pin <image_var> <image_value> <version_var> <version_value>
 # Writes or replaces both pin lines in $MEC_HOME/images.conf atomically.
 _mec_write_pin() {
@@ -2097,11 +2141,12 @@ _mec_update_internal() {
 
     _image="${MEC_IMAGE_REPO}/${_slug}:${_version}"
 
+    if ! _mec_validate_internal_image "$_image" "$_slug" "$_version"; then
+        exit 1
+    fi
+
     _mec_write_pin "$_image_var" "$_image" "$_version_var" "$_version"
     echo "Pinned $_tool to $_version"
-
-    printf '  Pulling %s ... ' "$_image"
-    if docker pull "$_image" >/dev/null 2>&1; then echo "done"; else echo "FAILED"; fi
 }
 
 # ----------------------------------------------------------------------------

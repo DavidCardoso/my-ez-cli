@@ -2,8 +2,7 @@ FROM python:3.14-alpine
 
 # Metadata
 LABEL com.my-ez-cli.project="my-ez-cli"
-LABEL com.my-ez-cli.component="config-service"
-LABEL com.my-ez-cli.version="1.0.0"
+LABEL com.my-ez-cli.tool="config-service"
 LABEL org.opencontainers.image.source="https://github.com/DavidCardoso/my-ez-cli"
 LABEL org.opencontainers.image.description="YAML config read/write service for My Ez CLI"
 LABEL org.opencontainers.image.licenses="MIT"
