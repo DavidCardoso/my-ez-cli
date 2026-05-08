@@ -1,4 +1,4 @@
-FROM node:25-slim
+FROM node:26-slim
 
 # Metadata
 LABEL com.my-ez-cli.project="my-ez-cli"
