@@ -23,9 +23,9 @@ if [ -z "$IMAGE_TAG" ]; then
     echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
-if [ -z "$SPEEDTEST_VERSION" ]; then
-    SPEEDTEST_VERSION=1.2.0
-    echo "SPEEDTEST_VERSION not set, using default: ${SPEEDTEST_VERSION}"
+if [ -z "$MEC_SPEEDTEST_VERSION" ]; then
+    MEC_SPEEDTEST_VERSION=1.2.0
+    echo "MEC_SPEEDTEST_VERSION not set, using default: ${MEC_SPEEDTEST_VERSION}"
 fi
 
 # Build options (use --load for local single-platform builds, --push for CI multi-platform)
@@ -45,11 +45,18 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
+echo "Speedtest version: ${MEC_SPEEDTEST_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
+_extra_tags=""
+if [ "$MEC_SPEEDTEST_VERSION" != "latest" ]; then
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_SPEEDTEST_VERSION}"
+fi
+
 docker buildx build \
     ${BUILD_OPTS} \
-    --build-arg VERSION=${SPEEDTEST_VERSION} \
+    --build-arg MEC_SPEEDTEST_VERSION=${MEC_SPEEDTEST_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    ${_extra_tags} \
     .

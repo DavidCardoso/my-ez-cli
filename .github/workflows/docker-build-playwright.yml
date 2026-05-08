@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/playwright
   TOOL_NAME: playwright
+  MEC_PLAYWRIGHT_VERSION: latest
 
 jobs:
   build:
@@ -41,6 +42,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
+      - name: Resolve Playwright base tag
+        id: playwright_tag
+        run: |
+          if [ "${{ env.MEC_PLAYWRIGHT_VERSION }}" = "latest" ]; then
+            echo "base_tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_tag=v${{ env.MEC_PLAYWRIGHT_VERSION }}-jammy" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -48,6 +58,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.MEC_PLAYWRIGHT_VERSION }},enable=${{ github.ref_name == github.event.repository.default_branch && env.MEC_PLAYWRIGHT_VERSION != 'latest' }}
             type=ref,event=branch
             type=raw,value=sha-{{sha}}
             type=semver,pattern={{version}}
@@ -62,6 +73,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            MEC_PLAYWRIGHT_BASE_TAG=${{ steps.playwright_tag.outputs.base_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

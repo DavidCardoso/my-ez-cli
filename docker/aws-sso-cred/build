@@ -23,9 +23,9 @@ if [ -z "$IMAGE_TAG" ]; then
     echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
-if [ -z "$AWS_CLI_VERSION" ]; then
-    AWS_CLI_VERSION=2.15.0
-    echo "AWS_CLI_VERSION not set, using default: ${AWS_CLI_VERSION}"
+if [ -z "$MEC_AWS_SSO_CRED_VERSION" ]; then
+    MEC_AWS_SSO_CRED_VERSION=2.15.0
+    echo "MEC_AWS_SSO_CRED_VERSION not set, using default: ${MEC_AWS_SSO_CRED_VERSION}"
 fi
 
 # Build options (use --load for local single-platform builds, --push for CI multi-platform)
@@ -45,11 +45,18 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
+echo "AWS CLI version: ${MEC_AWS_SSO_CRED_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
+_extra_tags=""
+if [ "$MEC_AWS_SSO_CRED_VERSION" != "latest" ]; then
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_AWS_SSO_CRED_VERSION}"
+fi
+
 docker buildx build \
     ${BUILD_OPTS} \
-    --build-arg AWS_CLI_VERSION=${AWS_CLI_VERSION} \
+    --build-arg AWS_CLI_VERSION=${MEC_AWS_SSO_CRED_VERSION} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    ${_extra_tags} \
     .

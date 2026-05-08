@@ -71,9 +71,9 @@ if [ -z "$IMAGE_TAG" ]; then
     echo "IMAGE_TAG not set, using default: ${IMAGE_TAG}"
 fi
 
-if [ -z "$CLAUDE_CODE_VERSION" ]; then
-    CLAUDE_CODE_VERSION=latest
-    echo "CLAUDE_CODE_VERSION not set, using default: ${CLAUDE_CODE_VERSION}"
+if [ -z "$MEC_CLAUDE_VERSION" ]; then
+    MEC_CLAUDE_VERSION=latest
+    echo "MEC_CLAUDE_VERSION not set, using default: ${MEC_CLAUDE_VERSION}"
 fi
 
 # Build options (use --load for local single-platform builds, --push for CI multi-platform)
@@ -93,15 +93,21 @@ fi
 echo "=========================================================="
 echo "Building '${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG}'..."
 echo "Platform: ${PLATFORM}"
-echo "Claude Code version: ${CLAUDE_CODE_VERSION}"
+echo "Claude Code version: ${MEC_CLAUDE_VERSION}"
 echo "Build options: ${BUILD_OPTS}"
 echo "=========================================================="
 
 cd "$SCRIPT_DIR"
 
+_extra_tags=""
+if [ "$MEC_CLAUDE_VERSION" != "latest" ]; then
+    _extra_tags="--tag ${IMAGE_REPO}/${IMAGE_TOOL}:${MEC_CLAUDE_VERSION}"
+fi
+
 docker buildx build \
     ${BUILD_OPTS} \
-    --build-arg CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION} \
+    --build-arg MEC_CLAUDE_VERSION=${MEC_CLAUDE_VERSION} \
     --build-arg TZ=${TZ} \
     --tag ${IMAGE_REPO}/${IMAGE_TOOL}:${IMAGE_TAG} \
+    ${_extra_tags} \
     .

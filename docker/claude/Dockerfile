@@ -41,9 +41,9 @@ RUN mkdir -p /workspace "$HOME/.claude" && \
     echo '{}' > "$HOME/.claude.json"
 
 # Install Claude Code CLI via Anthropic's official install script (runs as root)
-ARG CLAUDE_CODE_VERSION=latest
+ARG MEC_CLAUDE_VERSION=latest
 # hadolint ignore=DL3059,DL4006,SC2086
-RUN curl -fsSL https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_VERSION}
+RUN curl -fsSL https://claude.ai/install.sh | bash -s ${MEC_CLAUDE_VERSION}
 
 # Update npm to latest to remediate bundled dependency CVEs
 # (minimatch, picomatch, tar in /usr/lib/node_modules/npm/node_modules/)

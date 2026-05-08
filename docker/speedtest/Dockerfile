@@ -7,7 +7,7 @@ LABEL com.my-ez-cli.project="my-ez-cli" \
       org.opencontainers.image.authors="David Cardoso <dev+github@davidcardoso.me>" \
       org.opencontainers.image.source="https://github.com/davidcardoso/my-ez-cli"
 
-ARG VERSION=1.2.0
+ARG MEC_SPEEDTEST_VERSION=1.2.0
 
 # Install speedtest binary only
 # hadolint ignore=DL3018,DL4006,SC2086
@@ -19,7 +19,7 @@ RUN apk add --no-cache ca-certificates && \
     armv7)  _arch=armhf     ;; \
     *)      _arch="$ARCH"   ;; \
     esac && \
-    curl -sSL https://install.speedtest.net/app/cli/ookla-speedtest-${VERSION}-linux-${_arch}.tgz | tar xz -C /tmp && \
+    curl -sSL https://install.speedtest.net/app/cli/ookla-speedtest-${MEC_SPEEDTEST_VERSION}-linux-${_arch}.tgz | tar xz -C /tmp && \
     mv /tmp/speedtest /usr/local/bin/ && \
     chmod +x /usr/local/bin/speedtest && \
     rm -rf /tmp/* && \

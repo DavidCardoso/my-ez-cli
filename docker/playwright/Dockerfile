@@ -1,4 +1,5 @@
-FROM mcr.microsoft.com/playwright:v1.59.1-jammy
+ARG MEC_PLAYWRIGHT_BASE_TAG=v1.59.1-jammy
+FROM mcr.microsoft.com/playwright:${MEC_PLAYWRIGHT_BASE_TAG}
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="playwright" \

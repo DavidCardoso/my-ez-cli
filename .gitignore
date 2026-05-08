@@ -34,3 +34,4 @@ data/
 .claude/*.local.json
 .claude/worktrees/
 .worktrees/
+docs/superpowers/

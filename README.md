@@ -42,7 +42,7 @@ CLI tools over Docker — managed by `mec`.
   - [Google Cloud CLI](#google-cloud-cli)
   - [Playwright](#playwright)
   - [Promptfoo](#promptfoo)
-  - [Claude Code (tool)](#claude-code-tool)
+  - [Claude Code (tool)](#claude-code)
 - [Author](#author)
 - [Contributors](#contributors)
 
@@ -339,8 +339,10 @@ For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATIO
 
 ## Tools
 
+### AWS CLI
+
 <details>
-<summary><strong>AWS CLI</strong></summary>
+<summary>Show commands</summary>
 
 > See [more](config/aws).
 
@@ -385,8 +387,12 @@ aws-saml-okta login --profile saml
 
 </details>
 
+### Python
+
+_default: 3.12.4_
+
 <details>
-<summary><strong>Python</strong> — default: 3.12.4</summary>
+<summary>Show commands</summary>
 
 ```shell
 python --version
@@ -401,8 +407,12 @@ PYENV_VERSION=3.9.19 python main.py
 
 </details>
 
+### NodeJS
+
+_default: Node 22 LTS_
+
 <details>
-<summary><strong>Node.js</strong> — default: Node 24 LTS</summary>
+<summary>Show commands</summary>
 
 ```shell
 node -v
@@ -440,8 +450,12 @@ registry=https://private.npm.registry.com/
 
 </details>
 
+### NPM
+
+_default: Node 22_
+
 <details>
-<summary><strong>NPM</strong> — default: Node 24</summary>
+<summary>Show commands</summary>
 
 ```shell
 npm -v
@@ -450,23 +464,31 @@ npm install some-pkg --save-dev
 npm install -g another-pkg
 ```
 
-Version suffixes: `npm20`, `npm22`
+Version suffixes: `npm20`, `npm22`, `npm24`
 
 </details>
 
+### NPX
+
+_default: Node 22_
+
 <details>
-<summary><strong>NPX</strong> — default: Node 24</summary>
+<summary>Show commands</summary>
 
 ```shell
 npx cowsay "Hello!"
 ```
 
-Version suffixes: `npx20`, `npx22`
+Version suffixes: `npx20`, `npx22`, `npx24`
 
 </details>
 
+### Yarn
+
+_default: Node 22_
+
 <details>
-<summary><strong>Yarn</strong> — default: Node 24</summary>
+<summary>Show commands</summary>
 
 ```shell
 yarn -v
@@ -475,7 +497,7 @@ yarn add some-pkg --dev
 yarn global add another-pkg
 ```
 
-Version suffixes: `yarn20`, `yarn22`
+Version suffixes: `yarn20`, `yarn22`, `yarn24`
 
 **Yarn Berry (v2+)**:
 
@@ -491,8 +513,12 @@ yarn-plus install
 
 </details>
 
+### Serverless Framework
+
+_AWS-ready_
+
 <details>
-<summary><strong>Serverless Framework</strong> — AWS-ready</summary>
+<summary>Show commands</summary>
 
 > [Docker image details](docker/serverless) · [Docs](https://www.serverless.com/framework/docs/getting-started)
 
@@ -505,8 +531,10 @@ serverless logs -f hello --tail
 
 </details>
 
+### Terraform
+
 <details>
-<summary><strong>Terraform</strong></summary>
+<summary>Show commands</summary>
 
 > **Important**: ensure correct credentials/roles before running any command.
 > [AWS modules registry](https://registry.terraform.io/browse/modules?provider=aws)
@@ -530,8 +558,10 @@ terraform destroy
 
 </details>
 
+### Ookla Speedtest CLI
+
 <details>
-<summary><strong>Ookla Speedtest CLI</strong></summary>
+<summary>Show commands</summary>
 
 > [Docker image details](docker/speedtest/README.md)
 
@@ -541,8 +571,10 @@ speedtest
 
 </details>
 
+### Google Cloud CLI
+
 <details>
-<summary><strong>Google Cloud CLI</strong></summary>
+<summary>Show commands</summary>
 
 > [gcloud CLI overview](https://cloud.google.com/sdk/gcloud)
 
@@ -554,8 +586,10 @@ gcloud storage ls
 
 </details>
 
+### Playwright
+
 <details>
-<summary><strong>Playwright</strong></summary>
+<summary>Show commands</summary>
 
 > [Official documentation](https://playwright.dev/docs/docker)
 
@@ -579,8 +613,12 @@ npm install                        # install @playwright/test in your project
 
 </details>
 
+### Promptfoo
+
+_LLM evaluation tool_
+
 <details>
-<summary><strong>Promptfoo</strong> — LLM evaluation tool</summary>
+<summary>Show commands</summary>
 
 > [Official docs](https://www.promptfoo.dev/docs/getting-started)
 
@@ -602,8 +640,12 @@ open http://localhost:33333
 
 </details>
 
+### Claude Code
+
+_AI coding assistant_
+
 <details>
-<summary><strong>Claude Code</strong> — AI coding assistant</summary>
+<summary>Show commands</summary>
 
 > Requires authentication — see [docker/claude/README.md](./docker/claude/README.md#authentication)
 
