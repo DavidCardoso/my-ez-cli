@@ -1,0 +1,43 @@
+{
+  "Results": [
+    {
+      "Target": "alpine:latest (alpine 3.19.0)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2025-68973",
+          "PkgName": "gnupg",
+          "SrcName": "gnupg2",
+          "InstalledVersion": "2.2.27-r0",
+          "FixedVersion": "2.2.27-r1",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-68973",
+          "PkgName": "gpg",
+          "SrcName": "gnupg2",
+          "InstalledVersion": "2.2.27-r0",
+          "FixedVersion": "2.2.27-r1",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-68973",
+          "PkgName": "gpgv",
+          "SrcName": "gnupg2",
+          "InstalledVersion": "2.2.27-r0",
+          "FixedVersion": "",
+          "Severity": "HIGH"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-99999",
+          "PkgName": "openssl",
+          "SrcName": "openssl",
+          "InstalledVersion": "3.1.0",
+          "FixedVersion": "",
+          "Severity": "CRITICAL"
+        }
+      ]
+    }
+  ]
+}

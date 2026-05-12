@@ -1,0 +1,27 @@
+{
+  "Results": [
+    {
+      "Target": "alpine:latest (alpine 3.19.0)",
+      "Class": "os-pkgs",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-12345",
+          "PkgName": "libxml2",
+          "SrcName": "libxml2",
+          "InstalledVersion": "2.10.3-r1",
+          "FixedVersion": "2.10.4-r0",
+          "Severity": "MEDIUM"
+        },
+        {
+          "VulnerabilityID": "CVE-2023-67890",
+          "PkgName": "zlib",
+          "SrcName": "zlib",
+          "InstalledVersion": "1.2.13-r0",
+          "FixedVersion": "1.2.13-r1",
+          "Severity": "LOW"
+        }
+      ]
+    }
+  ]
+}
