@@ -69,7 +69,7 @@ jobs:
           vuln-type: os,library
 
       - name: Upload JSON artifacts for triage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trivy-json-${{ matrix.tool }}
           path: |

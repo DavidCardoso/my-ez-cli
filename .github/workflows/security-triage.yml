@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Find latest security-scan run
         id: scan-run
@@ -46,7 +46,7 @@ jobs:
           echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
 
       - name: Download Trivy artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: trivy-json-${{ matrix.tool }}
           path: /tmp/trivy
