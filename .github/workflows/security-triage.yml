@@ -1,0 +1,95 @@
+name: Security Triage
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'   # Monday 4:00 AM UTC (after Sunday's security-scan.yml)
+  workflow_dispatch:
+
+jobs:
+  triage:
+    name: Triage — ${{ matrix.tool }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+          - ai-service
+          - aws-sso-cred
+          - claude
+          - config-service
+          - dashboard
+          - playwright
+          - serverless
+          - speedtest
+          - yarn-berry
+          - yarn-plus
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find latest security-scan run
+        id: scan-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow security-scan.yml \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Download Trivy artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-json-${{ matrix.tool }}
+          path: /tmp/trivy
+          run-id: ${{ steps.scan-run.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Triage image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TOOL: ${{ matrix.tool }}
+        run: |
+          .github/scripts/security/triage-image.sh \
+            --tool "${TOOL}" \
+            --input /tmp/trivy
+          .github/scripts/security/upsert-issue.sh \
+            --tool "${TOOL}" \
+            --tier 2 \
+            --body "/tmp/tier2-${TOOL}.md"
+          .github/scripts/security/upsert-issue.sh \
+            --tool "${TOOL}" \
+            --tier 3 \
+            --body "/tmp/tier3-${TOOL}.md"
+
+  summary:
+    name: Triage Summary
+    runs-on: ubuntu-latest
+    needs: triage
+    if: always()
+    steps:
+      - name: Summary
+        env:
+          TRIAGE_RESULT: ${{ needs.triage.result }}
+        run: |
+          echo "## Security Triage Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Processed all mec custom images. Tracking issues updated in the Issues tab." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Issue type | Label | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|-------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`[security-watch]\` | priority:watch | HIGH/CRITICAL unfixable — watched for upstream fix |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`[security-triage]\` | priority:normal | MEDIUM/LOW fixable — addressed opportunistically |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Note |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Triage job result: ${TRIAGE_RESULT} | See individual job logs for details |" >> $GITHUB_STEP_SUMMARY

@@ -394,10 +394,28 @@ jobs:
         run: |
           bats tests/integration/*.bats
 
+  # Security scripts unit tests — bats, no Docker needed
+  unit-tests-security-scripts:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install bats-core
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run security-scripts unit tests
+        run: |
+          bats tests/security-scripts/test-group-cves.bats
+          bats tests/security-scripts/test-triage-image.bats
+
   # Summary job - aggregate results
   summary:
     runs-on: ubuntu-latest
-    needs: [smoke-tests, unit-tests, unit-tests-config-service, unit-tests-dashboard-api, unit-tests-dashboard-frontend, e2e-tests-dashboard, integration-tests]
+    needs: [smoke-tests, unit-tests, unit-tests-config-service, unit-tests-dashboard-api, unit-tests-dashboard-frontend, e2e-tests-dashboard, integration-tests, unit-tests-security-scripts]
     if: always()
     steps:
       - name: Test Summary
@@ -412,6 +430,7 @@ jobs:
           echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests (dashboard-api) | ${{ needs.unit-tests-dashboard-api.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests (dashboard-frontend) | ${{ needs.unit-tests-dashboard-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests (security-scripts) | ${{ needs.unit-tests-security-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E Tests (dashboard) | ${{ needs.e2e-tests-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY

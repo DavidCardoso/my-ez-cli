@@ -14,7 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ghcr.io/my-ez-cli/playwright
   TOOL_NAME: playwright
-  MEC_PLAYWRIGHT_VERSION: latest
+  MEC_PLAYWRIGHT_VERSION: 1.60.0
 
 jobs:
   build:
@@ -85,9 +85,13 @@ jobs:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: 'sarif'
           output: 'trivy-results-playwright.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
       - name: Upload Trivy results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results-playwright.sarif'
+          category: trivy-playwright-build

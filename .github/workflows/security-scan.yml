@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -27,18 +28,54 @@ jobs:
           - yarn-plus
 
     steps:
-      - name: Run Trivy vulnerability scanner
+      # Tier 1 — HIGH/CRITICAL fixable → SARIF → GitHub Security tab
+      - name: Trivy — HIGH/CRITICAL fixable (SARIF)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/my-ez-cli/${{ matrix.tool }}:latest
-          format: 'sarif'
-          output: trivy-results-${{ matrix.tool }}.sarif
+          format: sarif
+          output: trivy-tier1-${{ matrix.tool }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          vuln-type: os,library
 
-      - name: Upload Trivy results to GitHub Security tab
+      - name: Upload SARIF to Security tab
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: trivy-results-${{ matrix.tool }}.sarif
+          sarif_file: trivy-tier1-${{ matrix.tool }}.sarif
           category: trivy-${{ matrix.tool }}
+
+      # Full HIGH/CRITICAL scan (fixable + unfixable) → JSON
+      # Triage workflow diffs this against the SARIF above to derive Tier 2 (unfixable)
+      - name: Trivy — HIGH/CRITICAL full (JSON)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/my-ez-cli/${{ matrix.tool }}:latest
+          format: json
+          output: trivy-high-full-${{ matrix.tool }}.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          vuln-type: os,library
+
+      # Tier 3 — MEDIUM/LOW fixable → JSON → triage workflow creates tracking issue
+      - name: Trivy — MEDIUM/LOW fixable (JSON)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/my-ez-cli/${{ matrix.tool }}:latest
+          format: json
+          output: trivy-tier3-${{ matrix.tool }}.json
+          severity: MEDIUM,LOW
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Upload JSON artifacts for triage
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-json-${{ matrix.tool }}
+          path: |
+            trivy-high-full-${{ matrix.tool }}.json
+            trivy-tier3-${{ matrix.tool }}.json
+          retention-days: 30
 
   summary:
     name: Security Scan Summary
@@ -47,11 +84,20 @@ jobs:
     if: always()
     steps:
       - name: Summary
+        env:
+          SCAN_RESULT: ${{ needs.scan.result }}
         run: |
           echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Trivy scanned all 10 GHCR images. Check the Security tab for findings." >> $GITHUB_STEP_SUMMARY
+          echo "Trivy scanned all mec custom images. Check the Security tab for Tier 1 findings (HIGH/CRITICAL fixable)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tier | Coverage | Destination |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1 | HIGH/CRITICAL, fixable | GitHub Security tab (SARIF) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2 | HIGH/CRITICAL, unfixable | Artifact → weekly triage issues |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3 | MEDIUM/LOW, fixable | Artifact → weekly triage issues |" >> $GITHUB_STEP_SUMMARY
+          echo "| 4+ | MEDIUM/LOW, unfixable / informational | Not tracked |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Status | Note |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Scan job result: ${{ needs.scan.result }} | See individual job logs for details |" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan job result: ${SCAN_RESULT} | See individual job logs for details |" >> $GITHUB_STEP_SUMMARY

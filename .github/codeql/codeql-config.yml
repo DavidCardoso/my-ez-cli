@@ -1,0 +1,7 @@
+name: CodeQL config
+
+paths-ignore:
+  - 'services/*/tests/**'
+  - 'services/dashboard/frontend/tests/**'
+  - 'tests/**'
+  - '**/node_modules/**'

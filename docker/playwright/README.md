@@ -9,7 +9,7 @@ Docker image providing Playwright with Chromium pre-installed. No manual browser
 
 **Registry:** `ghcr.io/my-ez-cli`
 **Image:** `ghcr.io/my-ez-cli/playwright:latest`
-**Base Image:** `mcr.microsoft.com/playwright:v1.44.0-jammy`
+**Base Image:** `mcr.microsoft.com/playwright:v1.60.0-jammy`
 **Platforms:** linux/amd64, linux/arm64
 
 ## Building the Docker Image

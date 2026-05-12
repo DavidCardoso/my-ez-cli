@@ -87,9 +87,13 @@ jobs:
           image-ref: ${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: 'sarif'
           output: 'trivy-results-dashboard.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
       - name: Upload Trivy results to GitHub Security tab
         if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results-dashboard.sarif'
+          category: trivy-dashboard-build
