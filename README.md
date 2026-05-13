@@ -8,43 +8,55 @@
 [![GitHub issues](https://img.shields.io/github/issues/DavidCardoso/my-ez-cli)](https://github.com/DavidCardoso/my-ez-cli/issues)
 
 
-CLI tools over Docker — managed by `mec`.
+CLI tools over Docker - managed by `mec` command.
 
 > Docker-based dev tools + AI analysis powered by Claude Code.
 
+> Release v1.0.0 is being baked. Consider this as a RC one.
+
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [`mec` CLI Reference](#mec-cli-reference)
-  - [Setup & Installation](#setup--installation)
-  - [Configuration](#configuration)
-  - [Log Management](#log-management)
-  - [AI Analysis](#ai-analysis----mec-ai)
-  - [Dashboard](#dashboard----mec-dashboard)
-  - [Health Check](#health-check----mec-doctor)
-  - [Purge](#purge----mec-purge)
-  - [Claude Code](#claude-code----mec-claude)
-- [AI Features](#ai-features)
-  - [TUI](#tui----mec-ai)
-  - [Web Dashboard](#web-dashboard----mec-dashboard)
-- [Documentation](#documentation)
-- [Tools](#tools)
-  - [AWS CLI](#aws-cli)
-  - [Python](#python)
-  - [NodeJS](#nodejs)
-  - [NPM](#npm)
-  - [NPX](#npx)
-  - [Yarn](#yarn)
-  - [Serverless Framework](#serverless-framework)
-  - [Terraform](#terraform)
-  - [Ookla Speedtest CLI](#ookla-speedtest-cli)
-  - [Google Cloud CLI](#google-cloud-cli)
-  - [Playwright](#playwright)
-  - [Promptfoo](#promptfoo)
-  - [Claude Code (tool)](#claude-code)
-- [Author](#author)
-- [Contributors](#contributors)
+- [My Ez CLI](#my-ez-cli)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Getting Started](#getting-started)
+  - [`mec` CLI Reference](#mec-cli-reference)
+    - [Setup \& Installation](#setup--installation)
+    - [Tool List — `mec list`](#tool-list--mec-list)
+    - [Image Updates — `mec update`](#image-updates--mec-update)
+    - [Image Pin Reset — `mec reset`](#image-pin-reset--mec-reset)
+    - [Telemetry — `mec telemetry`](#telemetry--mec-telemetry)
+    - [Configuration](#configuration)
+    - [Log Management — `mec logs`](#log-management--mec-logs)
+    - [AI Analysis — `mec ai`](#ai-analysis--mec-ai)
+    - [Dashboard — `mec dashboard`](#dashboard--mec-dashboard)
+    - [Health Check — `mec doctor`](#health-check--mec-doctor)
+    - [Purge — `mec purge`](#purge--mec-purge)
+    - [Claude Code — `mec claude`](#claude-code--mec-claude)
+    - [Other](#other)
+  - [AI Features](#ai-features)
+    - [TUI — `mec ai`](#tui--mec-ai)
+    - [Web Dashboard — `mec dashboard`](#web-dashboard--mec-dashboard)
+  - [Tools](#tools)
+    - [AWS CLI](#aws-cli)
+    - [Python](#python)
+    - [NodeJS](#nodejs)
+    - [NPM](#npm)
+    - [NPX](#npx)
+    - [Yarn](#yarn)
+    - [Serverless Framework](#serverless-framework)
+    - [Terraform](#terraform)
+    - [Ookla Speedtest CLI](#ookla-speedtest-cli)
+    - [Google Cloud CLI](#google-cloud-cli)
+    - [Playwright](#playwright)
+    - [Promptfoo](#promptfoo)
+    - [Claude Code](#claude-code)
+  - [Documentation](#documentation)
+    - [For users](#for-users)
+    - [For contributors](#for-contributors)
+    - [Tool image READMEs](#tool-image-readmes)
+  - [Author](#author)
+  - [Contributors](#contributors)
 
 ## Prerequisites
 
@@ -291,49 +303,17 @@ mec dashboard restart
 
 ```mermaid
 flowchart TD
-    A["bin/* tool scripts\n(node, aws, terraform, …)"] -->|"exec_with_ai()"| B["log-manager.sh\nimmutable log\n~/.my-ez-cli/logs/<tool>/<ts>.json"]
-    B -->|"MEC_AI_ENABLED=true"| C["analyze_with_claude()\nbackground subshell"]
-    C -->|"docker run"| D["Claude Code CLI\n--output-format json"]
-    D -->|"stdout JSON"| E["parse-claude-response\n(services/ai middleware)"]
+    A["bin/* tool scripts <br>(node, aws, terraform, …)"] -->|"exec_with_ai()"| B["log-manager.sh <br>immutable log <br>~/.my-ez-cli/logs/<tool>/<ts>.json"]
+    B -->|"MEC_AI_ENABLED=true"| C["analyze_with_claude()<br>background subshell"]
+    C -->|"docker run"| D["Claude Code CLI <br>--output-format json"]
+    D -->|"stdout JSON"| E["parse-claude-response <br>(services/ai middleware)"]
     E -->|"sidecar"| F["~/.my-ez-cli/ai-analyses/<tool>/<ts>.json"]
-    B & F --> G["mec dashboard\nFastAPI + Vue 3\nlocalhost:4242"]
+    B & F --> G["mec dashboard <br>FastAPI + Vue 3 <br>localhost:4242"]
 ```
 
 </details>
 
 For detailed AI documentation, see [docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md).
-
----
-
-## Documentation
-
-### For users
-
-- **[docs/SETUP.md](./docs/SETUP.md)** — Installation guide, conflict detection, advanced options
-- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — All config keys, environment variables, Docker container management
-- **[docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)** — AI workflow, Claude Code integration, authentication
-- **[services/dashboard/README.md](./services/dashboard/README.md)** — Dashboard stack, pages, API reference, development guide
-- **[config/aws/README.md](./config/aws/README.md)** — AWS CLI configuration examples
-
-### For contributors
-
-- **[CLAUDE.md](./CLAUDE.md)** — Architecture reference and contributor guide
-- **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** — Python code standards (type hints, error handling, logging)
-- **[docs/LOG_FORMAT.md](./docs/LOG_FORMAT.md)** — JSON log schema, sidecar files, rotation
-- **[docs/CONTAINER_REGISTRY.md](./docs/CONTAINER_REGISTRY.md)** — Container registry images, CI/CD workflows, GitHub Secrets
-- **[tests/README.md](./tests/README.md)** — Testing framework, writing and running tests
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Contribution guidelines
-- **[CHANGELOG.md](./CHANGELOG.md)** — Release history
-
-### Tool image READMEs
-
-- **[docker/claude/README.md](./docker/claude/README.md)** — Claude Code image, authentication methods
-- **[docker/ai-service/README.md](./docker/ai-service/README.md)** — AI I/O middleware image
-- **[docker/serverless/README.md](./docker/serverless/README.md)** — Serverless Framework image
-- **[docker/speedtest/README.md](./docker/speedtest/README.md)** — Ookla Speedtest image
-- **[docker/yarn-berry/README.md](./docker/yarn-berry/README.md)** — Yarn Berry image
-- **[docker/yarn-plus/README.md](./docker/yarn-plus/README.md)** — Yarn Plus image
-- **[docker/aws-sso-cred/README.md](./docker/aws-sso-cred/README.md)** — AWS SSO credentials image
 
 ---
 
@@ -662,6 +642,38 @@ Authentication methods:
 - **OAuth web login** — run `claude` interactively; session persists via `~/.claude/`
 
 </details>
+
+---
+
+## Documentation
+
+### For users
+
+- **[docs/SETUP.md](./docs/SETUP.md)** — Installation guide, conflict detection, advanced options
+- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — All config keys, environment variables, Docker container management
+- **[docs/AI_INTEGRATION.md](./docs/AI_INTEGRATION.md)** — AI workflow, Claude Code integration, authentication
+- **[services/dashboard/README.md](./services/dashboard/README.md)** — Dashboard stack, pages, API reference, development guide
+- **[config/aws/README.md](./config/aws/README.md)** — AWS CLI configuration examples
+
+### For contributors
+
+- **[CLAUDE.md](./CLAUDE.md)** — Architecture reference and contributor guide
+- **[docs/CODE_STANDARDS.md](./docs/CODE_STANDARDS.md)** — Python code standards (type hints, error handling, logging)
+- **[docs/LOG_FORMAT.md](./docs/LOG_FORMAT.md)** — JSON log schema, sidecar files, rotation
+- **[docs/CONTAINER_REGISTRY.md](./docs/CONTAINER_REGISTRY.md)** — Container registry images, CI/CD workflows, GitHub Secrets
+- **[tests/README.md](./tests/README.md)** — Testing framework, writing and running tests
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Contribution guidelines
+- **[CHANGELOG.md](./CHANGELOG.md)** — Release history
+
+### Tool image READMEs
+
+- **[docker/claude/README.md](./docker/claude/README.md)** — Claude Code image, authentication methods
+- **[docker/ai-service/README.md](./docker/ai-service/README.md)** — AI I/O middleware image
+- **[docker/serverless/README.md](./docker/serverless/README.md)** — Serverless Framework image
+- **[docker/speedtest/README.md](./docker/speedtest/README.md)** — Ookla Speedtest image
+- **[docker/yarn-berry/README.md](./docker/yarn-berry/README.md)** — Yarn Berry image
+- **[docker/yarn-plus/README.md](./docker/yarn-plus/README.md)** — Yarn Plus image
+- **[docker/aws-sso-cred/README.md](./docker/aws-sso-cred/README.md)** — AWS SSO credentials image
 
 ---
 
