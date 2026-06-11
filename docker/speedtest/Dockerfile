@@ -1,4 +1,4 @@
-FROM alpine:3.23
+FROM alpine:3.24
 
 LABEL com.my-ez-cli.project="my-ez-cli" \
       com.my-ez-cli.tool="speedtest" \
