@@ -203,6 +203,7 @@ jobs:
           - gcloud
           - node
           - npm
+          - pnpm
           - purge
           - python
           - setup

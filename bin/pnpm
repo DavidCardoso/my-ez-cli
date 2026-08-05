@@ -1,0 +1,57 @@
+#!/bin/bash
+set -e
+
+# Source common utilities (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$([ -L "$0" ] && readlink "$0" || echo "$0")")" && pwd)"
+MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+. "${MEC_BASE_DIR}/bin/utils/common.sh"
+
+# Check Docker availability
+check_docker
+
+IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
+WORKDIR=/app
+NPMRC_FILE=$HOME/.npmrc
+PNPM_STORE_DIR=${PNPM_STORE_DIR:-"$HOME/.local/share/pnpm/store"}
+CONTAINER_PNPM_HOME="/root/.local/share/pnpm"
+CONTAINER_PNPM_STORE_DIR="$CONTAINER_PNPM_HOME/store"
+
+# Create .npmrc if it doesn't exist
+if [ ! -f "$NPMRC_FILE" ]; then
+    touch "$NPMRC_FILE"
+fi
+
+# Create pnpm store folder if it doesn't exist (persistent, content-addressable)
+if [ ! -d "$PNPM_STORE_DIR" ]; then
+    mkdir -p "$PNPM_STORE_DIR"
+fi
+
+# Container naming and labeling
+CONTAINER_NAME=$(get_container_name "pnpm")
+CONTAINER_LABELS=$(get_container_labels "pnpm" "$IMAGE")
+
+# Get port flags from MEC_BIND_PORTS
+PORTS=$(get_port_flags)
+
+# Setup logging (if enabled)
+setup_logging "pnpm" "$IMAGE" "pnpm ${*}"
+
+# pnpm ships via corepack rather than being preinstalled on the node image,
+# so activate a pinned version before exec-ing into it.
+DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
+    --name $CONTAINER_NAME \
+    $CONTAINER_LABELS \
+    --env NPM_TOKEN=$NPM_TOKEN \
+    --env PNPM_HOME=$CONTAINER_PNPM_HOME \
+    --env pnpm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
+    --env npm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
+    --volume $NPMRC_FILE:/root/.npmrc \
+    --volume $PNPM_STORE_DIR:$CONTAINER_PNPM_STORE_DIR \
+    --volume $PWD:$WORKDIR \
+    --workdir $WORKDIR \
+    $PORTS \
+    --entrypoint sh \
+    $IMAGE -c 'corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@$MEC_PNPM_VERSION --activate >/dev/null 2>&1 && exec pnpm \"\$@\"' sh $(printf '%q ' "$@")"
+
+# Execute with AI analysis (port detection for dev servers)
+exec_with_ai "$DOCKER_CMD"

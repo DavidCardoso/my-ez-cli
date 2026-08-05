@@ -17,10 +17,10 @@ setup() {
     [[ "$output" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
 }
 
-@test "npm uses Node 22 by default" {
+@test "npm uses Node 24 by default" {
     run "$BASEDIR/bin/npm" exec node -- --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v22" ]]
+    [[ "$output" =~ "v24" ]]
 }
 
 @test "npm22 uses Node.js 22" {

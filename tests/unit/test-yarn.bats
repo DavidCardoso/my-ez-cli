@@ -10,10 +10,10 @@ setup() {
     [ -x "$BASEDIR/bin/yarn" ]
 }
 
-@test "yarn uses Node 22 by default" {
+@test "yarn uses Node 24 by default" {
     run "$BASEDIR/bin/yarn" node --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v22" ]]
+    [[ "$output" =~ "v24" ]]
 }
 
 @test "yarn can run help command" {

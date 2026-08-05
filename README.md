@@ -43,6 +43,7 @@ CLI tools over Docker - managed by `mec` command.
     - [NodeJS](#nodejs)
     - [NPM](#npm)
     - [NPX](#npx)
+    - [pnpm](#pnpm)
     - [Yarn](#yarn)
     - [Serverless Framework](#serverless-framework)
     - [Terraform](#terraform)
@@ -389,7 +390,7 @@ PYENV_VERSION=3.9.19 python main.py
 
 ### NodeJS
 
-_default: Node 22 LTS_
+_default: Node 24 LTS_
 
 <details>
 <summary>Show commands</summary>
@@ -403,8 +404,8 @@ Multi-version support:
 
 ```shell
 node20 -v  # maintenance LTS
-node22 -v  # default (LTS)
-node24 -v
+node22 -v  # maintenance LTS
+node24 -v  # default (LTS)
 ```
 
 **Custom ports** — use `MEC_BIND_PORTS`:
@@ -412,6 +413,7 @@ node24 -v
 ```shell
 MEC_BIND_PORTS="8080:80" node
 MEC_BIND_PORTS="8080:80" npm
+MEC_BIND_PORTS="8080:80" pnpm
 MEC_BIND_PORTS="8080:80" yarn
 ```
 
@@ -432,7 +434,7 @@ registry=https://private.npm.registry.com/
 
 ### NPM
 
-_default: Node 22_
+_default: Node 24_
 
 <details>
 <summary>Show commands</summary>
@@ -450,7 +452,7 @@ Version suffixes: `npm20`, `npm22`, `npm24`
 
 ### NPX
 
-_default: Node 22_
+_default: Node 24_
 
 <details>
 <summary>Show commands</summary>
@@ -463,9 +465,37 @@ Version suffixes: `npx20`, `npx22`, `npx24`
 
 </details>
 
+### pnpm
+
+_default: Node 24 · installed via corepack, pinned by `MEC_PNPM_VERSION`_
+
+<details>
+<summary>Show commands</summary>
+
+```shell
+pnpm -v
+pnpm install
+pnpm add some-pkg --save-dev
+pnpm run dev
+```
+
+Version suffixes: `pnpm20` (pnpm 10.x, Node 20), `pnpm22`/`pnpm24`/`pnpm` (pnpm 11.x, Node 22+; `pnpm`/`pnpm24` is the default)
+
+**Persistent store** — pnpm's content-addressable store is mounted from
+`$HOME/.local/share/pnpm/store` (override with `PNPM_STORE_DIR`) so packages are cached across
+runs instead of being re-downloaded every container invocation.
+
+**Pin a specific pnpm version**:
+
+```shell
+MEC_PNPM_VERSION=11.20.0 pnpm -v
+```
+
+</details>
+
 ### Yarn
 
-_default: Node 22_
+_default: Node 24_
 
 <details>
 <summary>Show commands</summary>
