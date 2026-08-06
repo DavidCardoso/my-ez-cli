@@ -21,7 +21,7 @@
     "highlight.js": "^11.10.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.6",
+    "@vitejs/plugin-vue": "^6.0.7",
     "vite": "^8.0.10",
     "vitest": "^4.1.5",
     "@vue/test-utils": "^2.4.10",
