@@ -165,9 +165,6 @@ install_aws() {
 
         echo "alias aws-saml-okta=\"${BASEDIR}/bin/aws-saml-okta \"" >>~/.zshrc
         msg_ok "Activating aws-saml-okta"
-
-        sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
-        msg_ok "Activating aws-sso-cred"
     else
         local existing_path="${detected#external:}"
         handle_tool_conflict "aws" "$existing_path"
@@ -185,14 +182,10 @@ install_aws() {
 
             echo "alias aws-saml-okta=\"${BASEDIR}/bin/aws-saml-okta \"" >>~/.zshrc
             msg_ok "Activating aws-saml-okta"
-
-            sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
-            msg_ok "Activating aws-sso-cred"
         elif [[ $result -eq 1 ]]; then
             # Side-by-side
             msg_warn "Installing as 'mec-aws' (side-by-side)"
             sudo ln -sf ${BASEDIR}/bin/aws /usr/local/bin/mec-aws
-            sudo ln -sf ${BASEDIR}/bin/aws-sso-cred /usr/local/bin/aws-sso-cred
             echo "> Run 'mec-aws' to use the Docker wrapper."
         else
             echo "Skipping aws installation."
@@ -1036,7 +1029,6 @@ install_all() {
 uninstall_aws() {
     sudo rm -f /usr/local/bin/aws
     sudo rm -f /usr/local/bin/mec-aws
-    sudo rm -f /usr/local/bin/aws-sso-cred
 
     # Remove aliases from ~/.zshrc
     if [ -f ~/.zshrc ]; then

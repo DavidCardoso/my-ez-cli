@@ -89,10 +89,6 @@ teardown() {
     grep -q 'MEC_SPEEDTEST_VERSION' "$BASEDIR/config/images.conf"
 }
 
-@test "config/images.conf defines MEC_AWS_SSO_CRED_VERSION" {
-    grep -q 'MEC_AWS_SSO_CRED_VERSION' "$BASEDIR/config/images.conf"
-}
-
 @test "config/images.conf defines MEC_YARN_PLUS_VERSION" {
     grep -q 'MEC_YARN_PLUS_VERSION' "$BASEDIR/config/images.conf"
 }
@@ -180,7 +176,7 @@ _load_mec_functions() {
 
 @test "registry: all tools have non-empty type" {
     _load_mec_functions
-    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest yarn-berry yarn-plus dashboard ai-service config-service; do
         result=$(_mec_tool_field "$_tool" "type")
         [ -n "$result" ] || { echo "Missing type for: $_tool"; return 1; }
     done
@@ -188,7 +184,7 @@ _load_mec_functions() {
 
 @test "registry: all tools have non-empty image_var" {
     _load_mec_functions
-    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest yarn-berry yarn-plus dashboard ai-service config-service; do
         result=$(_mec_tool_field "$_tool" "image_var")
         [ -n "$result" ] || { echo "Missing image_var for: $_tool"; return 1; }
     done
@@ -196,7 +192,7 @@ _load_mec_functions() {
 
 @test "registry: all tools have non-empty version_var" {
     _load_mec_functions
-    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest yarn-berry yarn-plus dashboard ai-service config-service; do
         result=$(_mec_tool_field "$_tool" "version_var")
         [ -n "$result" ] || { echo "Missing version_var for: $_tool"; return 1; }
     done
@@ -204,7 +200,7 @@ _load_mec_functions() {
 
 @test "registry: custom and internal tools have non-empty slug" {
     _load_mec_functions
-    for _tool in claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+    for _tool in claude playwright serverless speedtest yarn-berry yarn-plus dashboard ai-service config-service; do
         result=$(_mec_tool_field "$_tool" "slug")
         [ -n "$result" ] || { echo "Missing slug for: $_tool"; return 1; }
     done
@@ -212,7 +208,7 @@ _load_mec_functions() {
 
 @test "registry: type values are valid" {
     _load_mec_functions
-    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest aws-sso-cred yarn-berry yarn-plus dashboard ai-service config-service; do
+    for _tool in aws terraform gcloud python node promptfoo claude playwright serverless speedtest yarn-berry yarn-plus dashboard ai-service config-service; do
         result=$(_mec_tool_field "$_tool" "type")
         case "$result" in
             public|custom|internal) ;;

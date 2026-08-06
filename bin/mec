@@ -82,7 +82,6 @@ show_help() {
     printf '%s\n' "  aws-get-session-token  AWS session token helper"
     printf '%s\n' "  aws-sso             AWS SSO login"
     printf '%s\n' "  aws-saml-okta       AWS SAML/Okta login"
-    printf '%s\n' "  aws-sso-cred        AWS SSO credential provider"
     printf '%s\n' "  gcloud              Google Cloud CLI"
     printf '%s\n' "  gcloud-login        Google Cloud interactive login"
     printf '%s\n' "  node, node20/22/24  Node.js (default: node24)"
@@ -1806,7 +1805,6 @@ claude:custom:MEC_IMAGE_CLAUDE:MEC_CLAUDE_VERSION:claude
 playwright:custom:MEC_IMAGE_PLAYWRIGHT:MEC_PLAYWRIGHT_VERSION:playwright
 serverless:custom:MEC_IMAGE_SERVERLESS:MEC_SERVERLESS_VERSION:serverless
 speedtest:custom:MEC_IMAGE_SPEEDTEST:MEC_SPEEDTEST_VERSION:speedtest
-aws-sso-cred:custom:MEC_IMAGE_AWS_SSO_CRED:MEC_AWS_SSO_CRED_VERSION:aws-sso-cred
 yarn-berry:custom:MEC_IMAGE_YARN_BERRY:MEC_YARN_BERRY_VERSION:yarn-berry
 yarn-plus:custom:MEC_IMAGE_YARN_PLUS:MEC_YARN_PLUS_VERSION:yarn-plus
 dashboard:internal:MEC_IMAGE_DASHBOARD:MEC_DASHBOARD_VERSION:dashboard
@@ -2315,7 +2313,7 @@ case "$COMMAND" in
         show_help
         ;;
     # Tool wrappers — delegate directly to the corresponding bin/ script
-    aws|aws-get-session-token|aws-saml-okta|aws-sso|aws-sso-cred| \
+    aws|aws-get-session-token|aws-saml-okta|aws-sso| \
     gcloud|gcloud-login| \
     node|node20|node22|node24| \
     npm|npm20|npm22| \

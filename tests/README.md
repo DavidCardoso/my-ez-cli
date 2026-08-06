@@ -393,7 +393,7 @@ wait
 | PR | Smoke + Unit | ~5 minutes | ~2 minutes |
 | Main/Release | Smoke + Unit + Integration | ~6 minutes | ~3 minutes |
 
-**Note:** Custom Docker images (yarn-berry, serverless, cdktf, aws-sso-cred, speedtest) are NOT tested in CI to avoid long build times. These are tested separately in their respective docker-build-* workflows.
+**Note:** Custom Docker images (yarn-berry, serverless, cdktf, speedtest) are NOT tested in CI to avoid long build times. These are tested separately in their respective docker-build-* workflows.
 
 ### Skip Dependency Check
 
