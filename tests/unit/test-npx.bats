@@ -17,10 +17,10 @@ setup() {
     [[ "$output" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
 }
 
-@test "npx uses Node 22 by default" {
+@test "npx uses Node 24 by default" {
     run "$BASEDIR/bin/npx" node --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v22" ]]
+    [[ "$output" =~ "v24" ]]
 }
 
 @test "npx22 uses Node.js 22" {

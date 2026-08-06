@@ -275,7 +275,7 @@ _load_mec_functions() {
 
 @test "mec list shows node default image" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep '^  node ' | grep -q 'node:22-alpine'
+    echo "$output" | grep '^  node ' | grep -q 'node:24-alpine'
 }
 
 @test "mec list respects user pin in MEC_HOME/images.conf" {
@@ -298,7 +298,7 @@ _load_mec_functions() {
 
 @test "mec list shows node version from MEC_NODE_VERSION" {
     run "$BASEDIR/bin/mec" list
-    echo "$output" | grep '^  node ' | grep -q '22-alpine'
+    echo "$output" | grep '^  node ' | grep -q '24-alpine'
 }
 
 @test "mec list shows [pinned] when tool is pinned in user images.conf" {

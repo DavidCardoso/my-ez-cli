@@ -9,7 +9,7 @@ MEC_BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Check Docker availability
 check_docker
 
-# Defaults to NodeJS v22 if no version is specified
+# Defaults to NodeJS v24 if no version is specified
 IMAGE=${IMAGE:-"$MEC_IMAGE_NODE"}
 WORKDIR=/app
 

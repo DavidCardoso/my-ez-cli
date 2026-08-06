@@ -126,7 +126,7 @@ verify_installation() {
                 verified=1
             fi
             ;;
-        node|npm|yarn|terraform|python|aws|gcloud|serverless|speedtest|playwright|promptfoo|npx)
+        node|npm|pnpm|yarn|terraform|python|aws|gcloud|serverless|speedtest|playwright|promptfoo|npx)
             if verify_symlink "/usr/local/bin/$tool" 2>/dev/null || \
                verify_symlink "/usr/local/bin/mec-$tool" 2>/dev/null; then
                 verified=1
@@ -209,7 +209,7 @@ install_node() {
     detected=$(detect_existing_tool "node")
 
     if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
-        msg_ok "Activating node (v22)"
+        msg_ok "Activating node (v24)"
         sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node
         sudo ln -sf ${BASEDIR}/bin/node /usr/local/bin/node24
 
@@ -251,7 +251,7 @@ install_npm() {
     detected=$(detect_existing_tool "npm")
 
     if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
-        msg_ok "Activating npm (over NodeJS v22)"
+        msg_ok "Activating npm (over NodeJS v24)"
         sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm
         sudo ln -sf ${BASEDIR}/bin/npm /usr/local/bin/npm24
 
@@ -288,6 +288,48 @@ install_npm() {
     track_install "npm"
 }
 
+install_pnpm() {
+    local detected
+    detected=$(detect_existing_tool "pnpm")
+
+    if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
+        msg_ok "Activating pnpm (over NodeJS v24)"
+        sudo ln -sf ${BASEDIR}/bin/pnpm /usr/local/bin/pnpm
+        sudo ln -sf ${BASEDIR}/bin/pnpm24 /usr/local/bin/pnpm24
+
+        msg_ok "Activating pnpm22 (over NodeJS v22)"
+        sudo ln -sf ${BASEDIR}/bin/pnpm22 /usr/local/bin/pnpm22
+
+        msg_ok "Activating pnpm20 (over NodeJS v20)"
+        sudo ln -sf ${BASEDIR}/bin/pnpm20 /usr/local/bin/pnpm20
+    else
+        local existing_path="${detected#external:}"
+        handle_tool_conflict "pnpm" "$existing_path"
+        local result=$?
+        if [[ $result -eq 0 ]]; then
+            # Replace
+            msg_ok "Activating pnpm"
+            sudo ln -sf ${BASEDIR}/bin/pnpm /usr/local/bin/pnpm
+            sudo ln -sf ${BASEDIR}/bin/pnpm24 /usr/local/bin/pnpm24
+            sudo ln -sf ${BASEDIR}/bin/pnpm22 /usr/local/bin/pnpm22
+            sudo ln -sf ${BASEDIR}/bin/pnpm20 /usr/local/bin/pnpm20
+        elif [[ $result -eq 1 ]]; then
+            # Side-by-side
+            msg_warn "Installing as 'mec-pnpm' (side-by-side)"
+            sudo ln -sf ${BASEDIR}/bin/pnpm /usr/local/bin/mec-pnpm
+            sudo ln -sf ${BASEDIR}/bin/pnpm22 /usr/local/bin/pnpm22
+            sudo ln -sf ${BASEDIR}/bin/pnpm20 /usr/local/bin/pnpm20
+            echo "> Run 'mec-pnpm' to use the Docker wrapper."
+        else
+            echo "Skipping pnpm installation."
+            echo "> You can still run 'mec pnpm' or '${BASEDIR}/bin/pnpm' directly."
+            return
+        fi
+    fi
+
+    track_install "pnpm"
+}
+
 install_npx() {
     # npx is bundled with Node.js — check for native node first
     local node_detected
@@ -300,7 +342,7 @@ install_npx() {
 
         if [[ "$npx_detected" == "none" || "$npx_detected" == "mec" ]]; then
             # npx not found or already mec — safe to install
-            msg_ok "Activating npx (over NodeJS v22)"
+            msg_ok "Activating npx (over NodeJS v24)"
             sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx
             sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx24
             sudo ln -sf ${BASEDIR}/bin/npx22 /usr/local/bin/npx22
@@ -337,7 +379,7 @@ install_npx() {
         detected=$(detect_existing_tool "npx")
 
         if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
-            msg_ok "Activating npx (over NodeJS v22)"
+            msg_ok "Activating npx (over NodeJS v24)"
             sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx
             sudo ln -sf ${BASEDIR}/bin/npx /usr/local/bin/npx24
             sudo ln -sf ${BASEDIR}/bin/npx22 /usr/local/bin/npx22
@@ -374,7 +416,7 @@ install_yarn() {
     detected=$(detect_existing_tool "yarn")
 
     if [[ "$detected" == "none" || "$detected" == "mec" ]]; then
-        msg_ok "Activating yarn (using NodeJS v22)"
+        msg_ok "Activating yarn (using NodeJS v24)"
         sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn
         sudo ln -sf ${BASEDIR}/bin/yarn /usr/local/bin/yarn24
 
@@ -974,6 +1016,7 @@ install_all() {
     install_node
     install_npm
     install_npx
+    install_pnpm
     install_yarn
     install_yarn-plus
     install_yarn-berry
@@ -1027,6 +1070,17 @@ uninstall_npm() {
 
     track_uninstall "npm"
     msg_ok "Uninstalled npm"
+}
+
+uninstall_pnpm() {
+    sudo rm -f /usr/local/bin/pnpm
+    sudo rm -f /usr/local/bin/mec-pnpm
+    sudo rm -f /usr/local/bin/pnpm20
+    sudo rm -f /usr/local/bin/pnpm22
+    sudo rm -f /usr/local/bin/pnpm24
+
+    track_uninstall "pnpm"
+    msg_ok "Uninstalled pnpm"
 }
 
 uninstall_npx() {
@@ -1160,7 +1214,7 @@ show_status() {
 ================================================================================"
     echo ""
 
-    local tools=("mec" "aws" "node" "npm" "npx" "yarn" "yarn-plus" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "python" "promptfoo" "promptfoo-server" "claude")
+    local tools=("mec" "aws" "node" "npm" "npx" "pnpm" "yarn" "yarn-plus" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "python" "promptfoo" "promptfoo-server" "claude")
 
     echo "Tool                  Status        Verified"
     echo "--------------------------------------------------------------------------------"
@@ -1203,8 +1257,8 @@ interactive_menu() {
     printf '%s\n' "Available tools:"
     printf '%s\n' "--------------------------------------------------------------------------------"
 
-    local tools=("mec" "aws" "node" "npm" "npx" "yarn" "yarn-plus" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "python" "promptfoo" "promptfoo-server" "claude")
-    local descriptions=("My Ez CLI command" "AWS CLI and SSO tools" "Node.js (v22, v24 LTS)" "NPM package manager" "NPX package runner" "Yarn package manager" "Yarn + git/curl/jq tools" "Yarn Berry (v2+)" "Serverless Framework" "Terraform CLI" "Ookla Speedtest CLI" "Google Cloud CLI" "Playwright testing" "Python interpreter" "Promptfoo evaluation" "Promptfoo server" "Claude Code CLI")
+    local tools=("mec" "aws" "node" "npm" "npx" "pnpm" "yarn" "yarn-plus" "yarn-berry" "serverless" "terraform" "speedtest" "gcloud" "playwright" "python" "promptfoo" "promptfoo-server" "claude")
+    local descriptions=("My Ez CLI command" "AWS CLI and SSO tools" "Node.js (v20/22/24, default v24)" "NPM package manager" "NPX package runner" "pnpm package manager" "Yarn package manager" "Yarn + git/curl/jq tools" "Yarn Berry (v2+)" "Serverless Framework" "Terraform CLI" "Ookla Speedtest CLI" "Google Cloud CLI" "Playwright testing" "Python interpreter" "Promptfoo evaluation" "Promptfoo server" "Claude Code CLI")
 
     local i=1
     for tool in "${tools[@]}"; do
@@ -1252,7 +1306,7 @@ interactive_menu() {
                         echo "Uninstalling $tool..."
                         # Use explicit function dispatch for security
                         case "$tool" in
-                            mec|aws|node|npm|npx|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
+                            mec|aws|node|npm|npx|pnpm|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
                                 "uninstall_${tool}"
                                 ;;
                             *)
@@ -1279,7 +1333,7 @@ interactive_menu() {
                     echo "Installing $tool..."
                     # Use explicit function dispatch for security
                     case "$tool" in
-                        mec|aws|node|npm|npx|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
+                        mec|aws|node|npm|npx|pnpm|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
                             "install_${tool}"
                             ;;
                         *)
@@ -1319,7 +1373,7 @@ handle_install() {
 
     for tool in "$@"; do
         case "$tool" in
-            mec|aws|node|npm|npx|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
+            mec|aws|node|npm|npx|pnpm|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
                 if is_tracked "$tool"; then
                     echo "Tool '$tool' is already installed."
                 else
@@ -1349,7 +1403,7 @@ handle_uninstall() {
 
     for tool in "$@"; do
         case "$tool" in
-            mec|aws|node|npm|npx|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
+            mec|aws|node|npm|npx|pnpm|yarn|yarn-plus|yarn-berry|serverless|terraform|speedtest|gcloud|playwright|python|promptfoo|promptfoo-server|claude)
                 if is_tracked "$tool"; then
                     uninstall_$tool
                 else
