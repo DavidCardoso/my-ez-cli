@@ -13,7 +13,6 @@ All custom Docker images are published to per-tool repositories under the `ghcr.
 | Tool | Docker Image | Platforms | Build Workflow |
 |------|-------------|-----------|----------------|
 | AI Service | `ghcr.io/my-ez-cli/ai-service:latest` | amd64, arm64 | `.github/workflows/docker-build-ai-service.yml` |
-| AWS SSO Cred | `ghcr.io/my-ez-cli/aws-sso-cred:latest` | amd64, arm64 | `.github/workflows/docker-build-aws-sso-cred.yml` |
 | Claude Code | `ghcr.io/my-ez-cli/claude:latest` | amd64, arm64 | `.github/workflows/docker-build-claude.yml` |
 | Config Service | `ghcr.io/my-ez-cli/config-service:latest` | amd64, arm64 | `.github/workflows/docker-build-config-service.yml` |
 | Dashboard | `ghcr.io/my-ez-cli/dashboard:latest` | amd64, arm64 | `.github/workflows/docker-build-dashboard.yml` |
@@ -34,8 +33,8 @@ Each tool image uses multiple tags for versioning and tracking:
 - `{major}.{minor}` - Major.minor version (e.g., `1.0`)
 
 **Examples**:
-- `ghcr.io/my-ez-cli/aws-sso-cred:latest`
-- `ghcr.io/my-ez-cli/aws-sso-cred:sha-a1b2c3d`
+- `ghcr.io/my-ez-cli/serverless:latest`
+- `ghcr.io/my-ez-cli/serverless:sha-a1b2c3d`
 - `ghcr.io/my-ez-cli/serverless:1.0.0`
 
 ## GitHub Secrets Setup
@@ -75,7 +74,7 @@ After adding the secrets, trigger a workflow manually to verify the setup:
 Go to Actions → Select any Docker workflow → Run workflow
 
 # Or via GitHub CLI
-gh workflow run docker-build-aws-sso-cred.yml
+gh workflow run docker-build-serverless.yml
 ```
 
 Check the workflow logs for successful authentication:
@@ -122,7 +121,7 @@ Check build status at:
 All images are configured as **public** to allow users to pull without authentication:
 
 ```bash
-docker pull ghcr.io/my-ez-cli/aws-sso-cred:latest
+docker pull ghcr.io/my-ez-cli/serverless:latest
 ```
 
 ### Security Scanning
@@ -141,8 +140,8 @@ Each Docker image has a dedicated directory with a Dockerfile:
 
 ```bash
 # Build specific tool image
-cd docker/aws-sso-cred
-docker build -t ghcr.io/my-ez-cli/aws-sso-cred:local .
+cd docker/serverless
+docker build -t ghcr.io/my-ez-cli/serverless:local .
 
 # Build with specific platform
 docker buildx build --platform linux/amd64,linux/arm64 \
@@ -155,10 +154,10 @@ Test the image before pushing:
 
 ```bash
 # Run the image
-docker run --rm ghcr.io/my-ez-cli/aws-sso-cred:local --help
+docker run --rm ghcr.io/my-ez-cli/serverless:local --help
 
 # Or use the bin script with local image
-IMAGE=ghcr.io/my-ez-cli/aws-sso-cred:local ./bin/aws-sso-cred
+IMAGE=ghcr.io/my-ez-cli/serverless:local ./bin/serverless
 ```
 
 ### Pushing to GitHub Container Registry

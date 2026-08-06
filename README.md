@@ -346,12 +346,6 @@ aws-sso
 # 1) configure  2) login  3) logout
 ```
 
-**AWS SSO Get Credentials** — retrieve current SSO credentials ([docker image](docker/aws-sso-cred/)):
-
-```shell
-aws-sso-cred $AWS_PROFILE
-```
-
 **AWS SAML (Okta)** — authenticate using SAML via Okta:
 
 ```shell
@@ -703,7 +697,6 @@ Authentication methods:
 - **[docker/speedtest/README.md](./docker/speedtest/README.md)** — Ookla Speedtest image
 - **[docker/yarn-berry/README.md](./docker/yarn-berry/README.md)** — Yarn Berry image
 - **[docker/yarn-plus/README.md](./docker/yarn-plus/README.md)** — Yarn Plus image
-- **[docker/aws-sso-cred/README.md](./docker/aws-sso-cred/README.md)** — AWS SSO credentials image
 
 ---
 

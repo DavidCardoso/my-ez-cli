@@ -126,12 +126,6 @@ TOOL_REGISTRY: list[dict[str, str]] = [
         "category": "cloud",
     },
     {
-        "name": "aws-sso-cred",
-        "image": "davidcardoso/my-ez-cli:aws-sso-cred-latest",
-        "description": "AWS SSO credential retrieval",
-        "category": "cloud",
-    },
-    {
         "name": "gcloud",
         "image": "google/cloud-sdk:alpine",
         "description": "Google Cloud CLI",

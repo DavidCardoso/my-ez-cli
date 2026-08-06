@@ -24,7 +24,7 @@ All wrapper scripts in `bin/` follow a consistent pattern:
 
 - `bin/`: Executable wrapper scripts
 - `bin/utils/`: Shared utilities (`common.sh`, `config-manager.sh`, `log-manager.sh`)
-- `docker/`: Custom Dockerfiles (aws-sso-cred, serverless, speedtest, yarn-berry, yarn-plus, claude, dashboard, ai-service, config-service, playwright)
+- `docker/`: Custom Dockerfiles (serverless, speedtest, yarn-berry, yarn-plus, claude, dashboard, ai-service, config-service, playwright)
 - `config/`: Default configuration (`config.default.yaml`)
 - `docs/`: Project documentation
 - `services/ai/`: AI I/O middleware (Python 3.12, filter-only)
