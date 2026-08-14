@@ -95,3 +95,25 @@ setup() {
     # Cleanup
     rm -rf "$PNPM_STORE_DIR"
 }
+
+@test "pnpm corepack cache folder is created and reused across invocations" {
+    COREPACK_HOME="/tmp/test-pnpm-corepack-cache-$$"
+    # Prime the cache. Retry a few times: corepack fetching pnpm from the
+    # registry can hit transient network errors, which this test isn't
+    # exercising — it only asserts that a *warm* cache is reused afterwards.
+    local attempt
+    for attempt in 1 2 3; do
+        run bash -c "COREPACK_HOME='$COREPACK_HOME' $BASEDIR/bin/pnpm --version"
+        [ "$status" -eq 0 ] && break
+    done
+    [ "$status" -eq 0 ]
+    [ -d "$COREPACK_HOME" ]
+    # A second invocation must not need the network: it reuses the cached
+    # pnpm tarball rather than re-fetching it from the registry every time.
+    run bash -c "COREPACK_HOME='$COREPACK_HOME' $BASEDIR/bin/pnpm --version"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]
+    # Cleanup. corepack extracts pnpm's tarball as root inside the container,
+    # so the CI runner user can't remove it directly (see the pnpmNN tests above).
+    rm -rf "$COREPACK_HOME" 2>/dev/null || { docker run --rm -v "$COREPACK_HOME:/cleanup" alpine sh -c 'rm -rf /cleanup/*'; rm -rf "$COREPACK_HOME"; }
+}

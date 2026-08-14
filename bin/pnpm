@@ -15,6 +15,8 @@ NPMRC_FILE=$HOME/.npmrc
 PNPM_STORE_DIR=${PNPM_STORE_DIR:-"$HOME/.local/share/pnpm/store"}
 CONTAINER_PNPM_HOME="/root/.local/share/pnpm"
 CONTAINER_PNPM_STORE_DIR="$CONTAINER_PNPM_HOME/store"
+COREPACK_HOME=${COREPACK_HOME:-"$HOME/.cache/node/corepack"}
+CONTAINER_COREPACK_HOME=${CONTAINER_COREPACK_HOME:-"/root/.cache/node/corepack"}
 
 # Create .npmrc if it doesn't exist
 if [ ! -f "$NPMRC_FILE" ]; then
@@ -24,6 +26,13 @@ fi
 # Create pnpm store folder if it doesn't exist (persistent, content-addressable)
 if [ ! -d "$PNPM_STORE_DIR" ]; then
     mkdir -p "$PNPM_STORE_DIR"
+fi
+
+# Create corepack cache folder if it doesn't exist. Without this, corepack
+# re-fetches the pnpm tarball from the npm registry on every invocation,
+# which is slow and fails intermittently under network/registry hiccups.
+if [ ! -d "$COREPACK_HOME" ]; then
+    mkdir -p "$COREPACK_HOME"
 fi
 
 # Container naming and labeling
@@ -37,7 +46,9 @@ PORTS=$(get_port_flags)
 setup_logging "pnpm" "$IMAGE" "pnpm ${*}"
 
 # pnpm ships via corepack rather than being preinstalled on the node image,
-# so activate a pinned version before exec-ing into it.
+# so activate a pinned version before exec-ing into it. corepack's own
+# download cache is mounted from the host so the pnpm tarball is fetched
+# once, not on every invocation.
 DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --name $CONTAINER_NAME \
     $CONTAINER_LABELS \
@@ -45,13 +56,15 @@ DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
     --env PNPM_HOME=$CONTAINER_PNPM_HOME \
     --env pnpm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
     --env npm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
+    --env COREPACK_HOME=$CONTAINER_COREPACK_HOME \
     --volume $NPMRC_FILE:/root/.npmrc \
     --volume $PNPM_STORE_DIR:$CONTAINER_PNPM_STORE_DIR \
+    --volume $COREPACK_HOME:$CONTAINER_COREPACK_HOME \
     --volume $PWD:$WORKDIR \
     --workdir $WORKDIR \
     $PORTS \
     --entrypoint sh \
-    $IMAGE -c 'corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@$MEC_PNPM_VERSION --activate >/dev/null 2>&1 && exec pnpm \"\$@\"' sh $(printf '%q ' "$@")"
+    $IMAGE -c 'corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@$MEC_PNPM_VERSION --activate && exec pnpm \"\$@\"' sh $(printf '%q ' "$@")"
 
 # Execute with AI analysis (port detection for dev servers)
 exec_with_ai "$DOCKER_CMD"
