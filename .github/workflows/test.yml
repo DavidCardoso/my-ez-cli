@@ -224,6 +224,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bats
 
+      - name: Set up Docker Buildx
+        if: matrix.test-group == 'shared'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build config-service image for testing
+        if: matrix.test-group == 'shared'
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --file ./docker/config-service/Dockerfile \
+            --tag davidcardoso/my-ez-cli:config-service-latest \
+            ./services/config
+
       - name: Run unit tests - ${{ matrix.test-group }}
         env:
           SKIP_DEPENDENCY_CHECK: 1
