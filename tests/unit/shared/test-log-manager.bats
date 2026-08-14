@@ -3,7 +3,7 @@
 # Tests for Log Manager
 # ============================================================================
 
-BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/.." && pwd)"
+BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/../.." && pwd)"
 
 setup() {
     # Source log-manager

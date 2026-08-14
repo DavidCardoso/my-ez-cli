@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 setup() {
-    BASEDIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    BASEDIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)"
     export MEC_HOME="$(mktemp -d)"
 }
 

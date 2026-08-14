@@ -188,27 +188,21 @@ jobs:
           echo "✓ mec setup status works"
 
   # Unit tests - run in parallel for faster execution
+  # Unit tests are split by directory structure, not a hand-maintained file
+  # list: "tools" runs the flat tests/unit/test-<tool>.bats files (1:1 with
+  # bin/<tool>), "shared" runs everything under tests/unit/shared/ (shared
+  # libs, bin/mec subcommands, setup.sh). New test files are picked up
+  # automatically by whichever group their path falls into — see
+  # tests/README.md for the convention.
   unit-tests:
     runs-on: ubuntu-latest
     needs: setup
     strategy:
       fail-fast: false
       matrix:
-        test-suite:
-          - aws
-          - aws-saml-okta
-          - common-utils
-          - dashboard
-          - doctor
-          - gcloud
-          - node
-          - npm
-          - pnpm
-          - purge
-          - python
-          - setup
-          - terraform
-          - yarn
+        test-group:
+          - tools
+          - shared
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -230,11 +224,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bats
 
-      - name: Run unit tests - ${{ matrix.test-suite }}
+      - name: Run unit tests - ${{ matrix.test-group }}
         env:
           SKIP_DEPENDENCY_CHECK: 1
         run: |
-          bats tests/unit/test-${{ matrix.test-suite }}.bats
+          if [ "${{ matrix.test-group }}" = "tools" ]; then
+            bats tests/unit/*.bats
+          else
+            bats -r tests/unit/shared/
+          fi
 
   # Config service unit tests — pytest inside the Docker image
   unit-tests-config-service:

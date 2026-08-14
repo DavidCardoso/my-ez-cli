@@ -3,7 +3,7 @@
 # Test setup.sh script
 
 setup() {
-    MEC_PROJECT_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    MEC_PROJECT_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)"
     SETUP_SCRIPT="$MEC_PROJECT_DIR/setup.sh"
 }
 
