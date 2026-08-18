@@ -3,7 +3,7 @@
 # Tests for mec purge subcommand
 # ============================================================================
 
-BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/.." && pwd)"
+BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/../.." && pwd)"
 
 setup() {
     export MEC_BASE_DIR="$BASEDIR"

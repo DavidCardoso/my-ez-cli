@@ -3,7 +3,7 @@
 # Test common utilities
 
 setup() {
-    BASEDIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    BASEDIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)"
     source "$BASEDIR/bin/utils/common.sh"
 }
 

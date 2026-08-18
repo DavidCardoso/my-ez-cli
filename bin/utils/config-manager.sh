@@ -123,6 +123,7 @@ _config_service() {
     shift 2  # remaining args are key [value]
 
     docker run --rm \
+        --user "$(id -u):$(id -g)" \
         --volume "${host_file}:/config/config.yaml" \
         "${MEC_IMAGE_CONFIG_SERVICE:-davidcardoso/my-ez-cli:config-service-latest}" \
         "$cmd" /config/config.yaml "$@"
