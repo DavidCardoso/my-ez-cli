@@ -49,22 +49,35 @@ setup_logging "pnpm" "$IMAGE" "pnpm ${*}"
 # so activate a pinned version before exec-ing into it. corepack's own
 # download cache is mounted from the host so the pnpm tarball is fetched
 # once, not on every invocation.
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    --env NPM_TOKEN=$NPM_TOKEN \
-    --env PNPM_HOME=$CONTAINER_PNPM_HOME \
-    --env pnpm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
-    --env npm_config_store_dir=$CONTAINER_PNPM_STORE_DIR \
-    --env COREPACK_HOME=$CONTAINER_COREPACK_HOME \
-    --volume $NPMRC_FILE:/root/.npmrc \
-    --volume $PNPM_STORE_DIR:$CONTAINER_PNPM_STORE_DIR \
-    --volume $COREPACK_HOME:$CONTAINER_COREPACK_HOME \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $PORTS \
-    --entrypoint sh \
-    $IMAGE -c 'corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@$MEC_PNPM_VERSION --activate && exec pnpm \"\$@\"' sh $(printf '%q ' "$@")"
+# This script string is a single argv element passed to the container's
+# `sh -c` — it is never re-parsed by the host shell (no eval), so $@ here
+# stays literal for the container's sh to expand.
+PNPM_SH_SCRIPT='corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@'"$MEC_PNPM_VERSION"' --activate && exec pnpm "$@"'
+
+# Build docker command as an array — never as a string handed to eval,
+# so shell metacharacters in $PWD (or any other value) can't be
+# re-interpreted as commands (see GHSA-3vmh-fm2p-pcv2).
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS/PORTS are internally built flag lists, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=(
+    --env "NPM_TOKEN=$NPM_TOKEN"
+    --env "PNPM_HOME=$CONTAINER_PNPM_HOME"
+    --env "pnpm_config_store_dir=$CONTAINER_PNPM_STORE_DIR"
+    --env "npm_config_store_dir=$CONTAINER_PNPM_STORE_DIR"
+    --env "COREPACK_HOME=$CONTAINER_COREPACK_HOME"
+    --volume "$NPMRC_FILE:/root/.npmrc"
+    --volume "$PNPM_STORE_DIR:$CONTAINER_PNPM_STORE_DIR"
+    --volume "$COREPACK_HOME:$CONTAINER_COREPACK_HOME"
+    --volume "$PWD:$WORKDIR"
+    --workdir "$WORKDIR"
+)
+# shellcheck disable=SC2206
+DOCKER_CMD+=($PORTS)
+DOCKER_CMD+=(--entrypoint sh "$IMAGE" -c "$PNPM_SH_SCRIPT" sh "$@")
 
 # Execute with AI analysis (port detection for dev servers)
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"

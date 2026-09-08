@@ -506,13 +506,14 @@ trigger_ai_analysis() {
 
 # Execute command with optional logging and AI analysis
 # This is the main wrapper that bin scripts should use
-# Usage: exec_with_ai "docker run ..."
+# Takes the command as argv (an array), never as a string, so no shell
+# metacharacter in any argument (e.g. $PWD) is ever re-parsed (see
+# GHSA-3vmh-fm2p-pcv2).
+# Usage: exec_with_ai "${DOCKER_CMD[@]}"
 exec_with_ai() {
-    local docker_cmd="$1"
-
     # If logging is not enabled, just run the command
     if [ "$LOG_SESSION_ENABLED" != "true" ]; then
-        eval "$docker_cmd"
+        "$@"
         return $?
     fi
 
@@ -526,7 +527,7 @@ exec_with_ai() {
         local stderr_tmp="${tmpdir_path}/stderr"
 
         set +e
-        eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
+        "$@" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
         exit_code=$?
         set -e
 
@@ -539,7 +540,7 @@ exec_with_ai() {
     else
         # Output capture disabled — run directly, no tee overhead
         set +e
-        eval "$docker_cmd"
+        "$@"
         exit_code=$?
         set -e
     fi

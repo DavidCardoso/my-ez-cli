@@ -34,22 +34,28 @@ case "$ARCH" in
     *)             PLATFORM=${PLATFORM:-linux/amd64} ;;
 esac
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --platform $PLATFORM \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    --env AWS_PROFILE=${AWS_PROFILE} \
-    --env AWS_SDK_LOAD_CONFIG=1 \
-    --env STACK_NAME=${STACK_NAME} \
-    --env "SLS_DEBUG=${SLS_DEBUG:-0}" \
-    --env "DEBUG=${DEBUG:-0}" \
-    --volume ${HOME}/.aws:/root/.aws \
-    --volume ${PWD}:${WORKDIR} \
-    --workdir ${WORKDIR} \
-    --entrypoint serverless \
-    --network=host \
-    ${IMAGE} $(printf '%q ' "$@")"
+# Build docker command as an array — never as a string handed to eval,
+# so shell metacharacters in $PWD (or any other value) can't be
+# re-interpreted as commands (see GHSA-3vmh-fm2p-pcv2).
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --platform "$PLATFORM" --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS is an internally built flag list, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=(
+    --env "AWS_PROFILE=${AWS_PROFILE}"
+    --env AWS_SDK_LOAD_CONFIG=1
+    --env "STACK_NAME=${STACK_NAME}"
+    --env "SLS_DEBUG=${SLS_DEBUG:-0}"
+    --env "DEBUG=${DEBUG:-0}"
+    --volume "${HOME}/.aws:/root/.aws"
+    --volume "${PWD}:${WORKDIR}"
+    --workdir "${WORKDIR}"
+    --entrypoint serverless
+    --network=host
+    "${IMAGE}" "$@"
+)
 
 # Execute with AI analysis
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"
