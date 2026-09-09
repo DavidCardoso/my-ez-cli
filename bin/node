@@ -23,14 +23,16 @@ PORTS=$(get_port_flags)
 # Setup logging (if enabled)
 setup_logging "node" "$IMAGE" "node ${*}"
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $PORTS \
-    $IMAGE $(printf '%q ' "$@")"
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS/PORTS are internally built flag lists, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=(--volume "$PWD:$WORKDIR" --workdir "$WORKDIR")
+# shellcheck disable=SC2206
+DOCKER_CMD+=($PORTS)
+DOCKER_CMD+=("$IMAGE" "$@")
 
 # Execute with AI analysis (port detection)
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"

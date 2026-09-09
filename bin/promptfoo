@@ -43,30 +43,35 @@ fi
 # Setup logging (if enabled)
 setup_logging "promptfoo" "$IMAGE" "promptfoo ${*}"
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    --volume $PWD:$WORKDIR \
-    --volume $PWD/data:$PROMPTFOO_CONFIG_DIR \
-    --env API_PORT=$PROMPTFOO_API_PORT \
-    --env AWS_REGION=$AWS_REGION \
-    --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-    --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-    --env AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
-    --env LANG=$LANG \
-    --env PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR \
-    --env PROMPTFOO_REMOTE_APP_BASE_URL=$PROMPTFOO_REMOTE_APP_BASE_URL \
-    --env PROMPTFOO_REMOTE_API_BASE_URL=$PROMPTFOO_REMOTE_API_BASE_URL \
-    --env OPENAI_API_KEY=$OPENAI_API_KEY \
-    --env ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
-    --env AZURE_API_KEY=$AZURE_API_KEY \
-    --env LITELLM_API_KEY=$LITELLM_API_KEY \
-    --env GITHUB_TOKEN=$GITHUB_TOKEN \
-    --workdir $WORKDIR \
-    --entrypoint promptfoo \
-    $PORTS \
-    $IMAGE $(printf '%q ' "$@")"
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS is an internally built flag list, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=(
+    --volume "$PWD:$WORKDIR"
+    --volume "$PWD/data:$PROMPTFOO_CONFIG_DIR"
+    --env "API_PORT=$PROMPTFOO_API_PORT"
+    --env "AWS_REGION=$AWS_REGION"
+    --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+    --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+    --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+    --env "LANG=$LANG"
+    --env "PROMPTFOO_CONFIG_DIR=$PROMPTFOO_CONFIG_DIR"
+    --env "PROMPTFOO_REMOTE_APP_BASE_URL=$PROMPTFOO_REMOTE_APP_BASE_URL"
+    --env "PROMPTFOO_REMOTE_API_BASE_URL=$PROMPTFOO_REMOTE_API_BASE_URL"
+    --env "OPENAI_API_KEY=$OPENAI_API_KEY"
+    --env "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+    --env "AZURE_API_KEY=$AZURE_API_KEY"
+    --env "LITELLM_API_KEY=$LITELLM_API_KEY"
+    --env "GITHUB_TOKEN=$GITHUB_TOKEN"
+    --workdir "$WORKDIR"
+    --entrypoint promptfoo
+)
+# shellcheck disable=SC2206
+DOCKER_CMD+=($PORTS)
+DOCKER_CMD+=("$IMAGE" "$@")
 
 # Execute with AI analysis
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"

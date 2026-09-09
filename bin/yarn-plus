@@ -45,28 +45,34 @@ PORTS=$(get_port_flags)
 setup_logging "$TOOL_NAME" "$IMAGE" "yarn ${*}"
 
 # Collect deployment-related environment variables (TARGET_*, ENVIRONMENT, CDK_*)
-DEPLOYMENT_ENV_VARS=""
+DEPLOYMENT_ENV_VARS=()
 while IFS='=' read -r name value; do
     if [[ "$name" =~ ^(TARGET_|ENVIRONMENT|CDK_) ]]; then
-        DEPLOYMENT_ENV_VARS="$DEPLOYMENT_ENV_VARS --env $name=$(printf '%q' "$value")"
+        DEPLOYMENT_ENV_VARS+=(--env "$name=$value")
     fi
 done < <(env)
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    --env NPM_TOKEN=$NPM_TOKEN \
-    --env YARN_CACHE_FOLDER=$CONTAINER_YARN_CACHE_FOLDER \
-    $DEPLOYMENT_ENV_VARS \
-    --volume $NPMRC_FILE:/root/.npmrc \
-    --volume $YARNRC_FILE:/root/.yarnrc.yml \
-    --volume $YARN_CACHE_FOLDER:$CONTAINER_YARN_CACHE_FOLDER \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $PORTS \
-    --entrypoint yarn \
-    $IMAGE $(printf '%q ' "$@")"
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS/PORTS are internally built flag lists, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=(
+    --env "NPM_TOKEN=$NPM_TOKEN"
+    --env "YARN_CACHE_FOLDER=$CONTAINER_YARN_CACHE_FOLDER"
+)
+DOCKER_CMD+=("${DEPLOYMENT_ENV_VARS[@]}")
+DOCKER_CMD+=(
+    --volume "$NPMRC_FILE:/root/.npmrc"
+    --volume "$YARNRC_FILE:/root/.yarnrc.yml"
+    --volume "$YARN_CACHE_FOLDER:$CONTAINER_YARN_CACHE_FOLDER"
+    --volume "$PWD:$WORKDIR"
+    --workdir "$WORKDIR"
+)
+# shellcheck disable=SC2206
+DOCKER_CMD+=($PORTS)
+DOCKER_CMD+=(--entrypoint yarn "$IMAGE" "$@")
 
 # Run the command
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"

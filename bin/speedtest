@@ -19,12 +19,13 @@ CONTAINER_LABELS=$(get_container_labels "speedtest" "$IMAGE")
 # Setup logging (if enabled)
 setup_logging "speedtest" "$IMAGE" "speedtest ${*}"
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --platform linux/amd64 \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    $IMAGE $(printf '%q ' "$@")"
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --platform linux/amd64 --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS is an internally built flag list, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+DOCKER_CMD+=("$IMAGE" "$@")
 
 # Execute with AI analysis
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"

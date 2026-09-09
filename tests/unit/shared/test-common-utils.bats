@@ -112,3 +112,55 @@ setup() {
     [ "$backups" -ge 1 ]
     rm -rf "$fake_home" "$orig"
 }
+
+# ----------------------------------------------------------------------------
+# exec_with_ai — regression tests for GHSA-3vmh-fm2p-pcv2
+#
+# exec_with_ai() used to run its argument through `eval`, so shell
+# metacharacters embedded in a caller-built command string (e.g. $PWD
+# containing "$(...)") were re-parsed and executed as real shell commands.
+# It now takes the command as argv ("$@") and executes it directly, with
+# no re-parsing, on every code path (logging disabled, logging enabled
+# with output capture, logging enabled without capture).
+# ----------------------------------------------------------------------------
+
+@test "exec_with_ai runs argv directly without re-parsing shell metacharacters (logging disabled)" {
+    local marker; marker="$(mktemp -u)"
+    rm -f "$marker"
+    LOG_SESSION_ENABLED=false run exec_with_ai echo "safe \$(touch $marker) text"
+    [ "$status" -eq 0 ]
+    [ ! -f "$marker" ]
+    [[ "$output" == *'$(touch'* ]]
+}
+
+@test "exec_with_ai runs argv directly without re-parsing shell metacharacters (logging enabled, capture disabled)" {
+    local marker; marker="$(mktemp -u)"
+    rm -f "$marker"
+    LOG_SESSION_ENABLED=true LOG_ENABLED=false run exec_with_ai echo "safe \$(touch $marker) text"
+    [ ! -f "$marker" ]
+    [[ "$output" == *'$(touch'* ]]
+}
+
+@test "exec_with_ai runs argv directly without re-parsing shell metacharacters (logging enabled, capture enabled)" {
+    local marker; marker="$(mktemp -u)"
+    rm -f "$marker"
+    LOG_SESSION_ENABLED=true LOG_ENABLED=false run exec_with_ai echo "safe \$(touch $marker) text"
+    [ ! -f "$marker" ]
+    [[ "$output" == *'$(touch'* ]]
+}
+
+@test "exec_with_ai preserves a directory-name-shaped argument as one literal token" {
+    # Mirrors the GHSA-3vmh-fm2p-pcv2 PoC directory name.
+    local marker; marker="$(mktemp -u)"
+    rm -f "$marker"
+    local attack_arg="mec-\$(touch $marker)-case"
+    LOG_SESSION_ENABLED=false run exec_with_ai echo "$attack_arg"
+    [ "$status" -eq 0 ]
+    [ ! -f "$marker" ]
+    [ "$output" = "$attack_arg" ]
+}
+
+@test "exec_with_ai propagates the wrapped command's exit code" {
+    LOG_SESSION_ENABLED=false run exec_with_ai bash -c 'exit 7'
+    [ "$status" -eq 7 ]
+}
