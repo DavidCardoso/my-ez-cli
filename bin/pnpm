@@ -54,9 +54,6 @@ setup_logging "pnpm" "$IMAGE" "pnpm ${*}"
 # stays literal for the container's sh to expand.
 PNPM_SH_SCRIPT='corepack enable pnpm >/dev/null 2>&1 && corepack prepare pnpm@'"$MEC_PNPM_VERSION"' --activate && exec pnpm "$@"'
 
-# Build docker command as an array — never as a string handed to eval,
-# so shell metacharacters in $PWD (or any other value) can't be
-# re-interpreted as commands (see GHSA-3vmh-fm2p-pcv2).
 DOCKER_CMD=(docker run -i)
 TTY_FLAG=$(get_tty_flag)
 [ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")

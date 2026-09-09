@@ -25,9 +25,6 @@ CONTAINER_LABELS=$(get_container_labels "gcloud" "$IMAGE")
 # Setup logging (if enabled)
 setup_logging "gcloud" "$IMAGE" "gcloud ${*}"
 
-# Build docker command as an array — never as a string handed to eval,
-# so shell metacharacters in $PWD (or any other value) can't be
-# re-interpreted as commands (see GHSA-3vmh-fm2p-pcv2).
 DOCKER_CMD=(docker run --rm --name "$CONTAINER_NAME")
 # shellcheck disable=SC2206  # CONTAINER_LABELS is an internally built flag list, word-split by design
 DOCKER_CMD+=($CONTAINER_LABELS)

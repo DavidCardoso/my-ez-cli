@@ -61,9 +61,6 @@ fi
 # Setup logging (if enabled)
 setup_logging "claude" "$IMAGE" "claude ${*}"
 
-# Build docker command as an array — never as a string handed to eval,
-# so shell metacharacters in $PWD (or any other value) can't be
-# re-interpreted as commands (see GHSA-3vmh-fm2p-pcv2).
 # Note: $PWD:$WORKDIR already includes project's .claude/ directory
 DOCKER_CMD=(docker run -i)
 TTY_FLAG=$(get_tty_flag)
