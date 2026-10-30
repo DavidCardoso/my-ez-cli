@@ -16,6 +16,14 @@ updates:
     target-branch: "main"
     open-pull-requests-limit: 5
 
+  # Python (Poetry) — Config service
+  - package-ecosystem: "pip"
+    directory: "/services/config"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    open-pull-requests-limit: 5
+
   # npm — Dashboard frontend (Vue 3)
   - package-ecosystem: "npm"
     directory: "/services/dashboard/frontend"
