@@ -18,26 +18,42 @@ Comprehensive test suite for My Ez CLI using [bats-core](https://github.com/bats
 
 ```
 tests/
-├── unit/                      # Unit tests (65 tests)
-│   ├── test-aws.bats          # AWS CLI wrapper tests (4)
-│   ├── test-common-utils.bats # Common utilities tests (10)
-│   ├── test-node.bats         # Node.js wrapper tests (8)
-│   ├── test-npm.bats          # NPM wrapper tests (5)
-│   ├── test-python.bats       # Python wrapper tests (5)
-│   ├── test-setup.bats        # Setup script tests (18)
-│   ├── test-terraform.bats    # Terraform wrapper tests (5)
-│   └── test-yarn.bats         # Yarn wrapper tests (10)
-├── integration/               # Integration tests (8 tests)
+├── unit/
+│   ├── test-<tool>.bats       # One file per bin/<tool>, 1:1 naming (aws, node, pnpm, yarn, ...)
+│   └── shared/                # Everything that is NOT a single tool (see below)
+│       ├── test-common-utils.bats    # bin/utils/common.sh
+│       ├── test-config-manager.bats  # bin/utils/config-manager.sh
+│       ├── test-log-manager.bats     # bin/utils/log-manager.sh
+│       ├── test-tools.bats           # bin/mec (mec list/update/reset)
+│       ├── test-doctor.bats          # bin/mec (mec doctor)
+│       ├── test-purge.bats           # bin/mec (mec purge)
+│       ├── test-dashboard.bats       # bin/mec (mec dashboard)
+│       ├── test-setup.bats           # setup.sh
+│       └── test-select-tests.bats    # tests/helpers/select-tests.sh
+├── integration/                # Integration tests
 │   ├── test-node-port-binding.bats
 │   └── test-symlink-execution.bats
-├── e2e/                       # End-to-end tests (planned)
-├── helpers/                   # Shared test helpers (future)
-├── fixtures/                  # Test data/fixtures (future)
-├── check-dependencies.sh      # Dependency checker
-├── setup-test-env.sh          # Auto-install dependencies
-├── run-all-tests.sh           # Main test runner
-└── README.md                  # This file
+├── e2e/                        # End-to-end tests (planned)
+├── helpers/                    # Shared test tooling
+│   └── select-tests.sh         # Maps staged changes -> relevant bats file(s)/group
+├── fixtures/                   # Test data/fixtures (future)
+├── check-dependencies.sh       # Dependency checker
+├── setup-test-env.sh           # Auto-install dependencies
+├── run-all-tests.sh            # Main test runner
+└── README.md                   # This file
 ```
+
+### Tool tests vs. `shared/` — the grouping convention
+
+`tests/unit/` follows one rule: **if a test file covers exactly one `bin/<tool>` wrapper, it stays flat** as `tests/unit/test-<tool>.bats`. Everything else — shared libraries (`bin/utils/*.sh`), the multi-subcommand `bin/mec` script, `setup.sh`, and config files — lives together under `tests/unit/shared/` and is treated as **one group**, not individually tracked files.
+
+This isn't just tidiness: `tests/helpers/select-tests.sh` (used by the local `bats-unit-tests` pre-commit hook and documented there) relies on this convention to decide which tests to run for a given change, without a hand-maintained lookup table:
+
+- A changed `bin/<tool>` resolves to `tests/unit/test-<tool>.bats` **if that file exists on disk** — add a new tool + its test file and it's covered automatically, no script edit needed.
+- A changed file under `bin/utils/`, `bin/mec`, `setup.sh`, `config/`, or `tests/helpers/` selects the **entire `tests/unit/shared/` directory**. Add a new shared lib or `mec` subcommand test under `shared/` and it runs as part of that same group automatically.
+- Anything that doesn't fit either pattern falls back to the full suite, so coverage is never silently skipped.
+
+**When adding a new test file:** if it tests a single `bin/<tool>` wrapper 1:1, put it in `tests/unit/test-<tool>.bats`. If it tests a shared lib, a `bin/mec` subcommand, `setup.sh`, or anything else that isn't a single tool, put it in `tests/unit/shared/`.
 
 ---
 
@@ -91,12 +107,12 @@ cd bats-core
 **Specific test file:**
 ```bash
 bats tests/unit/test-node.bats
-bats tests/unit/test-setup.bats
+bats tests/unit/shared/test-setup.bats
 ```
 
-**Unit tests only:**
+**Unit tests only (includes `shared/`):**
 ```bash
-bats tests/unit/*.bats
+bats -r tests/unit/
 ```
 
 **Integration tests only:**
@@ -355,7 +371,7 @@ Tests run automatically with optimizations for speed and reliability.
 **Jobs:**
 1. **setup** - Pre-pulls and caches Docker images (node:14-24, python, terraform, aws-cli)
 2. **smoke-tests** - Fast syntax checks and basic validations (~30 seconds)
-3. **unit-tests** - 8 test suites run in parallel using matrix strategy (~2 minutes)
+3. **unit-tests** - `tools` (flat `tests/unit/*.bats`) and `shared` (`tests/unit/shared/`) run in parallel via matrix strategy (~2 minutes). Always runs the full set in both groups regardless of which files changed — see [Tool tests vs. `shared/`](#tool-tests-vs-shared--the-grouping-convention) for how that differs from the local pre-commit hook.
 4. **integration-tests** - Port binding and symlink tests (main/release only, ~1 minute)
 5. **summary** - Aggregates results with status table
 
@@ -375,7 +391,7 @@ Tests run automatically with optimizations for speed and reliability.
 strategy:
   fail-fast: false
   matrix:
-    test-suite: [aws, common-utils, node, npm, python, setup, terraform, yarn]
+    test-group: [tools, shared]
 ```
 
 **Pre-pull Images in Parallel:**
@@ -495,12 +511,11 @@ grep "^@test" tests/unit/*.bats tests/integration/*.bats
 
 When adding new tests:
 
-1. Place unit tests in `tests/unit/`
-2. Place integration tests in `tests/integration/`
-3. Follow naming convention: `test-<component>.bats`
-4. Add test documentation to this README
-5. Ensure all tests pass before committing
-6. Update test count in this README
+1. Place integration tests in `tests/integration/`
+2. For unit tests, follow the [tool vs. `shared/` convention](#tool-tests-vs-shared--the-grouping-convention): a single `bin/<tool>` wrapper's test goes in `tests/unit/test-<tool>.bats`; anything else goes in `tests/unit/shared/`
+3. Add test documentation to this README
+4. Ensure all tests pass before committing
+5. Update test count in this README
 
 ---
 
