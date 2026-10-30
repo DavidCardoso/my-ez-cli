@@ -3,7 +3,7 @@
 # Tests for Configuration Manager
 # ============================================================================
 
-BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/.." && pwd)"
+BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/../.." && pwd)"
 
 setup() {
     # Create temporary config directory

@@ -19,16 +19,20 @@ CONTAINER_LABELS=$(get_container_labels "aws" "$IMAGE")
 # Setup logging (if enabled)
 setup_logging "aws" "$IMAGE" "aws ${*}"
 
-# Build docker command
-DOCKER_CMD="docker run -i $(get_tty_flag) --rm \
-    --name $CONTAINER_NAME \
-    $CONTAINER_LABELS \
-    ${AWS_PROFILE:+--env AWS_PROFILE=$AWS_PROFILE} \
-    --env LANG=\"en_US.UTF-8\" \
-    --volume $HOME/.aws:/root/.aws \
-    --volume $PWD:$WORKDIR \
-    --workdir $WORKDIR \
-    $IMAGE $(printf '%q ' "$@")"
+DOCKER_CMD=(docker run -i)
+TTY_FLAG=$(get_tty_flag)
+[ -n "$TTY_FLAG" ] && DOCKER_CMD+=("$TTY_FLAG")
+DOCKER_CMD+=(--rm --name "$CONTAINER_NAME")
+# shellcheck disable=SC2206  # CONTAINER_LABELS is an internally built flag list, word-split by design
+DOCKER_CMD+=($CONTAINER_LABELS)
+[ -n "$AWS_PROFILE" ] && DOCKER_CMD+=(--env "AWS_PROFILE=$AWS_PROFILE")
+DOCKER_CMD+=(
+    --env "LANG=en_US.UTF-8"
+    --volume "$HOME/.aws:/root/.aws"
+    --volume "$PWD:$WORKDIR"
+    --workdir "$WORKDIR"
+    "$IMAGE" "$@"
+)
 
 # Execute with AI analysis (error detection for AWS CLI)
-exec_with_ai "$DOCKER_CMD"
+exec_with_ai "${DOCKER_CMD[@]}"
