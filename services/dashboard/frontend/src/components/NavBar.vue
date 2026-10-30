@@ -8,15 +8,15 @@
 
       <div class="navbar-links">
         <RouterLink to="/" class="nav-link" :class="{ active: route.path === '/' }">
-          <i class="pi pi-home nav-icon"></i>
+          <House class="nav-icon" aria-hidden="true" />
           <span>Home</span>
         </RouterLink>
         <RouterLink to="/sessions" class="nav-link" :class="{ active: route.path.startsWith('/sessions') }">
-          <i class="pi pi-list nav-icon"></i>
+          <List class="nav-icon" aria-hidden="true" />
           <span>Sessions</span>
         </RouterLink>
         <RouterLink to="/tools" class="nav-link" :class="{ active: route.path === '/tools' }">
-          <i class="pi pi-box nav-icon"></i>
+          <Box class="nav-icon" aria-hidden="true" />
           <span>Tools</span>
         </RouterLink>
       </div>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import { Box, House, List } from 'lucide-vue-next'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import WsStatus from './WsStatus.vue'
@@ -146,6 +147,8 @@ onUnmounted(() => {
 
 .nav-icon {
   font-size: 13px;
+  width: 1em;
+  height: 1em;
   opacity: 0.8;
 }
 

@@ -5,7 +5,7 @@ Local web dashboard for [My Ez CLI](../../README.md). Visualises all tool sessio
 ## Stack
 
 - **Backend**: Python 3.12, FastAPI, uvicorn, watchfiles
-- **Frontend**: Vue 3, Vite, PrimeVue 4 (Aura dark theme), Chart.js, marked.js, highlight.js
+- **Frontend**: Vue 3, Vite, Reka UI (headless components, styled in `src/components/ui/`), Chart.js via vue-chartjs, Lucide icons, marked.js, highlight.js
 - **Distribution**: Single Docker container (multi-stage build)
 
 ## Usage
@@ -42,11 +42,12 @@ services/dashboard/
 │       └── ws.py            # WebSocket /ws endpoint
 ├── frontend/
 │   ├── src/
-│   │   ├── main.js          # Vue app entry, PrimeVue config
+│   │   ├── main.js          # Vue app entry
 │   │   ├── App.vue          # Root component (NavBar + RouterView)
 │   │   ├── router/          # Vue Router (history mode, 4 routes)
 │   │   ├── composables/     # useWebSocket.js, useSessions.js
 │   │   ├── components/      # NavBar, WsStatus, SessionTable, AiOutput, LogOutput
+│   │   │   └── ui/          # Thin styled wrappers: UiDataTable, UiSelect, UiTooltip, UiButton, UiTag, UiInput
 │   │   └── pages/           # HomePage, SessionsPage, SessionDetailPage, ToolsPage
 │   ├── tests/e2e/           # Playwright end-to-end tests
 │   ├── package.json

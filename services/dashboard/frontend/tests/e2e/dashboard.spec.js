@@ -24,6 +24,37 @@ test.describe('mec dashboard', () => {
     await expect(page.locator('.table-wrapper')).toBeVisible()
   })
 
+  test('sessions table sorts by column header', async ({ page }) => {
+    await page.goto('/sessions')
+    const toolHeader = page.locator('.table-wrapper th', { hasText: 'Tool' })
+    await expect(toolHeader).toHaveAttribute('aria-sort', 'none')
+    // Default sort is newest first
+    await expect(page.locator('.table-wrapper th', { hasText: 'Timestamp' })).toHaveAttribute('aria-sort', 'descending')
+
+    await toolHeader.getByRole('button').click()
+    await expect(toolHeader).toHaveAttribute('aria-sort', 'ascending')
+    await toolHeader.getByRole('button').click()
+    await expect(toolHeader).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  test('sessions tool filter narrows rows and can be cleared', async ({ page }) => {
+    await page.goto('/sessions')
+    await expect(page.locator('.ui-table__row').first()).toBeVisible()
+
+    const toolFilter = page.getByRole('combobox', { name: 'All tools' })
+    await toolFilter.click()
+    await page.getByRole('option', { name: 'node' }).click()
+    await page.keyboard.press('Escape')
+
+    await expect(toolFilter).toContainText('node')
+    const tools = await page.locator('.ui-table__row .tool-tag').allTextContents()
+    expect(tools.length).toBeGreaterThan(0)
+    expect(tools.every((t) => t.trim() === 'node')).toBe(true)
+
+    await page.getByRole('button', { name: 'Clear' }).click()
+    await expect(toolFilter).toContainText('All tools')
+  })
+
   test('tools page loads with tool list', async ({ page }) => {
     await page.goto('/tools')
     await expect(page.locator('.page-title')).toContainText('Tools')

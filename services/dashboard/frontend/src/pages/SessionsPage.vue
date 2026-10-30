@@ -16,15 +16,15 @@
       <!-- Filters toolbar -->
       <div class="toolbar">
         <div class="toolbar-search">
-          <i class="pi pi-search search-icon"></i>
-          <InputText
+          <Search class="search-icon" aria-hidden="true" />
+          <UiInput
             v-model="search"
             placeholder="Search sessions…"
             class="search-input"
           />
         </div>
 
-        <MultiSelect
+        <UiSelect multiple
           v-model="selectedTools"
           :options="availableTools"
           placeholder="All tools"
@@ -32,7 +32,7 @@
           class="filter-select"
         />
 
-        <Select
+        <UiSelect
           v-model="selectedAiStatus"
           :options="aiStatusOptions"
           optionLabel="label"
@@ -40,7 +40,7 @@
           class="filter-select"
         />
 
-        <Select
+        <UiSelect
           v-model="selectedExitCode"
           :options="exitCodeOptions"
           optionLabel="label"
@@ -48,9 +48,9 @@
           class="filter-select"
         />
 
-        <Button
+        <UiButton
           v-if="hasActiveFilters"
-          icon="pi pi-times"
+          :icon="X"
           label="Clear"
           text
           size="small"
@@ -72,12 +72,12 @@
 </template>
 
 <script setup>
+import { Search, X } from 'lucide-vue-next'
+import UiButton from '../components/ui/UiButton.vue'
+import UiInput from '../components/ui/UiInput.vue'
+import UiSelect from '../components/ui/UiSelect.vue'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
-import Select from 'primevue/select'
-import Button from 'primevue/button'
 import SessionTable from '../components/SessionTable.vue'
 import { useSessions } from '../composables/useSessions.js'
 import { useWebSocket } from '../composables/useWebSocket.js'
@@ -211,13 +211,15 @@ onMounted(async () => {
   transform: translateY(-50%);
   color: var(--mec-text-faint);
   font-size: 12px;
+  width: 1em;
+  height: 1em;
   pointer-events: none;
   z-index: 1;
 }
 
-.search-input {
+.ui-input.search-input {
   width: 100%;
-  padding-left: 30px !important;
+  padding-left: 30px;
 }
 
 .filter-select {
@@ -225,8 +227,8 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.clear-btn {
-  color: var(--mec-text-faint) !important;
+.ui-button.clear-btn {
+  color: var(--mec-text-faint);
   flex-shrink: 0;
 }
 

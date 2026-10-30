@@ -244,7 +244,7 @@ mec dashboard open     # Open in default browser
 
 The dashboard is a single Docker container (`ghcr.io/my-ez-cli/dashboard:latest`) built from a multi-stage Dockerfile:
 
-- **Stage 1** (`node:22-alpine`): builds the Vue 3 + Vite + PrimeVue frontend into `/frontend/dist/`
+- **Stage 1** (`node:24-alpine`): builds the Vue 3 + Vite frontend into `/frontend/dist/`
 - **Stage 2** (`python:3.12-alpine`): runs FastAPI + uvicorn; serves the built Vue assets from `/assets` and the REST API from `/api`
 
 The frontend connects to a WebSocket (`/ws`) for live updates whenever new sessions are written to `~/.my-ez-cli/`.
