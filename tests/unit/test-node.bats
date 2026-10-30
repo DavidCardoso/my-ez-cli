@@ -11,10 +11,10 @@ setup() {
     [ -x "$BASEDIR/bin/node" ]
 }
 
-@test "node runs with default version 22" {
+@test "node runs with default version 24" {
     run "$BASEDIR/bin/node" --version
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "v22" ]]
+    [[ "$output" =~ "v24" ]]
 }
 
 @test "node22 uses correct version" {

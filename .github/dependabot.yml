@@ -40,13 +40,6 @@ updates:
     target-branch: "main"
     open-pull-requests-limit: 5
 
-  # Docker base images — aws-sso-cred
-  - package-ecosystem: "docker"
-    directory: "/docker/aws-sso-cred"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
 
   # Docker base images — claude
   - package-ecosystem: "docker"

@@ -40,7 +40,7 @@ echo ""
 # Run unit tests
 if [ -d "$BASEDIR/tests/unit" ]; then
     echo "Running unit tests..."
-    bats "$BASEDIR/tests/unit"/*.bats
+    bats -r "$BASEDIR/tests/unit"
     echo ""
 fi
 
