@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Lint docker/ai-service/Dockerfile
         uses: hadolint/hadolint-action@v3.3.0

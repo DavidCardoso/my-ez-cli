@@ -479,6 +479,10 @@ Version suffixes: `pnpm20` (pnpm 10.x, Node 20), `pnpm22`/`pnpm24`/`pnpm` (pnpm 
 `$HOME/.local/share/pnpm/store` (override with `PNPM_STORE_DIR`) so packages are cached across
 runs instead of being re-downloaded every container invocation.
 
+**Persistent corepack cache** — pnpm itself is installed via corepack on top of the node
+image, and the download is cached at `$HOME/.cache/node/corepack` (override with
+`COREPACK_HOME`, same as `yarn-berry`) so pnpm is fetched once, not on every invocation.
+
 **Pin a specific pnpm version**:
 
 ```shell

@@ -92,11 +92,16 @@ repos:
   # Local test suite hooks — run conditionally based on changed files
   - repo: local
     hooks:
-      # Bats unit tests — triggered when shell scripts or bats tests change
+      # Bats unit tests — triggered when shell scripts or bats tests change.
+      # Only runs the bats file(s)/group relevant to the staged changes (see
+      # tests/helpers/select-tests.sh and tests/README.md for the tool vs.
+      # shared/ grouping convention); falls back to the full suite when a
+      # change has no derivable mapping. CI always runs the full suite
+      # regardless — this scoping is local-only.
       - id: bats-unit-tests
         name: bats (unit tests)
         language: system
-        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bats tests/unit/'
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && bats -r $(bash tests/helpers/select-tests.sh)'
         pass_filenames: false
         files: ^(bin/|tests/unit/|tests/integration/)
 
