@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Cache Docker images
         id: cache-docker
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -69,10 +69,10 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Load cached Docker images
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -205,10 +205,10 @@ jobs:
           - shared
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Load cached Docker images
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -254,7 +254,7 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -281,7 +281,7 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -307,17 +307,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Install frontend dependencies
-        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install
+        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install --legacy-peer-deps
 
       - name: Run Vitest unit tests
         run: cd services/dashboard/frontend && npm test
@@ -328,17 +328,17 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -352,7 +352,7 @@ jobs:
         run: |
           cd services/dashboard/frontend
           rm -f package-lock.json
-          npm install
+          npm install --legacy-peer-deps
           npm run build
           # Copy built assets to where FastAPI's static mount expects them
           mkdir -p ../src/static
@@ -382,10 +382,10 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Load cached Docker images
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-images
           key: ${{ runner.os }}-docker-${{ hashFiles('.github/workflows/test.yml') }}-v1
@@ -413,7 +413,7 @@ jobs:
     needs: setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install bats-core
         run: |
