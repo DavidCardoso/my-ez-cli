@@ -9,7 +9,7 @@
 #   tests/integration/test-dashboard.bats
 # ============================================================================
 
-BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/.." && pwd)"
+BASEDIR="$(cd "$(dirname "$BATS_TEST_DIRNAME")/../.." && pwd)"
 
 setup() {
     export MEC_BASE_DIR="$BASEDIR"
