@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
-from datetime import UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -215,26 +217,79 @@ class SessionDetail(SessionSummary):
     ai_tokens_output: int | None = None
 
 
+class SessionList(TypedDict):
+    """Result of list_sessions()."""
+
+    sessions: list[SessionSummary]
+    total: int
+
+
+class DayCount(TypedDict):
+    """Session count for one calendar day."""
+
+    date: str
+    count: int
+
+
+class Stats(TypedDict):
+    """Result of get_stats()."""
+
+    total_sessions: int
+    sessions_by_tool: dict[str, int]
+    tool_stats: dict[str, dict[str, int]]
+    exit_code_distribution: dict[str, int]
+    ai_analysis_rate: dict[str, int]
+    last_7_days: list[DayCount]
+    telemetry_enabled: bool
+    logs_enabled: bool
+    ai_enabled: bool
+
+
+# Log and sidecar files are written by shell scripts and may be hand-edited, so
+# every value read from them is untrusted: these helpers narrow JSON values to
+# the expected type and fall back instead of raising on malformed input.
+
+
+def _as_dict(value: object) -> dict[str, object]:
+    """Return value if it is a JSON object, else an empty dict."""
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
+def _as_int(value: object) -> int | None:
+    """Return value as int, or None if it is missing or not numeric."""
+    if isinstance(value, int | float | str):
+        try:
+            return int(value)
+        except (ValueError, OverflowError):  # "abc", NaN / Infinity
+            return None
+    return None
+
+
+def _as_str(value: object) -> str:
+    """Return value if it is a string, else an empty string."""
+    return value if isinstance(value, str) else ""
+
+
 def _read_json(path: Path) -> dict[str, object]:
-    """Read and parse a JSON file; return empty dict on any error.
+    """Read and parse a JSON object file; return empty dict on any error.
 
     If the file contains raw ANSI/control characters that make it invalid JSON,
     strip them and retry once — this recovers sessions logged before escape_json
     was hardened to strip terminal control sequences.
     """
-    import re
-
     try:
         content = path.read_text().strip()
         if not content:
             return {}
         try:
-            return json.loads(content)  # type: ignore[no-any-return]
+            return _as_dict(json.loads(content))
         except json.JSONDecodeError:
             # Strip ANSI escape sequences and C0 control characters, then retry
             clean = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", content)
             clean = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", clean)
-            return json.loads(clean)  # type: ignore[no-any-return]
+            return _as_dict(json.loads(clean))
     except (OSError, json.JSONDecodeError) as exc:
         logger.debug("Could not read %s: %s", path, exc)
         return {}
@@ -245,24 +300,18 @@ def _ai_status(ai_path: Path) -> tuple[str, str, str, int | None, int | None, in
     if not ai_path.exists() or ai_path.is_dir():
         return "none", "", "", None, None, None
     data = _read_json(ai_path)
-    analyses: dict[str, object] = data.get("analyses", {})  # type: ignore[assignment]
+    analyses = {key: _as_dict(value) for key, value in _as_dict(data.get("analyses")).items()}
     if not analyses:
         return "pending", "", "", None, None, None
-    # Pick the latest entry by timestamp
-    items = sorted(
-        analyses.items(),  # type: ignore[union-attr]
-        key=lambda kv: kv[1].get("timestamp", ""),  # type: ignore[union-attr]
-    )
-    claude_session_id: str = items[-1][0] if items else ""
-    entry: dict[str, object] = items[-1][1]  # type: ignore[assignment]
-    exec_time_raw = entry.get("execution_time_ms")
-    exec_time: int | None = int(exec_time_raw) if exec_time_raw is not None else None  # type: ignore[arg-type]
-    tokens: dict[str, object] = entry.get("tokens", {})  # type: ignore[assignment]
-    tok_in_raw = tokens.get("input", 0)
-    tok_out_raw = tokens.get("output", 0)
-    tok_in: int | None = int(tok_in_raw) if tok_in_raw is not None else None  # type: ignore[arg-type]
-    tok_out: int | None = int(tok_out_raw) if tok_out_raw is not None else None  # type: ignore[arg-type]
-    result: str = entry.get("result", "")  # type: ignore[union-attr, assignment]
+    # Pick the latest entry by timestamp (sorted() is stable: last wins on ties)
+    claude_session_id, entry = sorted(
+        analyses.items(), key=lambda kv: _as_str(kv[1].get("timestamp"))
+    )[-1]
+    exec_time = _as_int(entry.get("execution_time_ms"))
+    tokens = _as_dict(entry.get("tokens"))
+    tok_in = _as_int(tokens.get("input", 0))
+    tok_out = _as_int(tokens.get("output", 0))
+    result = _as_str(entry.get("result"))
     if result:
         return "done", result, claude_session_id, exec_time, tok_in, tok_out
     return "pending", "", claude_session_id, exec_time, tok_in, tok_out
@@ -286,7 +335,7 @@ def _sidecar_path(log_path: Path, data_root: Path) -> Path:
         return log_path  # fallback (should not happen)
 
 
-def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
+def list_sessions(data_root: Path, limit: int = 50) -> SessionList:
     """Return up to `limit` sessions newest-first, plus the total count of valid sessions."""
     all_files = _log_files(data_root)
     results: list[SessionSummary] = []
@@ -298,10 +347,9 @@ def list_sessions(data_root: Path, limit: int = 50) -> dict[str, object]:
         total += 1
         if len(results) >= limit:
             continue
-        execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
-        exit_code_raw = execution.get("exit_code")
-        exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
-        output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
+        execution = _as_dict(data.get("execution"))
+        exit_code = _as_int(execution.get("exit_code"))
+        output = _as_dict(data.get("output"))
         log_status = "captured" if output.get("stdout") else "none"
         ai_path = _sidecar_path(log_path, data_root)
         status, _, _claude_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
@@ -329,10 +377,9 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
         data = _read_json(log_path)
         if str(data.get("session_id", "")) != session_id:
             continue
-        execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
-        exit_code_raw = execution.get("exit_code")
-        exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
-        output: dict[str, object] = data.get("output", {})  # type: ignore[assignment]
+        execution = _as_dict(data.get("execution"))
+        exit_code = _as_int(execution.get("exit_code"))
+        output = _as_dict(data.get("output"))
         output_capture_disabled = output.get("stdout") is None and output.get("stderr") is None
         ai_path = _sidecar_path(log_path, data_root)
         status, result, claude_session_id, exec_time, tok_in, tok_out = _ai_status(ai_path)
@@ -358,7 +405,7 @@ def get_session(data_root: Path, session_id: str) -> SessionDetail | None:
     return None
 
 
-def _read_config(data_root: Path) -> dict[str, object]:
+def _read_config(data_root: Path) -> dict[str, dict[str, object]]:
     """Read ~/.my-ez-cli/config.yaml using a minimal YAML subset parser.
 
     Handles the simple nested structure used by mec config:
@@ -367,8 +414,6 @@ def _read_config(data_root: Path) -> dict[str, object]:
       ai:
         enabled: false
     """
-    import re
-
     config_path = data_root / "config.yaml"
     try:
         content = config_path.read_text()
@@ -376,7 +421,7 @@ def _read_config(data_root: Path) -> dict[str, object]:
         logger.debug("Could not read config %s: %s", config_path, exc)
         return {}
 
-    result: dict[str, object] = {}
+    result: dict[str, dict[str, object]] = {}
     current_section: str | None = None
     for line in content.splitlines():
         # Top-level key (no leading whitespace, ends with colon)
@@ -399,15 +444,12 @@ def _read_config(data_root: Path) -> dict[str, object]:
                     val = int(raw)
                 else:
                     val = raw.strip("\"'")
-                section: dict[str, object] = result[current_section]  # type: ignore[assignment]
-                section[key] = val
+                result[current_section][key] = val
     return result
 
 
-def get_stats(data_root: Path) -> dict[str, object]:
+def get_stats(data_root: Path) -> Stats:
     """Aggregate statistics across all sessions for the dashboard home page."""
-    from datetime import datetime, timedelta
-
     total = 0
     by_tool: dict[str, int] = {}
     exit_dist = {"success": 0, "failure": 0}
@@ -428,9 +470,8 @@ def get_stats(data_root: Path) -> dict[str, object]:
         tool = str(data.get("tool", "unknown"))
         by_tool[tool] = by_tool.get(tool, 0) + 1
 
-        execution: dict[str, object] = data.get("execution", {})  # type: ignore[assignment]
-        exit_code_raw = execution.get("exit_code")
-        exit_code = int(exit_code_raw) if exit_code_raw is not None else None  # type: ignore[arg-type]
+        execution = _as_dict(data.get("execution"))
+        exit_code = _as_int(execution.get("exit_code"))
         is_success = exit_code == 0
         if is_success:
             exit_dist["success"] += 1
@@ -460,12 +501,12 @@ def get_stats(data_root: Path) -> dict[str, object]:
             except Exception:
                 pass
 
-    last_7_days = [{"date": d, "count": c} for d, c in day_counts.items()]
+    last_7_days: list[DayCount] = [{"date": d, "count": c} for d, c in day_counts.items()]
 
     config = _read_config(data_root)
-    telemetry_cfg: dict[str, object] = config.get("telemetry", {})  # type: ignore[assignment]
-    logs_cfg: dict[str, object] = config.get("logs", {})  # type: ignore[assignment]
-    ai_cfg: dict[str, object] = config.get("ai", {})  # type: ignore[assignment]
+    telemetry_cfg = config.get("telemetry", {})
+    logs_cfg = config.get("logs", {})
+    ai_cfg = config.get("ai", {})
 
     return {
         "total_sessions": total,
