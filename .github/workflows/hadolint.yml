@@ -24,11 +24,6 @@ jobs:
         with:
           dockerfile: docker/ai-service/Dockerfile
 
-      - name: Lint docker/aws-sso-cred/Dockerfile
-        uses: hadolint/hadolint-action@v3.3.0
-        with:
-          dockerfile: docker/aws-sso-cred/Dockerfile
-
       - name: Lint docker/claude/Dockerfile
         uses: hadolint/hadolint-action@v3.3.0
         with:

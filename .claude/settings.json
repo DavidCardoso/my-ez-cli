@@ -53,7 +53,6 @@
         "yarn-berry",
         "yarn-plus",
         "serverless",
-        "aws-sso-cred",
         "speedtest",
         "ai-service",
         "claude",
