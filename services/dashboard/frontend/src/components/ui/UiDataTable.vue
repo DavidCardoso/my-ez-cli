@@ -43,7 +43,7 @@
     </table>
 
     <div v-if="paginator && !loading && sortedRows.length" class="ui-table__paginator">
-      <UiSelect v-model="perPage" :options="rowsPerPageOptions" aria-label="Rows per page" class="ui-table__per-page" />
+      <UiSelect v-model="perPage" :options="rowsPerPageOptions" aria-label="Rows per page" />
       <PaginationRoot v-model:page="page" :total="sortedRows.length" :items-per-page="perPage" :sibling-count="1" show-edges>
         <PaginationList v-slot="{ items }" class="ui-table__pages">
           <PaginationFirst class="ui-table__page-btn" aria-label="First page"><ChevronsLeft /></PaginationFirst>
@@ -166,7 +166,8 @@ td {
 }
 
 .ui-table__sort {
-  display: inline-flex;
+  display: flex;
+  width: 100%; /* whole header cell is the click target */
   align-items: center;
   gap: 6px;
   font: inherit;
@@ -200,7 +201,7 @@ th[aria-sort='descending'] .ui-table__sort { color: var(--mec-text); }
   background: var(--mec-surface-1);
 }
 
-.ui-table__per-page { min-width: 72px; }
+.ui-table__paginator :deep(.ui-select) { min-width: 72px; }
 
 .ui-table__pages {
   display: flex;

@@ -147,6 +147,8 @@ onUnmounted(() => {
 
 .nav-icon {
   font-size: 13px;
+  width: 1em;
+  height: 1em;
   opacity: 0.8;
 }
 

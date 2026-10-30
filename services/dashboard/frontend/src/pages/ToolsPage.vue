@@ -202,6 +202,8 @@ onMounted(async () => {
   transform: translateY(-50%);
   color: var(--mec-text-faint);
   font-size: 12px;
+  width: 1em;
+  height: 1em;
   pointer-events: none;
   z-index: 1;
 }

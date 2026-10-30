@@ -11,13 +11,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@primevue/themes": "^4.3.0",
     "chart.js": "^4.4.0",
     "highlight.js": "^11.10.0",
     "lucide-vue-next": "^1.0.0",
     "marked": "^18.0.4",
-    "primeicons": "^7.0.0",
-    "primevue": "^4.5.5",
     "reka-ui": "^2.11.0",
     "vue": "^3.5.40",
     "vue-chartjs": "^5.3.4",

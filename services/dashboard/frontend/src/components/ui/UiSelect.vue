@@ -92,7 +92,6 @@ const displayLabel = computed(() => {
 }
 
 .ui-select__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ui-select__label--placeholder { color: var(--mec-text-dim); }
 .ui-select__chevron { width: 16px; height: 16px; color: var(--mec-text-dim); flex-shrink: 0; }
 
 .ui-select__content {

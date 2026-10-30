@@ -4,7 +4,7 @@
     <div class="detail-header">
       <div class="detail-header-inner">
         <RouterLink to="/sessions" class="back-link">
-          <ArrowLeft aria-hidden="true" /> Sessions
+          <ArrowLeft :size="14" aria-hidden="true" /> Sessions
         </RouterLink>
         <div v-if="session" class="detail-title">
           <span class="detail-tool">{{ session.tool }}</span>
