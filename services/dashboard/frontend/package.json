@@ -15,7 +15,7 @@
     "vue-router": "^5.1.0",
     "primevue": "^4.5.5",
     "@primevue/themes": "^4.3.0",
-    "primeicons": "^7.0.0",
+    "primeicons": "^8.0.2",
     "chart.js": "^4.4.0",
     "marked": "^18.0.4",
     "highlight.js": "^11.10.0"
