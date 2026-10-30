@@ -317,7 +317,7 @@ jobs:
           cache-dependency-path: services/dashboard/frontend/package.json
 
       - name: Install frontend dependencies
-        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install
+        run: cd services/dashboard/frontend && rm -f package-lock.json && npm install --legacy-peer-deps
 
       - name: Run Vitest unit tests
         run: cd services/dashboard/frontend && npm test
@@ -352,7 +352,7 @@ jobs:
         run: |
           cd services/dashboard/frontend
           rm -f package-lock.json
-          npm install
+          npm install --legacy-peer-deps
           npm run build
           # Copy built assets to where FastAPI's static mount expects them
           mkdir -p ../src/static
