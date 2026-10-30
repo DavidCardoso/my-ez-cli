@@ -57,7 +57,7 @@ format-check:
 
 typecheck:
 	@echo "Running mypy type checker..."
-	poetry run mypy src
+	poetry run mypy
 
 test:
 	@echo "Running pytest..."
