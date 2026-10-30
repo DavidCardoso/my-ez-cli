@@ -46,13 +46,13 @@ export MEC_GCLOUD_VERSION MEC_IMAGE_GCLOUD
 export MEC_PYTHON_VERSION MEC_IMAGE_PYTHON
 export MEC_NODE_VERSION MEC_IMAGE_NODE
 export MEC_PROMPTFOO_VERSION MEC_IMAGE_PROMPTFOO
+export MEC_PNPM_VERSION
 # Group B — Custom tool version vars + image refs
 export MEC_YARN_BERRY_VERSION MEC_IMAGE_YARN_BERRY
 export MEC_CLAUDE_VERSION MEC_IMAGE_CLAUDE
 export MEC_PLAYWRIGHT_VERSION MEC_IMAGE_PLAYWRIGHT
 export MEC_SERVERLESS_VERSION MEC_IMAGE_SERVERLESS
 export MEC_SPEEDTEST_VERSION MEC_IMAGE_SPEEDTEST
-export MEC_AWS_SSO_CRED_VERSION MEC_IMAGE_AWS_SSO_CRED
 export MEC_YARN_PLUS_VERSION MEC_YARN_PLUS_BASE_VERSION MEC_IMAGE_YARN_PLUS
 # Group C — Internal service version vars + image refs
 export MEC_DASHBOARD_VERSION MEC_IMAGE_DASHBOARD
@@ -506,13 +506,14 @@ trigger_ai_analysis() {
 
 # Execute command with optional logging and AI analysis
 # This is the main wrapper that bin scripts should use
-# Usage: exec_with_ai "docker run ..."
+# Takes the command as argv (an array), never as a string, so no shell
+# metacharacter in any argument (e.g. $PWD) is ever re-parsed (see
+# GHSA-3vmh-fm2p-pcv2).
+# Usage: exec_with_ai "${DOCKER_CMD[@]}"
 exec_with_ai() {
-    local docker_cmd="$1"
-
     # If logging is not enabled, just run the command
     if [ "$LOG_SESSION_ENABLED" != "true" ]; then
-        eval "$docker_cmd"
+        "$@"
         return $?
     fi
 
@@ -526,7 +527,7 @@ exec_with_ai() {
         local stderr_tmp="${tmpdir_path}/stderr"
 
         set +e
-        eval "$docker_cmd" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
+        "$@" > >(tee "$stdout_tmp") 2> >(tee "$stderr_tmp" >&2)
         exit_code=$?
         set -e
 
@@ -539,7 +540,7 @@ exec_with_ai() {
     else
         # Output capture disabled — run directly, no tee overhead
         set +e
-        eval "$docker_cmd"
+        "$@"
         exit_code=$?
         set -e
     fi
