@@ -1,21 +1,24 @@
 <template>
-  <TooltipRoot :delay-duration="200">
-    <TooltipTrigger as-child>
-      <slot />
-    </TooltipTrigger>
-    <TooltipPortal>
-      <TooltipContent class="ui-tooltip" side="top" :side-offset="6">
-        {{ text }}
-        <TooltipArrow class="ui-tooltip__arrow" :width="10" :height="5" />
-      </TooltipContent>
-    </TooltipPortal>
-  </TooltipRoot>
+  <TooltipProvider :delay-duration="200">
+    <TooltipRoot>
+      <TooltipTrigger as-child>
+        <slot />
+      </TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent class="ui-tooltip" side="top" :side-offset="6">
+          {{ text }}
+          <TooltipArrow class="ui-tooltip__arrow" :width="10" :height="5" />
+        </TooltipContent>
+      </TooltipPortal>
+    </TooltipRoot>
+  </TooltipProvider>
 </template>
 
 <script setup>
-import { TooltipArrow, TooltipContent, TooltipPortal, TooltipRoot, TooltipTrigger } from 'reka-ui'
+import {
+  TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger,
+} from 'reka-ui'
 
-// Requires a <TooltipProvider> ancestor (mounted once in App.vue).
 defineProps({
   text: { type: String, required: true },
 })

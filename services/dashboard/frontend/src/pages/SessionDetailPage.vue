@@ -4,7 +4,7 @@
     <div class="detail-header">
       <div class="detail-header-inner">
         <RouterLink to="/sessions" class="back-link">
-          <i class="pi pi-arrow-left"></i> Sessions
+          <ArrowLeft aria-hidden="true" /> Sessions
         </RouterLink>
         <div v-if="session" class="detail-title">
           <span class="detail-tool">{{ session.tool }}</span>
@@ -21,7 +21,7 @@
       <div class="meta-bar">
         <div class="meta-item">
           <span class="meta-label">Tool</span>
-          <Tag :value="session.tool" class="tool-tag" />
+          <UiTag :value="session.tool" class="tool-tag" />
         </div>
         <div class="meta-item">
           <span class="meta-label">Timestamp</span>
@@ -29,7 +29,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">Exit Code</span>
-          <Tag
+          <UiTag
             v-if="session.exit_code !== null && session.exit_code !== undefined"
             :value="String(session.exit_code)"
             :severity="session.exit_code === 0 ? 'success' : 'danger'"
@@ -38,7 +38,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">AI Status</span>
-          <Tag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
+          <UiTag :value="session.ai_status" :severity="aiSeverity(session.ai_status)" />
         </div>
         <div v-if="session.ai_execution_time_ms != null" class="meta-item">
           <span class="meta-label">AI Time</span>
@@ -52,60 +52,68 @@
           <span class="meta-label">Run AI Analysis</span>
           <div class="session-id-row">
             <span class="meta-value mono" style="font-size: 11px;">mec ai analyze {{ session.session_id }}</span>
-            <Button
-              icon="pi pi-copy"
-              text
-              rounded
-              size="small"
-              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
-              v-tooltip="copiedAnalyze ? 'Copied!' : 'Copy command'"
-              @click="copyAnalyze"
-            />
+            <UiTooltip :text="copiedAnalyze ? 'Copied!' : 'Copy command'">
+              <UiButton
+                :icon="Copy"
+                text
+                rounded
+                size="small"
+                style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+                @click="copyAnalyze"
+                :aria-label="copiedAnalyze ? 'Copied!' : 'Copy command'"
+              />
+            </UiTooltip>
           </div>
         </div>
         <div class="meta-item meta-item--id">
           <span class="meta-label">Session ID</span>
           <div class="session-id-row">
             <span class="meta-value mono" style="font-size: 12px;">{{ session.session_id }}</span>
-            <Button
-              icon="pi pi-copy"
-              text
-              rounded
-              size="small"
-              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
-              v-tooltip="copiedId ? 'Copied!' : 'Copy ID'"
-              @click="copyId"
-            />
+            <UiTooltip :text="copiedId ? 'Copied!' : 'Copy ID'">
+              <UiButton
+                :icon="Copy"
+                text
+                rounded
+                size="small"
+                style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+                @click="copyId"
+                :aria-label="copiedId ? 'Copied!' : 'Copy ID'"
+              />
+            </UiTooltip>
           </div>
         </div>
         <div v-if="session.cwd" class="meta-item meta-item--wide">
           <span class="meta-label">Working Dir</span>
           <div class="session-id-row">
             <span class="meta-value mono" style="font-size: 11px; color: var(--mec-text-dim);">{{ session.cwd }}</span>
-            <Button
-              icon="pi pi-copy"
-              text
-              rounded
-              size="small"
-              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
-              v-tooltip="copiedCwd ? 'Copied!' : 'Copy path'"
-              @click="copyCwd"
-            />
+            <UiTooltip :text="copiedCwd ? 'Copied!' : 'Copy path'">
+              <UiButton
+                :icon="Copy"
+                text
+                rounded
+                size="small"
+                style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+                @click="copyCwd"
+                :aria-label="copiedCwd ? 'Copied!' : 'Copy path'"
+              />
+            </UiTooltip>
           </div>
         </div>
         <div v-if="session.claude_session_id" class="meta-item meta-item--wide">
           <span class="meta-label">Resume AI</span>
           <div class="session-id-row">
             <span class="meta-value mono" style="font-size: 11px;">claude --resume {{ session.claude_session_id }}</span>
-            <Button
-              icon="pi pi-copy"
-              text
-              rounded
-              size="small"
-              style="color: var(--mec-text-faint); width: 24px; height: 24px;"
-              v-tooltip="copiedResume ? 'Copied!' : 'Copy command'"
-              @click="copyResume"
-            />
+            <UiTooltip :text="copiedResume ? 'Copied!' : 'Copy command'">
+              <UiButton
+                :icon="Copy"
+                text
+                rounded
+                size="small"
+                style="color: var(--mec-text-faint); width: 24px; height: 24px;"
+                @click="copyResume"
+                :aria-label="copiedResume ? 'Copied!' : 'Copy command'"
+              />
+            </UiTooltip>
           </div>
         </div>
       </div>
@@ -114,15 +122,17 @@
       <div v-if="session.command" class="command-bar">
         <span class="command-prompt">$</span>
         <span class="command-text">{{ session.command }}</span>
-        <Button
-          icon="pi pi-copy"
-          text
-          rounded
-          size="small"
-          style="color: var(--mec-text-faint); width: 24px; height: 24px; margin-left: auto; flex-shrink: 0;"
-          v-tooltip="copiedCommand ? 'Copied!' : 'Copy command'"
-          @click="copyCommand"
-        />
+        <UiTooltip :text="copiedCommand ? 'Copied!' : 'Copy command'">
+          <UiButton
+            :icon="Copy"
+            text
+            rounded
+            size="small"
+            style="color: var(--mec-text-faint); width: 24px; height: 24px; margin-left: auto; flex-shrink: 0;"
+            @click="copyCommand"
+            :aria-label="copiedCommand ? 'Copied!' : 'Copy command'"
+          />
+        </UiTooltip>
       </div>
 
       <!-- Two-panel layout -->
@@ -137,7 +147,7 @@
     </div>
 
     <div v-else-if="notFound" class="not-found">
-      <i class="pi pi-exclamation-triangle" style="font-size: 28px; color: var(--mec-yellow);"></i>
+      <TriangleAlert :size="28" style="color: var(--mec-yellow);" aria-hidden="true" />
       <div style="color: var(--mec-text-dim); margin-top: 12px;">Session <span class="mono">{{ sessionId }}</span> not found.</div>
       <RouterLink to="/sessions" class="back-link" style="margin-top: 16px;">← Back to sessions</RouterLink>
     </div>
@@ -145,10 +155,12 @@
 </template>
 
 <script setup>
+import { ArrowLeft, Copy, TriangleAlert } from 'lucide-vue-next'
+import UiButton from '../components/ui/UiButton.vue'
+import UiTag from '../components/ui/UiTag.vue'
+import UiTooltip from '../components/ui/UiTooltip.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import Tag from 'primevue/tag'
-import Button from 'primevue/button'
 import LogOutput from '../components/LogOutput.vue'
 import AiOutput from '../components/AiOutput.vue'
 import { useWebSocket } from '../composables/useWebSocket.js'
@@ -355,10 +367,10 @@ async function copyCwd() {
   gap: 4px;
 }
 
-.tool-tag {
-  background: var(--mec-surface-3) !important;
-  color: var(--mec-accent-bright) !important;
-  border: 1px solid var(--mec-accent-dim) !important;
+.ui-tag.tool-tag {
+  background: var(--mec-surface-3);
+  color: var(--mec-accent-bright);
+  border: 1px solid var(--mec-accent-dim);
 }
 
 /* Command bar */

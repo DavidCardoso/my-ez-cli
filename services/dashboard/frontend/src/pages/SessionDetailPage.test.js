@@ -16,16 +16,6 @@ vi.mock('../components/LogOutput.vue', () => ({
 vi.mock('../components/AiOutput.vue', () => ({
   default: { template: '<div class="ai-output-stub" />', props: ['content', 'status'] },
 }))
-vi.mock('primevue/tag', () => ({
-  default: { template: '<span class="tag-stub">{{ value }}</span>', props: ['value', 'severity'] },
-}))
-vi.mock('primevue/button', () => ({
-  default: {
-    template: '<button class="btn-stub" @click="$emit(\'click\')"><slot /></button>',
-    emits: ['click'],
-    props: ['icon', 'text', 'rounded', 'size'],
-  },
-}))
 
 function makeSession(overrides = {}) {
   return {
@@ -114,7 +104,7 @@ describe('SessionDetailPage — Working Dir copy button', () => {
     expect(wrapper.text()).toContain('Working Dir')
     expect(wrapper.text()).toContain('/home/user/myproject')
     // Should have a copy button in the cwd row
-    const buttons = wrapper.findAll('.btn-stub')
+    const buttons = wrapper.findAll('.ui-button')
     expect(buttons.length).toBeGreaterThan(0)
   })
 })

@@ -13,8 +13,3 @@ config.global.stubs = {
   RouterLink: { template: '<a><slot /></a>' },
 }
 
-// Register v-tooltip as a no-op directive globally
-config.global.directives = {
-  ...config.global.directives,
-  tooltip: {},
-}

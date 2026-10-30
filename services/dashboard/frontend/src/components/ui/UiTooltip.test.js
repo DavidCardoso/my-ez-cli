@@ -1,15 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
-import { TooltipProvider } from 'reka-ui'
 import UiTooltip from './UiTooltip.vue'
 
 function mountWithText(initial) {
   const text = ref(initial)
   const Host = defineComponent({
-    components: { TooltipProvider, UiTooltip },
+    components: { UiTooltip },
     setup: () => ({ text }),
-    template: '<TooltipProvider><UiTooltip :text="text"><button class="trigger">copy</button></UiTooltip></TooltipProvider>',
+    template: '<UiTooltip :text="text"><button class="trigger">copy</button></UiTooltip>',
   })
   return { wrapper: mount(Host, { attachTo: document.body }), text }
 }

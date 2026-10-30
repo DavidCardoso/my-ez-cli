@@ -58,13 +58,9 @@
             <template v-if="loading">
               <div class="chart-skeleton skeleton-pulse"></div>
             </template>
-            <Chart
-              v-else-if="toolBarData.labels.length"
-              type="bar"
-              :data="toolBarData"
-              :options="barOptions"
-              class="chart"
-            />
+            <div v-else-if="toolBarData.labels.length" class="chart">
+              <Bar :data="toolBarData" :options="barOptions" />
+            </div>
             <div v-else class="chart-empty">No data</div>
           </div>
         </div>
@@ -76,13 +72,9 @@
             <template v-if="loading">
               <div class="chart-skeleton skeleton-pulse"></div>
             </template>
-            <Chart
-              v-else-if="stats && stats.total_sessions > 0"
-              type="doughnut"
-              :data="exitDonutData"
-              :options="donutOptions"
-              class="chart chart--donut"
-            />
+            <div v-else-if="stats && stats.total_sessions > 0" class="chart chart--donut">
+              <Doughnut :data="exitDonutData" :options="donutOptions" />
+            </div>
             <div v-else class="chart-empty">No data</div>
           </div>
         </div>
@@ -94,13 +86,9 @@
             <template v-if="loading">
               <div class="chart-skeleton skeleton-pulse"></div>
             </template>
-            <Chart
-              v-else-if="stats"
-              type="line"
-              :data="lineData"
-              :options="lineOptions"
-              class="chart"
-            />
+            <div v-else-if="stats" class="chart">
+              <Line :data="lineData" :options="lineOptions" />
+            </div>
             <div v-else class="chart-empty">No data</div>
           </div>
         </div>
@@ -111,8 +99,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import Chart from 'primevue/chart'
+import {
+  Chart as ChartJS, ArcElement, BarController, BarElement, CategoryScale, DoughnutController,
+  Filler, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
+} from 'chart.js'
+import { Bar, Doughnut, Line } from 'vue-chartjs'
 import { useWebSocket } from '../composables/useWebSocket.js'
+
+// Register only what the three charts use (chart.js/auto would pull in every chart type)
+ChartJS.register(
+  ArcElement, BarController, BarElement, CategoryScale, DoughnutController,
+  Filler, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip,
+)
 
 const stats = ref(null)
 const loading = ref(true)
@@ -492,8 +490,9 @@ const lineOptions = {
 }
 
 .chart {
-  width: 100% !important;
-  height: 200px !important;
+  position: relative; /* chart.js sizes the canvas to this box (maintainAspectRatio: false) */
+  width: 100%;
+  height: 200px;
 }
 
 .chart--donut {
