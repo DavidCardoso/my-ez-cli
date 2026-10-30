@@ -1,4 +1,15 @@
 version: 2
+
+# Grouping strategy:
+# - Minor and patch updates are batched into one PR per ecosystem/directory,
+#   so a weekly run produces a handful of PRs instead of one per package.
+# - Major updates stay as individual PRs, since each may need migration work.
+# - Security updates are batched separately so they are never held behind
+#   routine version bumps.
+#
+# Each Poetry/npm project keeps its own entry so a PR only ever touches one
+# lockfile; the Docker base images have no lockfile and share one entry.
+
 updates:
   # Python (Poetry) — AI service
   - package-ecosystem: "pip"
@@ -7,6 +18,12 @@ updates:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   # Python (Poetry) — Dashboard service
   - package-ecosystem: "pip"
@@ -15,6 +32,12 @@ updates:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   # Python (Poetry) — Config service
   - package-ecosystem: "pip"
@@ -23,6 +46,12 @@ updates:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   # npm — Dashboard frontend (Vue 3)
   - package-ecosystem: "npm"
@@ -31,6 +60,12 @@ updates:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -39,76 +74,26 @@ updates:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
-  # Docker base images — ai-service
+  # Docker base images — all custom images
   - package-ecosystem: "docker"
-    directory: "/docker/ai-service"
+    directories:
+      - "/docker/ai-service"
+      - "/docker/claude"
+      - "/docker/config-service"
+      - "/docker/dashboard"
+      - "/docker/playwright"
+      - "/docker/serverless"
+      - "/docker/speedtest"
+      - "/docker/yarn-berry"
+      - "/docker/yarn-plus"
     schedule:
       interval: "weekly"
     target-branch: "main"
     open-pull-requests-limit: 5
-
-
-  # Docker base images — claude
-  - package-ecosystem: "docker"
-    directory: "/docker/claude"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — config-service
-  - package-ecosystem: "docker"
-    directory: "/docker/config-service"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — dashboard
-  - package-ecosystem: "docker"
-    directory: "/docker/dashboard"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — playwright
-  - package-ecosystem: "docker"
-    directory: "/docker/playwright"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — serverless
-  - package-ecosystem: "docker"
-    directory: "/docker/serverless"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — speedtest
-  - package-ecosystem: "docker"
-    directory: "/docker/speedtest"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — yarn-berry
-  - package-ecosystem: "docker"
-    directory: "/docker/yarn-berry"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
-
-  # Docker base images — yarn-plus
-  - package-ecosystem: "docker"
-    directory: "/docker/yarn-plus"
-    schedule:
-      interval: "weekly"
-    target-branch: "main"
-    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
