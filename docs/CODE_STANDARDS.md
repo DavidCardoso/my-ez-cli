@@ -28,6 +28,16 @@ poetry add --group dev package-name  # development
 
 ### Configuration
 - `pyproject.toml` - Poetry deps, Ruff rules, Mypy settings, Pytest config
+
+### CI enforcement
+The `python-quality` job in `.github/workflows/test.yml` runs `ruff check`, `ruff format --check` and `mypy` for every Python service (`ai`, `config`, `dashboard`), using the tool versions pinned in each `poetry.lock`. Any finding fails the build, so run the same checks locally before pushing:
+
+```bash
+cd services/<service>
+poetry run ruff check . && poetry run ruff format --check . && poetry run mypy
+```
+
+Prefer fixing the type over adding `# type: ignore`. When one is unavoidable, use the specific error code (`# type: ignore[no-any-return]`) — `warn_unused_ignores` flags stale ones.
 - `.pre-commit-config.yaml` - Git hooks
 - `poetry.lock` - Locked versions (commit to git)
 

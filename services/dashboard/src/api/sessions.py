@@ -20,8 +20,7 @@ def _data_root(request: Request) -> Path:
 def sessions_list(request: Request, limit: int = 50) -> dict[str, object]:
     """Return up to `limit` sessions newest-first, plus the total count."""
     result = list_sessions(_data_root(request), limit=limit)
-    sessions = result["sessions"]  # type: ignore[index]
-    return {"sessions": [asdict(s) for s in sessions], "total": result["total"]}  # type: ignore[arg-type]
+    return {"sessions": [asdict(s) for s in result["sessions"]], "total": result["total"]}
 
 
 @router.get("/{session_id}")

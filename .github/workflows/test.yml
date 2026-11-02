@@ -302,6 +302,46 @@ jobs:
             dashboard-test \
             -m pytest tests/ -v
 
+  # Python lint, format and type checks — any ruff/mypy finding fails the build.
+  # Tools come from each service's poetry.lock, so CI runs the same versions
+  # as `make check` locally. The ai service has no Docker test image, so its
+  # pytest suite runs here too.
+  python-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ai, config, dashboard]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install poetry==1.8.4
+          poetry install --no-root --no-interaction
+
+      - name: Ruff lint
+        run: poetry run ruff check --output-format=github .
+
+      - name: Ruff format
+        run: poetry run ruff format --check .
+
+      - name: Mypy
+        run: poetry run mypy
+
+      - name: Pytest
+        if: matrix.service == 'ai'
+        run: poetry run pytest -v
+
   # Dashboard frontend unit tests — Vitest
   unit-tests-dashboard-frontend:
     runs-on: ubuntu-latest
@@ -428,7 +468,7 @@ jobs:
   # Summary job - aggregate results
   summary:
     runs-on: ubuntu-latest
-    needs: [smoke-tests, unit-tests, unit-tests-config-service, unit-tests-dashboard-api, unit-tests-dashboard-frontend, e2e-tests-dashboard, integration-tests, unit-tests-security-scripts]
+    needs: [smoke-tests, unit-tests, unit-tests-config-service, unit-tests-dashboard-api, unit-tests-dashboard-frontend, e2e-tests-dashboard, integration-tests, unit-tests-security-scripts, python-quality]
     if: always()
     steps:
       - name: Test Summary
@@ -445,6 +485,15 @@ jobs:
           echo "| Unit Tests (dashboard-frontend) | ${{ needs.unit-tests-dashboard-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests (security-scripts) | ${{ needs.unit-tests-security-scripts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E Tests (dashboard) | ${{ needs.e2e-tests-dashboard.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python lint & types (ruff, mypy) | ${{ needs.python-quality.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
+      # Make this aggregate job a usable required check: it runs with always(),
+      # so without this step it reports success even when a suite failed.
+      - name: Fail if any suite failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::One or more test suites failed or were cancelled"
+          exit 1

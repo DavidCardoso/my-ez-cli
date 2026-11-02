@@ -43,6 +43,7 @@ def _write_sidecar(
     data_root: Path,
     tool: str,
     ts: str,
+    *,
     result: str = "",
     execution_time_ms: int | None = None,
     tokens: dict[str, int] | None = None,
@@ -318,3 +319,85 @@ class TestGetSession:
         assert detail.ai_execution_time_ms == 5000
         assert detail.ai_tokens_input == 100
         assert detail.ai_tokens_output == 50
+
+
+class TestMalformedInput:
+    """Log and sidecar files are untrusted: bad values degrade, never raise."""
+
+    def _write_raw_log(self, data_root: Path, payload: object) -> None:
+        log_dir = data_root / "logs" / "npm"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        (log_dir / "2026-03-25_12-00-00.json").write_text(json.dumps(payload))
+
+    def _write_raw_sidecar(self, data_root: Path, payload: object) -> None:
+        ai_dir = data_root / "ai-analyses" / "npm"
+        ai_dir.mkdir(parents=True, exist_ok=True)
+        (ai_dir / "2026-03-25_12-00-00.json").write_text(json.dumps(payload))
+
+    @pytest.mark.parametrize("exit_code", ["abc", [1], {"code": 1}, "1.5"])
+    def test_non_numeric_exit_code_becomes_none(self, data_root: Path, exit_code: object) -> None:
+        self._write_raw_log(
+            data_root,
+            {"session_id": "mec-npm-1", "tool": "npm", "execution": {"exit_code": exit_code}},
+        )
+        assert list_sessions(data_root)["sessions"][0].exit_code is None
+        detail = get_session(data_root, "mec-npm-1")
+        assert detail is not None
+        assert detail.exit_code is None
+
+    def test_numeric_string_exit_code_still_parsed(self, data_root: Path) -> None:
+        self._write_raw_log(
+            data_root, {"session_id": "mec-npm-1", "tool": "npm", "execution": {"exit_code": "2"}}
+        )
+        assert list_sessions(data_root)["sessions"][0].exit_code == 2
+
+    def test_infinite_exit_code_becomes_none(self, data_root: Path) -> None:
+        log_dir = data_root / "logs" / "npm"
+        log_dir.mkdir(parents=True)
+        # Python's json module accepts the non-standard Infinity literal
+        (log_dir / "2026-03-25_12-00-00.json").write_text(
+            '{"session_id": "mec-npm-1", "tool": "npm", "execution": {"exit_code": Infinity}}'
+        )
+        assert list_sessions(data_root)["sessions"][0].exit_code is None
+
+    def test_non_object_sections_are_ignored(self, data_root: Path) -> None:
+        self._write_raw_log(
+            data_root,
+            {"session_id": "mec-npm-1", "tool": "npm", "execution": "oops", "output": ["x"]},
+        )
+        session = list_sessions(data_root)["sessions"][0]
+        assert session.exit_code is None
+        assert session.log_status == "none"
+
+    def test_top_level_array_is_skipped(self, data_root: Path) -> None:
+        self._write_raw_log(data_root, [{"session_id": "mec-npm-1"}])
+        assert list_sessions(data_root) == {"sessions": [], "total": 0}
+
+    def test_malformed_sidecar_entries_are_tolerated(self, data_root: Path) -> None:
+        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        self._write_raw_sidecar(
+            data_root,
+            {
+                "analyses": {
+                    "bad-entry": "not an object",
+                    "good-entry": {
+                        "timestamp": "2026-03-25T12:00:00Z",
+                        "result": "ok",
+                        "execution_time_ms": "fast",
+                        "tokens": {"input": None, "output": "12"},
+                    },
+                }
+            },
+        )
+        detail = get_session(data_root, "mec-npm-1")
+        assert detail is not None
+        assert detail.ai_status == "done"
+        assert detail.claude_session_id == "good-entry"
+        assert detail.ai_execution_time_ms is None
+        assert detail.ai_tokens_input is None
+        assert detail.ai_tokens_output == 12
+
+    def test_analyses_not_an_object_is_pending(self, data_root: Path) -> None:
+        _write_log(data_root, "npm", "2026-03-25_12-00-00", "mec-npm-1")
+        self._write_raw_sidecar(data_root, {"analyses": ["unexpected"]})
+        assert list_sessions(data_root)["sessions"][0].ai_status == "pending"
