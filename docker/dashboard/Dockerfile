@@ -1,5 +1,5 @@
 # ===========================================================================
-# Stage 1: Build Vue 3 + PrimeVue frontend
+# Stage 1: Build Vue 3 frontend (Vite)
 # ===========================================================================
 FROM node:24-alpine AS frontend-builder
 
