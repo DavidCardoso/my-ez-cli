@@ -2,13 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AiOutput from './AiOutput.vue'
 
-// Stub PrimeVue components used in AiOutput
-vi.mock('primevue/tag', () => ({
-  default: { template: '<span><slot /></span>' },
-}))
-vi.mock('primevue/button', () => ({
-  default: { template: '<button @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
-}))
 
 describe('AiOutput', () => {
   it('renders markdown content when status is "done"', () => {
