@@ -3,17 +3,18 @@
     <div class="panel-header">
       <span class="panel-title">Raw Output</span>
       <span v-if="hasStderr" class="stderr-badge">stderr</span>
-      <Button
-        v-if="hasContent"
-        icon="pi pi-copy"
-        text
-        rounded
-        size="small"
-        class="copy-btn"
-        :class="{ copied }"
-        v-tooltip="copied ? 'Copied!' : 'Copy'"
-        @click="copyContent"
-      />
+      <UiTooltip v-if="hasContent" :text="copied ? 'Copied!' : 'Copy'">
+        <UiButton
+          :icon="Copy"
+          text
+          rounded
+          size="small"
+          class="copy-btn"
+          :class="{ copied }"
+          @click="copyContent"
+          :aria-label="copied ? 'Copied!' : 'Copy'"
+        />
+      </UiTooltip>
     </div>
 
     <div class="panel-body">
@@ -29,11 +30,11 @@
         </div>
       </template>
       <div v-else-if="captureDisabled" class="state-msg">
-        <i class="pi pi-ban" style="font-size: 15px; opacity: 0.5;"></i>
+        <Ban :size="15" style="opacity: 0.5;" aria-hidden="true" />
         <span>Output capture disabled — run <code>mec logs enable</code> to record stdout/stderr.</span>
       </div>
       <div v-else class="state-msg">
-        <i class="pi pi-minus-circle" style="font-size: 15px; opacity: 0.4;"></i>
+        <CircleMinus :size="15" style="opacity: 0.4;" aria-hidden="true" />
         <span>No output for this session.</span>
       </div>
     </div>
@@ -41,8 +42,10 @@
 </template>
 
 <script setup>
+import { Ban, CircleMinus, Copy } from 'lucide-vue-next'
+import UiButton from './ui/UiButton.vue'
+import UiTooltip from './ui/UiTooltip.vue'
 import { computed, ref } from 'vue'
-import Button from 'primevue/button'
 
 const props = defineProps({
   stdout: { type: String, default: '' },
@@ -103,18 +106,18 @@ async function copyContent() {
   padding: 1px 6px;
 }
 
-.copy-btn {
+.ui-button.copy-btn {
   margin-left: auto;
-  color: var(--mec-text-faint) !important;
-  transition: color 0.15s !important;
+  color: var(--mec-text-faint);
+  transition: color 0.15s;
 }
 
-.copy-btn:hover {
-  color: var(--mec-accent-bright) !important;
+.ui-button.copy-btn:hover {
+  color: var(--mec-accent-bright);
 }
 
-.copy-btn.copied {
-  color: var(--mec-green) !important;
+.ui-button.copy-btn.copied {
+  color: var(--mec-green);
 }
 
 .panel-body {
