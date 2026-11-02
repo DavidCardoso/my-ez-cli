@@ -97,3 +97,8 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # Node major bumps are LTS decisions (odd majors like 25 are short-lived
+      # and go EOL within months), so they are made deliberately, not by bot.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
