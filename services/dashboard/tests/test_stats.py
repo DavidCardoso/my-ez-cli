@@ -63,16 +63,16 @@ class TestGetStats:
         _write_log(tmp_path, "mec-npm-1", "npm")
         stats = get_stats(tmp_path)
         assert stats["total_sessions"] == 3
-        assert stats["sessions_by_tool"]["node"] == 2  # type: ignore[index]
-        assert stats["sessions_by_tool"]["npm"] == 1  # type: ignore[index]
+        assert stats["sessions_by_tool"]["node"] == 2
+        assert stats["sessions_by_tool"]["npm"] == 1
 
     def test_exit_code_distribution(self, tmp_path: Path) -> None:
         _write_log(tmp_path, "mec-node-1", "node", exit_code=0)
         _write_log(tmp_path, "mec-node-2", "node", exit_code=1)
         _write_log(tmp_path, "mec-node-3", "node", exit_code=None)
         stats = get_stats(tmp_path)
-        assert stats["exit_code_distribution"]["success"] == 1  # type: ignore[index]
-        assert stats["exit_code_distribution"]["failure"] == 2  # type: ignore[index]
+        assert stats["exit_code_distribution"]["success"] == 1
+        assert stats["exit_code_distribution"]["failure"] == 2
 
     def test_ai_analysis_rate_done(self, tmp_path: Path) -> None:
         _write_log(tmp_path, "mec-node-1", "node")
@@ -91,7 +91,7 @@ class TestGetStats:
             )
         )
         stats = get_stats(tmp_path)
-        assert stats["ai_analysis_rate"]["done"] == 1  # type: ignore[index]
+        assert stats["ai_analysis_rate"]["done"] == 1
 
     def test_ai_analysis_rate_pending(self, tmp_path: Path) -> None:
         _write_log(tmp_path, "mec-node-1", "node")
@@ -102,26 +102,26 @@ class TestGetStats:
         sidecar = ai_dir / log_file.name
         sidecar.write_text(json.dumps({"analyses": {}}))
         stats = get_stats(tmp_path)
-        assert stats["ai_analysis_rate"]["pending"] == 1  # type: ignore[index]
+        assert stats["ai_analysis_rate"]["pending"] == 1
 
     def test_ai_analysis_rate_none(self, tmp_path: Path) -> None:
         _write_log(tmp_path, "mec-node-1", "node")
         # No sidecar file = none
         stats = get_stats(tmp_path)
-        assert stats["ai_analysis_rate"]["none"] == 1  # type: ignore[index]
+        assert stats["ai_analysis_rate"]["none"] == 1
 
     def test_last_7_days_always_7_entries(self, tmp_path: Path) -> None:
         stats = get_stats(tmp_path)
         assert len(stats["last_7_days"]) == 7
         for entry in stats["last_7_days"]:
-            assert "date" in entry  # type: ignore[operator]
-            assert "count" in entry  # type: ignore[operator]
-            assert isinstance(entry["count"], int)  # type: ignore[index]
+            assert "date" in entry
+            assert "count" in entry
+            assert isinstance(entry["count"], int)
 
     def test_last_7_days_dates_are_correct(self, tmp_path: Path) -> None:
         stats = get_stats(tmp_path)
         today = datetime.now(UTC).date()
-        dates = [e["date"] for e in stats["last_7_days"]]  # type: ignore[index]
+        dates = [e["date"] for e in stats["last_7_days"]]
         assert dates[0] == str(today - timedelta(days=6))
         assert dates[-1] == str(today)
 

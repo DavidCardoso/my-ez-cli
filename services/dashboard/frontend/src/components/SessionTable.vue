@@ -1,21 +1,21 @@
 <template>
-  <DataTable
-    :value="sessions"
+  <UiDataTable
+    :rows="sessions"
+    :columns="columns"
+    row-key="session_id"
     :loading="loading"
-    :rows="rows"
-    :rowsPerPageOptions="[20, 50, 100]"
+    :rows-per-page="rows"
+    :rows-per-page-options="[20, 50, 100]"
     paginator
-    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink"
-    sortField="timestamp"
-    :sortOrder="-1"
-    dataKey="session_id"
-    :rowHover="true"
+    clickable
+    sort-field="timestamp"
+    :sort-order="-1"
     class="mec-table"
-    @row-click="(e) => emit('row-click', e.data.session_id)"
+    @row-click="(row) => emit('row-click', row.session_id)"
   >
     <template #empty>
       <div class="table-empty">
-        <i class="pi pi-inbox" style="font-size: 28px; color: var(--mec-text-faint); margin-bottom: 10px;"></i>
+        <Inbox class="table-empty-icon" aria-hidden="true" />
         <div style="color: var(--mec-text-dim); font-size: 13px;">No sessions found.</div>
         <div style="color: var(--mec-text-faint); font-size: 12px; margin-top: 4px;">
           Run a tool with <code class="inline-code">MEC_TELEMETRY_ENABLED=true</code>
@@ -26,74 +26,62 @@
       <div class="table-loading">Loading sessions…</div>
     </template>
 
-    <Column field="timestamp" header="Timestamp (UTC)" sortable>
-      <template #body="{ data }">
-        <span class="mono" style="font-size: 12px; color: var(--mec-text-dim);">{{ fmtTs(data.timestamp) }}</span>
-      </template>
-    </Column>
+    <template #cell-timestamp="{ row }">
+      <span class="mono" style="font-size: 12px; color: var(--mec-text-dim);">{{ fmtTs(row.timestamp) }}</span>
+    </template>
 
-    <Column field="tool" header="Tool" sortable>
-      <template #body="{ data }">
-        <Tag :value="data.tool || '—'" class="tool-tag" />
-      </template>
-    </Column>
+    <template #cell-tool="{ row }">
+      <UiTag :value="row.tool || '—'" class="tool-tag" />
+    </template>
 
-    <Column field="exit_code" header="Exit" sortable>
-      <template #body="{ data }">
-        <Tag
-          v-if="data.exit_code !== null && data.exit_code !== undefined"
-          :value="String(data.exit_code)"
-          :severity="data.exit_code === 0 ? 'success' : 'danger'"
-          class="exit-tag"
-        />
-        <span v-else class="text-faint mono" style="font-size: 11px;">—</span>
-      </template>
-    </Column>
+    <template #cell-exit_code="{ row }">
+      <UiTag
+        v-if="row.exit_code !== null && row.exit_code !== undefined"
+        :value="String(row.exit_code)"
+        :severity="row.exit_code === 0 ? 'success' : 'danger'"
+        class="exit-tag"
+      />
+      <span v-else class="text-faint mono" style="font-size: 11px;">—</span>
+    </template>
 
-    <Column field="log_status" header="Logs" sortable>
-      <template #body="{ data }">
-        <Tag
-          :value="data.log_status"
-          :severity="logSeverity(data.log_status)"
-          class="log-tag"
-        />
-      </template>
-    </Column>
+    <template #cell-log_status="{ row }">
+      <UiTag :value="row.log_status" :severity="logSeverity(row.log_status)" class="log-tag" />
+    </template>
 
-    <Column field="ai_status" header="AI" sortable>
-      <template #body="{ data }">
-        <Tag
-          :value="data.ai_status"
-          :severity="aiSeverity(data.ai_status)"
-          class="ai-tag"
-        />
-      </template>
-    </Column>
+    <template #cell-ai_status="{ row }">
+      <UiTag :value="row.ai_status" :severity="aiSeverity(row.ai_status)" class="ai-tag" />
+    </template>
 
-    <Column field="ai_execution_time_ms" header="AI Time" sortable>
-      <template #body="{ data }">
-        <span class="mono col-ai-time">
-          {{ data.ai_execution_time_ms != null
-             ? (data.ai_execution_time_ms / 1000).toFixed(1) + 's'
-             : '—' }}
-        </span>
-      </template>
-    </Column>
+    <template #cell-ai_execution_time_ms="{ row }">
+      <span class="mono col-ai-time">
+        {{ row.ai_execution_time_ms != null
+           ? (row.ai_execution_time_ms / 1000).toFixed(1) + 's'
+           : '—' }}
+      </span>
+    </template>
 
-    <Column field="session_id" header="Session ID">
-      <template #body="{ data }">
-        <span class="mono session-id">{{ data.session_id }}</span>
-      </template>
-    </Column>
-  </DataTable>
+    <template #cell-session_id="{ row }">
+      <span class="mono session-id">{{ row.session_id }}</span>
+    </template>
+  </UiDataTable>
 </template>
 
 <script setup>
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
+import { Inbox } from 'lucide-vue-next'
+import UiDataTable from './ui/UiDataTable.vue'
+import UiTag from './ui/UiTag.vue'
 
-const props = defineProps({
+const columns = [
+  { field: 'timestamp', header: 'Timestamp (UTC)', sortable: true },
+  { field: 'tool', header: 'Tool', sortable: true },
+  { field: 'exit_code', header: 'Exit', sortable: true },
+  { field: 'log_status', header: 'Logs', sortable: true },
+  { field: 'ai_status', header: 'AI', sortable: true },
+  { field: 'ai_execution_time_ms', header: 'AI Time', sortable: true },
+  { field: 'session_id', header: 'Session ID' },
+]
+
+defineProps({
   sessions: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   rows: { type: Number, default: 20 },
@@ -136,10 +124,17 @@ function logSeverity(status) {
   font-size: 13px;
 }
 
-.tool-tag {
-  background: var(--mec-surface-3) !important;
-  color: var(--mec-accent-bright) !important;
-  border: 1px solid var(--mec-accent-dim) !important;
+.table-empty-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--mec-text-faint);
+  margin-bottom: 10px;
+}
+
+.ui-tag.tool-tag {
+  background: var(--mec-surface-3);
+  color: var(--mec-accent-bright);
+  border: 1px solid var(--mec-accent-dim);
 }
 
 .exit-tag {

@@ -10,6 +10,7 @@ Commands:
 - --version: Show version
 """
 
+import json
 import sys
 import tomllib
 from collections.abc import Callable
@@ -146,8 +147,6 @@ def _print_error_and_exit(
         code: Exit code
         **kwargs: Additional fields
     """
-    import json
-
     response: dict[str, Any] = _error_response(error, error_type, **kwargs)
     print(json.dumps(response), file=sys.stderr)
     sys.exit(code)
@@ -255,8 +254,6 @@ def main() -> None:
         _print_error_and_exit(f"Failed to load configuration: {e}", "ConfigurationError")
 
     if config and not is_ai_enabled(config):
-        import json
-
         response: dict[str, Any] = {
             "status": "disabled",
             "error": "AI integration is disabled",
@@ -279,7 +276,6 @@ def main() -> None:
                 "UsageError",
                 suggestion="Run 'ai-service --help' for usage information",
             )
-            return
 
         handler(config, logger)
 

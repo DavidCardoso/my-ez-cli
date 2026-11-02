@@ -2,28 +2,29 @@
   <div class="ai-output">
     <div class="panel-header">
       <span class="panel-title">AI Analysis</span>
-      <Tag v-if="status" :value="status" :severity="aiSeverity(status)" style="font-size: 10px;" />
-      <Button
-        v-if="status === 'done' && content"
-        icon="pi pi-copy"
-        text
-        rounded
-        size="small"
-        class="copy-btn"
-        :class="{ copied }"
-        v-tooltip="copied ? 'Copied!' : 'Copy'"
-        @click="copyContent"
-      />
+      <UiTag v-if="status" :value="status" :severity="aiSeverity(status)" style="font-size: 10px;" />
+      <UiTooltip v-if="status === 'done' && content" :text="copied ? 'Copied!' : 'Copy'">
+        <UiButton
+          :icon="Copy"
+          text
+          rounded
+          size="small"
+          class="copy-btn"
+          :class="{ copied }"
+          @click="copyContent"
+          :aria-label="copied ? 'Copied!' : 'Copy'"
+        />
+      </UiTooltip>
     </div>
 
     <div class="panel-body">
       <div v-if="status === 'done' && content" class="prose" v-html="renderedMarkdown"></div>
       <div v-else-if="status === 'pending'" class="state-msg state-msg--pending">
-        <i class="pi pi-spin pi-spinner" style="font-size: 15px;"></i>
+        <LoaderCircle class="ui-spin" :size="15" aria-hidden="true" />
         <span>Analysis running in background — page updates automatically.</span>
       </div>
       <div v-else class="state-msg state-msg--none">
-        <i class="pi pi-ban" style="font-size: 15px; opacity: 0.5;"></i>
+        <Ban :size="15" style="opacity: 0.5;" aria-hidden="true" />
         <span>No AI analysis for this session.</span>
       </div>
     </div>
@@ -31,10 +32,12 @@
 </template>
 
 <script setup>
+import { Ban, Copy, LoaderCircle } from 'lucide-vue-next'
+import UiButton from './ui/UiButton.vue'
+import UiTag from './ui/UiTag.vue'
+import UiTooltip from './ui/UiTooltip.vue'
 import { computed, ref } from 'vue'
 import { marked } from 'marked'
-import Tag from 'primevue/tag'
-import Button from 'primevue/button'
 
 const props = defineProps({
   content: { type: String, default: '' },
@@ -91,18 +94,18 @@ async function copyContent() {
   color: var(--mec-text-dim);
 }
 
-.copy-btn {
+.ui-button.copy-btn {
   margin-left: auto;
-  color: var(--mec-text-faint) !important;
-  transition: color 0.15s !important;
+  color: var(--mec-text-faint);
+  transition: color 0.15s;
 }
 
-.copy-btn:hover {
-  color: var(--mec-accent-bright) !important;
+.ui-button.copy-btn:hover {
+  color: var(--mec-accent-bright);
 }
 
-.copy-btn.copied {
-  color: var(--mec-green) !important;
+.ui-button.copy-btn.copied {
+  color: var(--mec-green);
 }
 
 .panel-body {

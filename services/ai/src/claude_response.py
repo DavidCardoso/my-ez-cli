@@ -68,6 +68,7 @@ def write_ai_analysis(
     log_session_id: str,
     claude_session_id: str,
     result: str,
+    *,
     logger: logging.Logger,
     input_tokens: int = 0,
     output_tokens: int = 0,

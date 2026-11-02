@@ -250,7 +250,7 @@ class TestSetYamlKeyErrors:
 class TestMainCLI:
     """Tests for the main() CLI dispatcher."""
 
-    def test_get_existing_key(self, config_file: Path, capsys: pytest.CaptureFixture) -> None:
+    def test_get_existing_key(self, config_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main(["get", str(config_file), "ai.claude.model"])
         assert rc == 0
         captured = capsys.readouterr()
@@ -260,7 +260,9 @@ class TestMainCLI:
         with pytest.raises(ConfigKeyError):
             main(["get", str(config_file), "nonexistent.key"])
 
-    def test_set_and_get_roundtrip(self, config_file: Path, capsys: pytest.CaptureFixture) -> None:
+    def test_set_and_get_roundtrip(
+        self, config_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         rc = main(["set", str(config_file), "ai.claude.model", "haiku"])
         assert rc == 0
 
@@ -424,7 +426,7 @@ class TestMainCLIList:
     """Tests for the main() CLI dispatcher — list commands."""
 
     def test_get_list_existing_key(
-        self, firewall_file: Path, capsys: pytest.CaptureFixture
+        self, firewall_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         rc = main(["get-list", str(firewall_file), "ai.claude.firewall.dns_resolve_domains"])
         assert rc == 0
@@ -439,7 +441,7 @@ class TestMainCLIList:
             main(["get-list", str(firewall_file), "ai.claude.firewall.nonexistent"])
 
     def test_add_list_item_and_verify(
-        self, firewall_file: Path, capsys: pytest.CaptureFixture
+        self, firewall_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         rc = main(
             [
@@ -456,7 +458,7 @@ class TestMainCLIList:
         assert "added.example.com" in captured.out
 
     def test_remove_list_item_and_verify(
-        self, firewall_file: Path, capsys: pytest.CaptureFixture
+        self, firewall_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         rc = main(
             [

@@ -18,7 +18,7 @@ def _data_root(request: Request) -> Path:
 @router.get("/stats")
 def stats_endpoint(request: Request) -> dict[str, object]:
     """Return aggregate stats for the dashboard home page."""
-    return get_stats(_data_root(request))
+    return dict(get_stats(_data_root(request)))
 
 
 @router.get("/tools")

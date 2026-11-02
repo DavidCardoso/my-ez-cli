@@ -94,7 +94,7 @@ class TestParseClaudeResponse:
                 "usage": {"input_tokens": 3200, "output_tokens": 512},
             }
         )
-        session_id, result, input_tok, output_tok = parse_claude_response(raw, mock_logger)
+        _session_id, _result, input_tok, output_tok = parse_claude_response(raw, mock_logger)
         assert input_tok == 3200
         assert output_tok == 512
 
@@ -153,7 +153,7 @@ class TestWriteAiAnalysis:
             "mec-node-1705318245",
             "abc-123-def",
             "Fix the import error.",
-            mock_logger,
+            logger=mock_logger,
         )
 
         sidecar: dict[str, Any] = json.loads(ai_path.read_text())
@@ -174,7 +174,7 @@ class TestWriteAiAnalysis:
             "mec-node-1",
             "session-A",
             "First analysis",
-            mock_logger,
+            logger=mock_logger,
         )
         write_ai_analysis(
             str(ai_path),
@@ -182,7 +182,7 @@ class TestWriteAiAnalysis:
             "mec-node-1",
             "session-B",
             "Second analysis",
-            mock_logger,
+            logger=mock_logger,
         )
 
         sidecar: dict[str, Any] = json.loads(ai_path.read_text())
@@ -199,7 +199,12 @@ class TestWriteAiAnalysis:
         ai_path = tmp_path / "ai-analyses.json"
 
         write_ai_analysis(
-            str(ai_path), str(log_file), "mec-node-1", "session-1", "Some analysis", mock_logger
+            str(ai_path),
+            str(log_file),
+            "mec-node-1",
+            "session-1",
+            "Some analysis",
+            logger=mock_logger,
         )
 
         assert log_file.read_text() == original_content
@@ -209,7 +214,7 @@ class TestWriteAiAnalysis:
         """Empty claude_session_id falls back to 'unknown' as the key."""
         ai_path = tmp_path / "ai-analyses.json"
         write_ai_analysis(
-            str(ai_path), "/logs/node/s.json", "mec-node-1", "", "Some result", mock_logger
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "", "Some result", logger=mock_logger
         )
 
         sidecar: dict[str, Any] = json.loads(ai_path.read_text())
@@ -224,7 +229,7 @@ class TestWriteAiAnalysis:
                 "mec-node-1",
                 "session-1",
                 "result",
-                mock_logger,
+                logger=mock_logger,
             )
 
     def test_corrupt_sidecar_starts_fresh(self, tmp_path: Path, mock_logger: Mock) -> None:
@@ -233,7 +238,7 @@ class TestWriteAiAnalysis:
         ai_path.write_text("{ not valid json }")
 
         write_ai_analysis(
-            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", logger=mock_logger
         )
 
         sidecar: dict[str, Any] = json.loads(ai_path.read_text())
@@ -246,7 +251,7 @@ class TestWriteAiAnalysis:
         ai_path.write_text("")  # simulates `touch`
 
         write_ai_analysis(
-            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", logger=mock_logger
         )
 
         sidecar: dict[str, Any] = json.loads(ai_path.read_text())
@@ -259,7 +264,7 @@ class TestWriteAiAnalysis:
         """Output sidecar file is valid JSON and ends with a newline."""
         ai_path = tmp_path / "ai-analyses.json"
         write_ai_analysis(
-            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", mock_logger
+            str(ai_path), "/logs/node/s.json", "mec-node-1", "s1", "result", logger=mock_logger
         )
 
         content: str = ai_path.read_text()
@@ -275,7 +280,7 @@ class TestWriteAiAnalysis:
             "sess-1",
             "claude-1",
             "result",
-            mock_logger,
+            logger=mock_logger,
             input_tokens=100,
             output_tokens=50,
         )
@@ -286,7 +291,9 @@ class TestWriteAiAnalysis:
     def test_write_ai_analysis_tokens_default_zero(self, tmp_path: Path, mock_logger: Mock) -> None:
         """write_ai_analysis stores zero tokens when not provided."""
         path = tmp_path / "ai.json"
-        write_ai_analysis(str(path), "/log.json", "sess-1", "claude-1", "result", mock_logger)
+        write_ai_analysis(
+            str(path), "/log.json", "sess-1", "claude-1", "result", logger=mock_logger
+        )
         data: dict[str, Any] = json.loads(path.read_text())
         entry = data["analyses"]["claude-1"]
         assert entry["tokens"] == {"input": 0, "output": 0}
