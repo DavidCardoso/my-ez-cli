@@ -34,8 +34,9 @@ RUN addgroup -g 1000 mecconfig && \
     adduser -D -u 1000 -G mecconfig mecconfig && \
     chown -R mecconfig:mecconfig /app
 
-# Switch to non-root user
-USER mecconfig
+# Switch to non-root user (numeric UID:GID so the host and runtimes like
+# Kubernetes runAsNonRoot can verify it; matches the user created above)
+USER 1000:1000
 
 # Set Python path
 ENV PYTHONPATH=/app
