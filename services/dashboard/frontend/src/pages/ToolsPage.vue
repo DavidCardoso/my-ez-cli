@@ -14,14 +14,14 @@
       <!-- Search + filter toolbar -->
       <div class="toolbar">
         <div class="toolbar-search">
-          <i class="pi pi-search search-icon"></i>
-          <InputText
+          <Search class="search-icon" aria-hidden="true" />
+          <UiInput
             v-model="search"
             placeholder="Search tools…"
             class="search-input"
           />
         </div>
-        <Select
+        <UiSelect
           v-model="selectedCategory"
           :options="categoryOptions"
           optionLabel="label"
@@ -32,59 +32,60 @@
 
       <!-- Table -->
       <div class="table-wrapper">
-        <DataTable
-          :value="filteredTools"
+        <UiDataTable
+          :rows="filteredTools"
+          :columns="columns"
+          row-key="name"
           :loading="loading"
-          sortField="name"
-          :sortOrder="1"
+          sort-field="name"
+          :sort-order="1"
           class="tools-table"
         >
           <template #empty>
             <div class="table-empty">
-              <i class="pi pi-search" style="font-size: 24px; color: var(--mec-text-faint);"></i>
+              <Search :size="24" style="color: var(--mec-text-faint);" aria-hidden="true" />
               <div style="color: var(--mec-text-dim); margin-top: 8px;">No tools match your search.</div>
             </div>
           </template>
 
-          <Column field="name" header="Name" sortable style="width: 150px;">
-            <template #body="{ data }">
-              <span class="tool-name mono">{{ data.name }}</span>
-            </template>
-          </Column>
+          <template #cell-name="{ row }">
+            <span class="tool-name mono">{{ row.name }}</span>
+          </template>
 
-          <Column field="category" header="Category" sortable style="width: 120px;">
-            <template #body="{ data }">
-              <Tag :value="data.category" :severity="categorySeverity(data.category)" class="category-tag" />
-            </template>
-          </Column>
+          <template #cell-category="{ row }">
+            <UiTag :value="row.category" :severity="categorySeverity(row.category)" class="category-tag" />
+          </template>
 
-          <Column field="description" header="Description">
-            <template #body="{ data }">
-              <span class="tool-description">{{ data.description }}</span>
-            </template>
-          </Column>
+          <template #cell-description="{ row }">
+            <span class="tool-description">{{ row.description }}</span>
+          </template>
 
-          <Column field="image" header="Image">
-            <template #body="{ data }">
-              <span class="tool-image mono">{{ data.image }}</span>
-            </template>
-          </Column>
-        </DataTable>
+          <template #cell-image="{ row }">
+            <span class="tool-image mono">{{ row.image }}</span>
+          </template>
+        </UiDataTable>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { Search } from 'lucide-vue-next'
+import UiInput from '../components/ui/UiInput.vue'
+import UiSelect from '../components/ui/UiSelect.vue'
+import UiTag from '../components/ui/UiTag.vue'
+import UiDataTable from '../components/ui/UiDataTable.vue'
 import { ref, computed, onMounted } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 const tools = ref([])
 const loading = ref(true)
+const columns = [
+  { field: 'name', header: 'Name', sortable: true, style: 'width: 150px;' },
+  { field: 'category', header: 'Category', sortable: true, style: 'width: 120px;' },
+  { field: 'description', header: 'Description' },
+  { field: 'image', header: 'Image' },
+]
+
 const search = ref('')
 const selectedCategory = ref('all')
 
@@ -201,13 +202,15 @@ onMounted(async () => {
   transform: translateY(-50%);
   color: var(--mec-text-faint);
   font-size: 12px;
+  width: 1em;
+  height: 1em;
   pointer-events: none;
   z-index: 1;
 }
 
-.search-input {
+.ui-input.search-input {
   width: 100%;
-  padding-left: 30px !important;
+  padding-left: 30px;
 }
 
 .filter-select {
@@ -238,8 +241,8 @@ onMounted(async () => {
   word-break: break-all;
 }
 
-.category-tag {
-  font-size: 10px !important;
+.ui-tag.category-tag {
+  font-size: 10px;
 }
 
 .table-empty {
