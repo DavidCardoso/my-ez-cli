@@ -4,7 +4,7 @@
 
 When writing or editing any `.github/workflows/` file, always use the latest major version of each action. Node.js 20-based action versions are deprecated (forced to Node.js 24 June 2026, removed September 2026).
 
-**Current latest versions (as of 2026-10):**
+**Current latest versions (as of 2026-11):**
 - `actions/checkout@v7`
 - `actions/upload-artifact@v7`
 - `actions/download-artifact@v8`
@@ -19,7 +19,7 @@ When writing or editing any `.github/workflows/` file, always use the latest maj
 - `aquasecurity/trivy-action@v0.36.0`
 - `github/codeql-action/*@v4`
 - `ossf/scorecard-action@v2.4.4`
-- `hadolint/hadolint-action@v3.3.0`
+- `hadolint/hadolint-action@v3.5.0`
 
 **How to apply:**
 - Before adding any `uses:` line, verify the action's latest release: `gh api repos/<owner>/<repo>/releases/latest --jq '.tag_name'`
