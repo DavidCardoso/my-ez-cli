@@ -34,7 +34,10 @@
   --mec-red-dim: rgba(255, 107, 107, 0.15);
   --mec-yellow: #ffd93d;
   --mec-yellow-dim: rgba(255, 217, 61, 0.15);
+  --mec-orange: #fb923c;
+  --mec-orange-dim: rgba(251, 146, 60, 0.15);
   --mec-blue: #60a5fa;
+  --mec-blue-dim: rgba(96, 165, 250, 0.15);
 
   /* Font stacks */
   --font-mono: 'IBM Plex Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
@@ -81,113 +84,17 @@ html, body {
   color: var(--mec-text);
 }
 
-/* PrimeVue overrides — surface token remapping to our palette */
-.p-dark {
-  --p-surface-0: var(--mec-bg);
-  --p-surface-50: var(--mec-surface-1);
-  --p-surface-100: var(--mec-surface-2);
-  --p-surface-200: var(--mec-surface-3);
-  --p-surface-300: var(--mec-border);
-  --p-surface-400: var(--mec-text-faint);
-  --p-surface-500: var(--mec-text-dim);
-  --p-surface-600: #6b7899;
-  --p-surface-700: #8b95b0;
-  --p-surface-800: var(--mec-text);
-  --p-surface-900: #eef2ff;
-  --p-surface-950: #f8faff;
-
-  --p-primary-color: var(--mec-accent);
-  --p-primary-contrast-color: #ffffff;
-  --p-primary-hover-color: var(--mec-accent-bright);
+/* Spinning icon (e.g. pending analysis) */
+.ui-spin {
+  animation: ui-spin 1s linear infinite;
 }
 
-/* PrimeVue DataTable */
-.p-datatable .p-datatable-thead > tr > th {
-  background: var(--mec-surface-2) !important;
-  border-color: var(--mec-border) !important;
-  color: var(--mec-text-dim) !important;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 10px 14px !important;
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
 }
 
-.p-datatable .p-datatable-tbody > tr {
-  background: transparent !important;
-  border-color: var(--mec-border-subtle) !important;
-  transition: background 0.12s;
-}
-
-.p-datatable .p-datatable-tbody > tr:hover {
-  background: var(--mec-surface-2) !important;
-  cursor: pointer;
-}
-
-.p-datatable .p-datatable-tbody > tr > td {
-  border-color: var(--mec-border-subtle) !important;
-  padding: 9px 14px !important;
-}
-
-/* PrimeVue Card */
-.p-card {
-  background: var(--mec-surface-1) !important;
-  border: 1px solid var(--mec-border) !important;
-  border-radius: 10px !important;
-}
-
-.p-card .p-card-content {
-  padding: 0 !important;
-}
-
-/* PrimeVue Tag */
-.p-tag {
-  font-family: var(--font-mono) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  border-radius: 4px !important;
-  padding: 2px 8px !important;
-  letter-spacing: 0.02em;
-}
-
-/* PrimeVue Button */
-.p-button {
-  font-family: var(--font-ui) !important;
-  font-size: 13px !important;
-}
-
-/* PrimeVue InputText */
-.p-inputtext {
-  background: var(--mec-surface-2) !important;
-  border-color: var(--mec-border) !important;
-  color: var(--mec-text) !important;
-  font-family: var(--font-ui) !important;
-  font-size: 13px !important;
-}
-
-.p-inputtext:focus {
-  border-color: var(--mec-accent) !important;
-  box-shadow: 0 0 0 2px var(--mec-accent-glow) !important;
-}
-
-/* PrimeVue Select / MultiSelect */
-.p-select,
-.p-multiselect {
-  background: var(--mec-surface-2) !important;
-  border-color: var(--mec-border) !important;
-}
-
-.p-select-label,
-.p-multiselect-label {
-  color: var(--mec-text) !important;
-  font-size: 13px !important;
-}
-
-/* PrimeVue Paginator */
-.p-paginator {
-  background: var(--mec-surface-1) !important;
-  border-color: var(--mec-border) !important;
+@media (prefers-reduced-motion: reduce) {
+  .ui-spin { animation: none; }
 }
 
 /* Markdown prose styles */
