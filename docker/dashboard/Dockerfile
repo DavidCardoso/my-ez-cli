@@ -5,10 +5,14 @@ FROM node:24-alpine AS frontend-builder
 
 WORKDIR /frontend
 
-# Copy registry config and package manifest (no lockfile — let npm resolve
-# optional native deps for the current platform, e.g. rollup-linux-x64-musl)
-COPY frontend/.npmrc frontend/package.json ./
-RUN npm install
+# Install exactly what package-lock.json pins, so the image builds the same
+# dependency tree that CI tested. The lockfile (v3) already lists the
+# platform-specific native packages for every target, including the Alpine
+# musl ones (@rolldown/binding-linux-*-musl, lightningcss-linux-*-musl), and
+# npm ci installs the ones matching this platform.
+# --legacy-peer-deps matches how the lockfile is generated and how CI installs.
+COPY frontend/.npmrc frontend/package.json frontend/package-lock.json ./
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
 # Copy source and build — output lands in /frontend/dist/
 COPY frontend/ ./
