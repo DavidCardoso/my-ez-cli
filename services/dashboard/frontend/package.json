@@ -24,7 +24,7 @@
     "@playwright/test": "^1.65.1",
     "@vitejs/plugin-vue": "^6.0.11",
     "@vue/test-utils": "^2.6.0",
-    "jsdom": "^30.1.3",
+    "jsdom": "^31.0.1",
     "vite": "^8.3.8",
     "vitest": "^4.1.7"
   },
