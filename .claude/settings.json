@@ -2,6 +2,11 @@
   "project": "my-ez-cli",
   "version": "1.0.0-rc",
   "model": "sonnet",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
   "preferences": {
     "communication": {
       "emoji_usage": "minimal",
